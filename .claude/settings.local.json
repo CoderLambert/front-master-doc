@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat /e/my-website/sidebars.js)",
+      "Bash(cat /e/my-website/.gitignore)",
+      "Bash(cat /e/my-website/blog/authors.yml)",
+      "Bash(cat /e/my-website/docs/intro.md)",
+      "Bash(cat /e/my-website/src/css/custom.css)",
+      "Bash(git init)",
+      "Bash(git config user.name \"Claude Code\")",
+      "Bash(git config user.email \"claude@anthropic.com\")",
+      "Bash(git add .)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
