@@ -104,13 +104,13 @@ const CopyButton = ({
           gap: '6px',
           padding: sizeStyles[size].padding,
           border: '1px solid var(--ifm-toc-border-color)',
-          background: copied ? '#28a745' : 'transparent',
+          background: copied ? '#28a745' : 'var(--ifm-background-color)',
           color: copied ? 'white' : 'var(--ifm-font-color-base)',
           borderRadius: '4px',
           cursor: 'pointer',
           fontSize: sizeStyles[size].fontSize,
           transition: 'all 0.2s ease',
-          opacity: 0,
+          opacity: 1,
         }}
         className="copy-button"
       >
