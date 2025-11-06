@@ -1,0 +1,1232 @@
+# JSX语法详解
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+JSX是React的核心语法，它允许你在JavaScript中编写类似HTML的代码。在本章中，我们将深入学习JSX的语法规则、最佳实践和常见模式。
+
+## 本章学习目标
+
+- 理解JSX的作用和优势
+- 掌握JSX的基本语法规则
+- 学会在JSX中嵌入表达式
+- 掌握条件渲染和列表渲染
+- 理解JSX的工作原理
+
+---
+
+## 1. 什么是JSX？
+
+### JSX简介
+
+**JSX（JavaScript XML）**是一种JavaScript的语法扩展，它允许你在JavaScript中编写类似HTML的代码。通过JSX，你可以更直观地描述UI的结构。
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 关键点</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    JSX不是合法的JavaScript语法，它需要被Babel或TypeScript编译器转译为<code>React.createElement()</code>调用。
+  </p>
+</Box>
+
+### JSX示例
+
+<Example>
+
+```jsx
+// 使用JSX（直观、声明式）
+const element = (
+  <div className="greeting">
+    <h1>Hello, world!</h1>
+    <p>Welcome to React.</p>
+  </div>
+);
+
+// 等效的JavaScript代码（冗长、命令式）
+const element = React.createElement(
+  'div',
+  { className: 'greeting' },
+  React.createElement('h1', null, 'Hello, world!'),
+  React.createElement('p', null, 'Welcome to React.')
+);
+```
+
+</Example>
+
+---
+
+## 2. JSX基础语法
+
+### 2.1 标签闭合
+
+JSX元素必须正确闭合，就像HTML一样。
+
+<Compare>
+
+```jsx
+// ✅ 自闭合标签
+<img src="logo.png" alt="Logo" />
+<input type="text" placeholder="Enter your name" />
+<br />
+
+// ✅ 配对闭合标签
+<div>
+  <h1>Title</h1>
+  <p>Paragraph</p>
+</div>
+```
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 未闭合标签
+<img src="logo.png" alt="Logo">
+<div>
+  <h1>Title
+</div>
+```
+
+</ErrorBox>
+
+</Compare>
+
+### 2.2 嵌套规则
+
+JSX元素必须遵循正确的嵌套规则。
+
+<Rules>
+
+1. **只能有一个根元素**
+   ```jsx
+   // ✅ 正确 - 单个根元素
+   <div>
+     <h1>Title</h1>
+     <p>Paragraph</p>
+   </div>
+
+   // ❌ 错误 - 多个根元素
+   <h1>Title</h1>
+   <p>Paragraph</p>
+   ```
+
+2. **使用React.Fragment避免额外div**
+   ```jsx
+   // ✅ 使用Fragment
+   <>
+     <h1>Title</h1>
+     <p>Paragraph</p>
+   </>
+   ```
+
+</Rules>
+
+### 2.3 注释
+
+在JSX中添加注释需要注意语法。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  return (
+    <div>
+      {/* 这是JSX注释，不会渲染 */}
+      <h1>Hello</h1>
+      {/*
+         多行注释
+         可以这样写
+      */}
+      <p>Content</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 嵌入表达式
+
+### 3.1 基本用法
+
+使用`{}`在JSX中嵌入JavaScript表达式。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const name = 'Alice';
+  const age = 25;
+  const isLoggedIn = true;
+
+  return (
+    <div>
+      {/* 嵌入变量 */}
+      <h1>Hello, {name}!</h1>
+
+      {/* 嵌入计算 */}
+      <p>You are {age} years old.</p>
+      <p>Next year you will be {age + 1}</p>
+
+      {/* 嵌入函数调用 */}
+      <p>{new Date().toLocaleDateString()}</p>
+
+      {/* 嵌入三元表达式 */}
+      <p>{isLoggedIn ? 'Welcome back!' : 'Please log in'}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 复杂表达式
+
+可以在`{}`中使用任何有效的JavaScript表达式。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const user = {
+    name: 'Bob',
+    role: 'Admin'
+  };
+
+  const items = ['Apple', 'Banana', 'Cherry'];
+
+  return (
+    <div>
+      {/* 对象属性访问 */}
+      <p>User: {user.name}</p>
+      <p>Role: {user.role}</p>
+
+      {/* 数组方法 */}
+      <p>Items count: {items.length}</p>
+      <p>First item: {items[0]}</p>
+
+      {/* 逻辑运算 */}
+      {user.role === 'Admin' && (
+        <button>Delete User</button>
+      )}
+
+      {/* 函数调用 */}
+      <p>{user.name.toUpperCase()}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 模板字符串
+
+使用模板字符串构建复杂的字符串。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const firstName = 'John';
+  const lastName = 'Doe';
+
+  return (
+    <div>
+      {/* 简单拼接 */}
+      <p>{firstName + ' ' + lastName}</p>
+
+      {/* 模板字符串 */}
+      <p>{`${firstName} ${lastName}`}</p>
+
+      {/* 动态消息 */}
+      <p>{`Hello, ${firstName}! You have ${5} messages.`}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 属性与Props
+
+### 4.1 字符串常量 vs JavaScript表达式
+
+区分字符串常量和表达式：
+
+<Compare>
+
+```jsx
+// ✅ 字符串常量（引号）
+<MyComponent message="Hello" />
+<MyComponent className="btn-primary" />
+
+// ✅ JavaScript表达式（大括号）
+<MyComponent message={variable} />
+<MyComponent count={10 + 20} />
+<MyComponent isActive={true} />
+```
+
+</Compare>
+
+### 4.2 特殊属性
+
+某些HTML属性在JSX中有不同的名称或行为。
+
+<Table>
+
+| HTML属性 | JSX属性 | 说明 |
+|---------|---------|------|
+| `class` | `className` | `class`是JavaScript保留字 |
+| `for` | `htmlFor` | `for`是JavaScript保留字 |
+| `onclick` | `onClick` | 事件处理器（驼峰命名） |
+| `ondblclick` | `onDoubleClick` | 双击事件 |
+| `onchange` | `onChange` | 变化事件 |
+| `onkeyup` | `onKeyUp` | 键盘事件 |
+
+</Table>
+
+<CodeBlock>
+
+```jsx
+function Form() {
+  return (
+    <form>
+      {/* 正确使用htmlFor */}
+      <label htmlFor="username">Username:</label>
+      <input id="username" type="text" />
+
+      {/* 正确使用className */}
+      <input className="input-field" type="text" />
+
+      {/* 事件处理器使用驼峰命名 */}
+      <button onClick={handleClick}>Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 样式属性
+
+`style`属性接受一个JavaScript对象，而不是字符串。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  // 使用对象定义样式
+  const buttonStyle = {
+    backgroundColor: '#007bff',
+    color: 'white',
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px'
+  };
+
+  // 使用内联样式
+  return (
+    <div>
+      <p style={{ color: 'red', fontSize: '18px' }}>Red text</p>
+      <p style={{ color: 'blue' }}>Blue text</p>
+
+      {/* 使用对象变量 */}
+      <button style={buttonStyle}>Click me</button>
+    </div>
+  );
+}
+```
+
+<Box style={{ padding: '15px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>💡 提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    CSS属性使用<strong>驼峰命名</strong>（camelCase），例如：<code>backgroundColor</code>而不是<code>background-color</code>。
+  </p>
+</Box>
+
+### 4.4 展开属性
+
+使用展开运算符传递多个属性。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const props = {
+    message: 'Hello',
+    count: 5,
+    isActive: true
+  };
+
+  // 展开属性
+  return <MyComponent {...props} />;
+
+  // 等效于
+  return (
+    <MyComponent
+      message="Hello"
+      count={5}
+      isActive={true}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 条件渲染
+
+### 5.1 if语句
+
+使用`if`语句在组件级别控制渲染。
+
+<CodeBlock>
+
+```jsx
+function App({ user }) {
+  // 在组件顶层使用if语句
+  if (!user) {
+    return <p>Please log in</p>;
+  }
+
+  return (
+    <div>
+      <h1>Welcome, {user.name}!</h1>
+      <p>Email: {user.email}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 三元运算符
+
+使用三元运算符进行简单条件渲染。
+
+<CodeBlock>
+
+```jsx
+function App({ isAdmin }) {
+  return (
+    <div>
+      {isAdmin ? <AdminPanel /> : <UserPanel />}
+
+      {/* 条件显示文本 */}
+      <p>
+        Status: {isAdmin ? 'Administrator' : 'Regular User'}
+      </p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 逻辑与运算符
+
+使用`&&`运算符进行条件渲染（当条件为真时渲染元素）。
+
+<CodeBlock>
+
+```jsx
+function App({ notifications }) {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+
+      {/* 只有当notifications.length > 0时才渲染 */}
+      {notifications.length > 0 && (
+        <div className="notifications">
+          You have {notifications.length} new notifications
+        </div>
+      )}
+
+      {/* 条件渲染加载状态 */}
+      {loading && <Spinner />}
+
+      {/* 条件渲染错误信息 */}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.4 立即返回（Guard Clause）
+
+使用早期返回简化条件渲染。
+
+<CodeBlock>
+
+```jsx
+function App({ user, loading, error }) {
+  // 早期返回，处理加载和错误状态
+  if (loading) return <Spinner />;
+  if (error) return <p>Error: {error}</p>;
+  if (!user) return <p>Please log in</p>;
+
+  // 主要渲染逻辑
+  return (
+    <div>
+      <h1>Welcome, {user.name}!</h1>
+      {/* 其他内容 */}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 列表渲染
+
+### 6.1 使用map方法
+
+使用`Array.map()`渲染列表是React中最常见的模式。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const fruits = ['Apple', 'Banana', 'Cherry'];
+
+  return (
+    <ul>
+      {fruits.map((fruit, index) => (
+        <li key={index}>{fruit}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+<Box style={{ padding: '15px', background: '#ffebee', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#c62828' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    渲染列表时<strong>必须</strong>提供<code>key</code>属性，帮助React识别哪些项目发生了变化。
+  </p>
+</Box>
+
+### 6.2 对象数组渲染
+
+渲染对象数组时，每个对象都应该有一个唯一的id作为key。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const users = [
+    { id: 1, name: 'Alice', email: 'alice@example.com' },
+    { id: 2, name: 'Bob', email: 'bob@example.com' },
+    { id: 3, name: 'Charlie', email: 'charlie@example.com' }
+  ];
+
+  return (
+    <div>
+      <h1>User List</h1>
+      {users.map(user => (
+        <div key={user.id} style={{
+          border: '1px solid #ddd',
+          padding: '10px',
+          margin: '5px 0'
+        }}>
+          <h3>{user.name}</h3>
+          <p>Email: {user.email}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 复杂列表渲染
+
+渲染包含多个元素的复杂列表。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const todos = [
+    { id: 1, text: 'Learn React', completed: true },
+    { id: 2, text: 'Build an app', completed: false },
+    { id: 3, text: 'Deploy to production', completed: false }
+  ];
+
+  return (
+    <div>
+      <h1>Todo List</h1>
+      {todos.map(todo => (
+        <div
+          key={todo.id}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '10px',
+            background: todo.completed ? '#e8f5e9' : 'transparent'
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            style={{ marginRight: '10px' }}
+          />
+          <span style={{
+            textDecoration: todo.completed ? 'line-through' : 'none'
+          }}>
+            {todo.text}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.4 过滤和排序
+
+在渲染前对列表进行过滤和排序。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const products = [
+    { id: 1, name: 'Laptop', price: 999, category: 'Electronics' },
+    { id: 2, name: 'Shirt', price: 29, category: 'Clothing' },
+    { id: 3, name: 'Phone', price: 699, category: 'Electronics' },
+    { id: 4, name: 'Pants', price: 59, category: 'Clothing' }
+  ];
+
+  return (
+    <div>
+      <h1>Products</h1>
+
+      {/* 显示电子产品 */}
+      <h2>Electronics</h2>
+      {products
+        .filter(product => product.category === 'Electronics')
+        .map(product => (
+          <div key={product.id}>
+            {product.name} - ${product.price}
+          </div>
+        ))}
+
+      {/* 按价格排序 */}
+      <h2>Sorted by Price</h2>
+      {products
+        .sort((a, b) => a.price - b.price)
+        .map(product => (
+          <div key={product.id}>
+            {product.name} - ${product.price}
+          </div>
+        ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 事件处理
+
+### 7.1 基础事件
+
+使用驼峰命名的事件处理器。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  // 定义事件处理器
+  const handleClick = () => {
+    alert('Button clicked!');
+  };
+
+  const handleInputChange = (e) => {
+    console.log('Input value:', e.target.value);
+  };
+
+  return (
+    <div>
+      {/* 点击事件 */}
+      <button onClick={handleClick}>
+        Click me
+      </button>
+
+      {/* 输入事件 */}
+      <input
+        type="text"
+        onChange={handleInputChange}
+        placeholder="Type something..."
+      />
+
+      {/* 内联事件处理器 */}
+      <button onClick={() => alert('Inline handler')}>
+        Inline Handler
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 事件参数
+
+向事件处理器传递参数。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const items = ['Apple', 'Banana', 'Cherry'];
+
+  // 使用箭头函数传递参数
+  const handleItemClick = (item, index) => {
+    alert(`Clicked: ${item} at index ${index}`);
+  };
+
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li
+          key={index}
+          onClick={() => handleItemClick(item, index)}
+          style={{ cursor: 'pointer' }}
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.3 事件对象
+
+事件处理器接收一个合成事件对象（SyntheticEvent）。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const handleSubmit = (e) => {
+    e.preventDefault(); // 阻止默认行为
+    console.log('Form submitted');
+  };
+
+  const handleKeyPress = (e) => {
+    console.log('Key pressed:', e.key);
+    console.log('Key code:', e.keyCode);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        onKeyPress={handleKeyPress}
+        placeholder="Press a key..."
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.4 常见事件类型
+
+<Table>
+
+| 事件类型 | 处理器名称 | 用途 |
+|---------|------------|------|
+| 鼠标点击 | `onClick` | 点击事件 |
+| 鼠标悬停 | `onMouseEnter` / `onMouseLeave` | 鼠标进入/离开 |
+| 表单提交 | `onSubmit` | 表单提交 |
+| 输入变化 | `onChange` | 输入值变化 |
+| 键盘按键 | `onKeyDown` / `onKeyUp` | 键盘事件 |
+| 焦点 | `onFocus` / `onBlur` | 获取/失去焦点 |
+| 滚动 | `onScroll` | 滚动事件 |
+
+</Table>
+
+---
+
+## 8. 样式处理
+
+### 8.1 内联样式
+
+使用对象定义样式，属性名使用驼峰命名。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const containerStyle = {
+    padding: '20px',
+    maxWidth: '600px',
+    margin: '0 auto'
+  };
+
+  const titleStyle = {
+    fontSize: '32px',
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center'
+  };
+
+  const buttonStyle = {
+    backgroundColor: '#007bff',
+    color: 'white',
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    transition: 'background-color 0.3s'
+  };
+
+  return (
+    <div style={containerStyle}>
+      <h1 style={titleStyle}>Welcome</h1>
+      <button style={buttonStyle}>Click me</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.2 CSS类名
+
+使用`className`属性添加CSS类。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  return (
+    <div className="container">
+      <h1 className="title">Welcome</h1>
+      <p className="description">This is a paragraph.</p>
+      <button className="btn btn-primary">Click me</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+<Box style={{ padding: '15px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1565c0' }}>💡 CSS最佳实践</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>内联样式</strong>：适合动态样式，作用域是元素本身<br/>
+    <strong>CSS类</strong>：适合静态样式，可复用，支持伪类
+  </p>
+</Box>
+
+### 8.3 动态样式
+
+根据状态动态设置样式。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const [isActive, setIsActive] = React.useState(false);
+
+  const buttonStyle = {
+    backgroundColor: isActive ? '#28a745' : '#007bff',
+    color: 'white',
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    transform: isActive ? 'scale(0.95)' : 'scale(1)',
+    transition: 'all 0.2s'
+  };
+
+  return (
+    <div>
+      <button
+        style={buttonStyle}
+        onClick={() => setIsActive(!isActive)}
+      >
+        {isActive ? 'Active!' : 'Click me'}
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.4 条件样式
+
+根据条件添加不同的类名。
+
+<CodeBlock>
+
+```jsx
+function App() {
+  const [status, setStatus] = React.useState('pending'); // 'pending', 'success', 'error'
+
+  const getStatusClass = (status) => {
+    return `status-badge status-${status}`;
+  };
+
+  return (
+    <div>
+      <div className={getStatusClass(status)}>
+        Status: {status}
+      </div>
+      <button onClick={() => setStatus('success')}>Success</button>
+      <button onClick={() => setStatus('error')}>Error</button>
+      <button onClick={() => setStatus('pending')}>Pending</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. JSX工作原理
+
+### 9.1 转译过程
+
+JSX不是合法的JavaScript，它需要被转译为`React.createElement()`调用。
+
+<Process>
+
+1. **编写JSX代码**
+   ```jsx
+   const element = <h1 className="greeting">Hello, world!</h1>;
+   ```
+
+2. **Babel转译**
+   ```javascript
+   const element = React.createElement(
+     'h1',
+     { className: 'greeting' },
+     'Hello, world!'
+   );
+   ```
+
+3. **React.createElement返回虚拟DOM元素**
+   ```javascript
+   const element = {
+     type: 'h1',
+     props: {
+       className: 'greeting',
+       children: 'Hello, world!'
+     }
+   };
+   ```
+
+4. **React渲染到DOM**
+   ```html
+   <h1 class="greeting">Hello, world!</h1>
+   ```
+
+</Process>
+
+### 9.2 虚拟DOM
+
+React使用虚拟DOM提高性能。
+
+<Diagram>
+
+```
+┌─────────────────┐
+│  初始渲染        │
+│  (Initial DOM)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  虚拟DOM树      │
+│ (Virtual DOM)   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  State改变      │
+│ (State Change)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  新的虚拟DOM树   │
+│ (New Virtual)   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  差异对比       │
+│   (Diff)        │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  最小化更新     │
+│ (Batch Update)  │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  真实DOM更新    │
+│ (Real DOM)      │
+└─────────────────┘
+```
+
+</Diagram>
+
+---
+
+## 10. 实践练习
+
+### 练习1：个人信息卡片
+
+创建一个`ProfileCard`组件，显示个人信息：
+
+<Expandable title="点击查看要求">
+
+**要求**：
+- 接收`name`、`age`、`job`、`avatar`属性
+- 显示头像、姓名、年龄、职业
+- 使用条件渲染，如果未提供年龄则显示"年龄保密"
+- 样式美观，使用内联样式
+
+**示例结构**：
+```jsx
+function ProfileCard({ name, age, job, avatar }) {
+  // 你的代码
+}
+
+function App() {
+  return (
+    <div>
+      <ProfileCard
+        name="Alice"
+        age={25}
+        job="前端工程师"
+        avatar="..."
+      />
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+### 练习2：待办事项列表
+
+创建一个`TodoList`组件，支持：
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 显示待办事项列表
+- 每个事项有文本和完成状态
+- 完成后显示删除线
+- 支持添加新事项（使用input和button）
+- 使用`Array.map()`渲染列表
+- 为每个列表项提供`key`属性
+
+**提示**：
+- 使用`useState`管理事项列表
+- 使用`Array.push()`或展开运算符添加新事项
+- 使用`Array.filter()`删除事项
+
+</Expandable>
+
+### 练习3：产品过滤器
+
+创建一个产品列表组件，支持：
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 显示产品列表（包含名称、价格、分类）
+- 提供过滤器（全部、电子产品、服装）
+- 显示过滤后的产品
+- 显示产品总数
+
+**数据结构**：
+```javascript
+const products = [
+  { id: 1, name: 'Laptop', price: 999, category: 'Electronics' },
+  { id: 2, name: 'Shirt', price: 29, category: 'Clothing' },
+  // 更多产品...
+];
+```
+
+</Expandable>
+
+### 练习4：用户登录状态
+
+创建组件根据用户状态显示不同内容：
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 根据`isLoggedIn`属性显示不同内容
+- 已登录：显示欢迎信息和用户信息
+- 未登录：显示登录表单
+- 登录成功后更新状态
+
+**提示**：
+- 使用条件渲染（if语句或三元运算符）
+- 使用`useState`管理登录状态
+- 使用`onClick`和`onSubmit`处理事件
+
+</Expandable>
+
+---
+
+## 11. 常见错误
+
+### 错误1：忘记key属性
+
+渲染列表时必须提供key属性。
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 缺少key
+{items.map(item => <div>{item}</div>)}
+
+// ✅ 正确
+{items.map((item, index) => <div key={index}>{item}</div>)}
+
+// ✅ 更好 - 使用唯一ID
+{items.map(item => <div key={item.id}>{item}</div>)}
+```
+
+</ErrorBox>
+
+### 错误2：使用错误的属性名
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+<div class="container">
+  <label for="username">Username:</label>
+</div>
+
+// ✅ 正确
+<div className="container">
+  <label htmlFor="username">Username:</label>
+</div>
+```
+
+</ErrorBox>
+
+### 错误3：忘记转义特殊字符
+
+<ErrorBox>
+
+```jsx
+// ✅ 正确 - 转义特殊字符
+<p>Price: &lt; $1000</p>
+<p>Copyright &copy; 2024</p>
+
+// ✅ 或者使用Unicode
+<p>Price: \u003C $1000</p>
+```
+
+</ErrorBox>
+
+### 错误4：直接使用对象作为children
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+const styles = { color: 'red' };
+return <div>{styles}</div>;
+
+// ✅ 正确 - 转换对象为字符串
+return <div>{JSON.stringify(styles)}</div>;
+```
+
+</ErrorBox>
+
+---
+
+## 12. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ JSX是JavaScript的语法扩展，允许在JavaScript中编写类似HTML的代码
+- ✅ 使用`{}`在JSX中嵌入JavaScript表达式
+- ✅ 某些HTML属性在JSX中有不同的名称（如`className`、`htmlFor`）
+- ✅ 使用`Array.map()`渲染列表时必须提供`key`属性
+- ✅ 条件渲染可以使用if语句、三元运算符或逻辑与运算符
+- ✅ 事件处理器使用驼峰命名（如`onClick`）
+- ✅ JSX需要被转译为`React.createElement()`调用
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **保持JSX简洁** - 避免在JSX中编写复杂的逻辑
+2. **使用解构赋值** - 从props中提取所需的属性
+3. **提取组件** - 当JSX变得复杂时，考虑提取为单独的组件
+4. **使用注释** - 为复杂的JSX结构添加注释
+5. **遵循约定** - 使用一致的大写命名和命名约定
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了JSX语法，接下来我们将学习：
+
+1. **[组件与Props](components-props)** - 深入理解组件和props的传递
+2. **[State与生命周期](state-lifecycle)** - 学习组件状态管理
+
+---
+
+## 13. 延伸阅读
+
+### 官方资源
+
+- [JSX规范](https://facebook.github.io/jsx/) - 官方JSX文档
+- [React JSX](https://react.dev/learn/writing-markup-with-jsx) - React官方JSX指南
+- [React事件处理](https://react.dev/reference/react-dom/components/common) - 事件系统文档
+
+### 工具推荐
+
+- [Babel在线转换器](https://babeljs.io/repl/) - 查看JSX转译结果
+- [JSX语法检查器](https://eslint.org/) - 使用ESLint检查JSX
+
+---
+
+[← 上一章：什么是React](what-is-react) | [下一章：组件与Props →](components-props)

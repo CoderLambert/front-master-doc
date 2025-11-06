@@ -1,0 +1,1154 @@
+# 组件与Props
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+组件是React应用的基本构建块，Props是组件间传递数据的主要方式。在本章中，我们将深入探讨组件的定义、Props的使用以及组件设计的最佳实践。
+
+## 本章学习目标
+
+- 理解React组件的概念和作用
+- 掌握函数组件和类组件的写法
+- 学会使用Props传递数据
+- 理解Props的只读性
+- 掌握Props的类型验证
+- 学习组件组合的技巧
+
+---
+
+## 1. 什么是组件？
+
+### 组件概念
+
+**组件**是React应用的基本构建块，它是可复用的UI片段，可以接受输入（props）并返回React元素。
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 组件特性</h4>
+  <ul style={{ margin: '10px 0' }}>
+    <li><strong>可组合</strong>：多个组件可以组合成复杂的UI</li>
+    <li><strong>可复用</strong>：一个组件可以被多次使用</li>
+    <li><strong>可维护</strong>：逻辑和样式封装在组件内</li>
+    <li><strong>可测试</strong>：可以独立测试组件功能</li>
+  </ul>
+</Box>
+
+### 组件思维
+
+将UI拆分成独立的、可复用的组件。
+
+<Diagram>
+
+```
+复杂UI → 拆分组件
+
+┌─────────────────────────────────────┐
+│           整个页面                    │
+│                                     │
+│  ┌─────────┐  ┌─────────┐           │
+│  │ Header  │  │  Nav    │           │
+│  └─────────┘  └─────────┘           │
+│                                     │
+│  ┌────────────────────────────────┐ │
+│  │         Main Content           │ │
+│  │  ┌──────┐ ┌──────┐ ┌──────┐   │ │
+│  │  │ Card1│ │ Card2│ │ Card3│   │ │
+│  │  └──────┘ └──────┘ └──────┘   │ │
+│  └────────────────────────────────┘ │
+│                                     │
+│  ┌─────────┐                        │
+│  │ Footer  │                        │
+│  └─────────┘                        │
+└─────────────────────────────────────┘
+```
+
+</Diagram>
+
+---
+
+## 2. 函数组件 vs 类组件
+
+React支持两种定义组件的方式：函数组件和类组件。现代React推荐使用函数组件。
+
+### 2.1 函数组件（推荐）
+
+函数组件是JavaScript函数，接受props参数，返回React元素。
+
+<CodeBlock>
+
+```jsx
+// 基本函数组件
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
+
+// 使用箭头函数
+const Welcome = (props) => {
+  return <h1>Hello, {props.name}</h1>;
+};
+
+// 解构props
+const Welcome = ({ name }) => {
+  return <h1>Hello, {name}</h1>;
+};
+
+// 隐式返回（单行）
+const Welcome = ({ name }) => <h1>Hello, {name}</h1>;
+```
+
+</CodeBlock>
+
+### 2.2 类组件（传统写法）
+
+类组件使用ES6类语法，继承自`React.Component`。
+
+<CodeBlock>
+
+```jsx
+// 基本类组件
+class Welcome extends React.Component {
+  render() {
+    return <h1>Hello, {this.props.name}</h1>;
+  }
+}
+
+// 现代类组件（支持类字段）
+class Welcome extends React.Component {
+  // 不需要构造函数（如果不用state）
+  render() {
+    return <h1>Hello, {this.props.name}</h1>;
+  }
+}
+```
+
+</CodeBlock>
+
+### 2.3 对比示例
+
+<Compare>
+
+```jsx
+// 函数组件 vs 类组件
+
+// 函数组件（推荐）
+function UserCardFunctional({ name, age, occupation }) {
+  return (
+    <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
+      <h3>{name}</h3>
+      <p>Age: {age}</p>
+      <p>Occupation: {occupation}</p>
+    </div>
+  );
+}
+
+// 类组件（传统）
+class UserCardClass extends React.Component {
+  render() {
+    const { name, age, occupation } = this.props;
+    return (
+      <div style={{ border: '1px solid #ddd', padding: '20px', borderRadius: '8px' }}>
+        <h3>{name}</h3>
+        <p>Age: {age}</p>
+        <p>Occupation: {occupation}</p>
+      </div>
+    );
+  }
+}
+
+// 使用组件
+function App() {
+  return (
+    <div>
+      <UserCardFunctional name="Alice" age={25} occupation="Engineer" />
+      <UserCardClass name="Bob" age={30} occupation="Designer" />
+    </div>
+  );
+}
+```
+
+</Compare>
+
+<Box style={{ padding: '15px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1565c0' }}>💡 为什么推荐函数组件？</h4>
+  <ul style={{ margin: '10px 0' }}>
+    <li>更简洁的语法，更少的样板代码</li>
+    <li>更好的性能（无需实例化）</li>
+    <li>易于测试和调试</li>
+    <li>与React Hooks完美配合</li>
+    <li>React未来发展的方向</li>
+  </ul>
+</Box>
+
+---
+
+## 3. Props详解
+
+### 3.1 什么是Props？
+
+**Props**是组件的输入数据，它们从父组件传递给子组件。Props是只读的，不能在子组件中修改。
+
+<Diagram>
+
+```
+┌────────────────────┐
+│   父组件 (Parent)   │
+│                    │
+│  state: {          │
+│    name: 'Alice'   │
+│    age: 25         │
+│  }                 │
+└────────┬───────────┘
+         │
+         │ props
+         │ name: 'Alice'
+         │ age: 25
+         │
+┌────────▼───────────┐
+│   子组件 (Child)    │
+│                    │
+│  Props:            │
+│  { name, age }     │
+└────────────────────┘
+```
+
+</Diagram>
+
+### 3.2 传递Props
+
+<CodeBlock>
+
+```jsx
+// 定义组件
+function UserCard({ name, age, occupation }) {
+  return (
+    <div>
+      <h3>{name}</h3>
+      <p>Age: {age}</p>
+      <p>Occupation: {occupation}</p>
+    </div>
+  );
+}
+
+// 传递props
+function App() {
+  return (
+    <div>
+      {/* 方式1：使用字符串字面量 */}
+      <UserCard name="Alice" age={25} occupation="Engineer" />
+
+      {/* 方式2：使用变量 */}
+      <UserCard
+        name={userName}
+        age={userAge}
+        occupation={userJob}
+      />
+
+      {/* 方式3：展开运算符 */}
+      <UserCard {...userData} />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 解构Props
+
+使用解构赋值从props中提取所需的属性。
+
+<CodeBlock>
+
+```jsx
+// 基本解构
+function UserCard(props) {
+  const { name, age, occupation } = props;
+  return <div>{name}</div>;
+}
+
+// 内联解构（推荐）
+function UserCard({ name, age, occupation }) {
+  return <div>{name}</div>;
+}
+
+// 带默认值的解构
+function UserCard({ name, age = 18, occupation = 'Unknown' }) {
+  return <div>{name}</div>;
+}
+
+// 重命名属性
+function UserCard({ name: userName, age: userAge }) {
+  return <div>{userName}</div>;
+}
+```
+
+</CodeBlock>
+
+### 3.4 Props的只读性
+
+Props是只读的，不能在子组件中修改。
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改props
+function UserCard(props) {
+  props.name = 'New Name'; // 不能修改props
+  return <div>{props.name}</div>;
+}
+
+// ✅ 正确 - 基于props创建新变量
+function UserCard(props) {
+  const displayName = props.name || 'Anonymous'; // 创建新变量
+  return <div>{displayName}</div>;
+}
+
+// ✅ 正确 - 使用props计算新值
+function UserCard({ name }) {
+  const upperCaseName = name.toUpperCase(); // 基于props计算
+  return <div>{upperCaseName}</div>;
+}
+```
+
+</ErrorBox>
+
+<Box style={{ padding: '15px', background: '#ffebee', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#c62828' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Props是单向数据流</strong>：数据从父组件流向子组件，子组件不能修改props。
+    如果需要修改数据，应该在父组件中使用state，并通过props传递修改函数。
+  </p>
+</Box>
+
+---
+
+## 4. Props类型验证
+
+### 4.1 PropTypes（运行时检查）
+
+使用PropTypes库在运行时验证props的类型。
+
+<CodeBlock>
+
+```bash
+# 安装PropTypes
+npm install prop-types
+```
+
+```jsx
+import PropTypes from 'prop-types';
+
+function UserCard({ name, age, isActive, onSelect }) {
+  return (
+    <div>
+      <h3>{name}</h3>
+      <p>Age: {age}</p>
+      <p>Status: {isActive ? 'Active' : 'Inactive'}</p>
+      <button onClick={() => onSelect(name)}>Select</button>
+    </div>
+  );
+}
+
+// 定义PropTypes
+UserCard.propTypes = {
+  name: PropTypes.string.isRequired,
+  age: PropTypes.number,
+  isActive: PropTypes.bool,
+  onSelect: PropTypes.func
+};
+
+// 定义默认值
+UserCard.defaultProps = {
+  age: 18,
+  isActive: false,
+  onSelect: () => {}
+};
+```
+
+</CodeBlock>
+
+<Table>
+
+| 类型 | 示例 | 验证器 |
+|------|------|--------|
+| 字符串 | `'hello'` | `PropTypes.string` |
+| 数字 | `42` | `PropTypes.number` |
+| 布尔 | `true` | `PropTypes.bool` |
+| 函数 | `() => {}` | `PropTypes.func` |
+| 数组 | `[]` | `PropTypes.array` |
+| 对象 | `{}` | `PropTypes.object` |
+| 元素 | `<div />` | `PropTypes.element` |
+| 任何类型 | 任意值 | `PropTypes.any` |
+
+</Table>
+
+### 4.2 TypeScript（推荐）
+
+使用TypeScript在编译时进行类型检查。
+
+<CodeBlock>
+
+```typescript
+// 定义类型接口
+interface UserCardProps {
+  name: string;
+  age?: number; // 可选属性
+  occupation: string;
+  isActive?: boolean;
+  onSelect?: (name: string) => void;
+}
+
+// 使用类型
+function UserCard({ name, age = 18, occupation, isActive = false, onSelect }: UserCardProps) {
+  return (
+    <div>
+      <h3>{name}</h3>
+      <p>Age: {age}</p>
+      <p>Occupation: {occupation}</p>
+      <p>Status: {isActive ? 'Active' : 'Inactive'}</p>
+      <button onClick={() => onSelect?.(name)}>Select</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 默认Props
+
+为props提供默认值。
+
+<CodeBlock>
+
+```jsx
+// 方式1：使用defaultProps
+function UserCard({ name, age, occupation }) {
+  return <div>{name}</div>;
+}
+
+UserCard.defaultProps = {
+  age: 18,
+  occupation: 'Unknown'
+};
+
+// 方式2：使用解构赋值默认值（推荐）
+function UserCard({ name, age = 18, occupation = 'Unknown' }) {
+  return <div>{name}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 特殊Props
+
+### 5.1 children
+
+`children`是传递给组件的特殊prop，包含组件开始和结束标签之间的内容。
+
+<CodeBlock>
+
+```jsx
+// 使用children
+function Card({ children }) {
+  return (
+    <div style={{ border: '1px solid #ddd', padding: '20px' }}>
+      {children}
+    </div>
+  );
+}
+
+// 使用组件
+function App() {
+  return (
+    <Card>
+      <h2>Card Title</h2>
+      <p>This is card content</p>
+    </Card>
+  );
+}
+
+// 条件渲染children
+function Container({ children, show = true }) {
+  if (!show) return null;
+  return <div>{children}</div>;
+}
+```
+
+</CodeBlock>
+
+### 5.2 render props模式
+
+使用render prop让组件可以自定义渲染逻辑。
+
+<CodeBlock>
+
+```jsx
+// 组件使用render prop
+function MouseTracker({ render }) {
+  const [position, setPosition] = React.useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    setPosition({ x: e.clientX, y: e.clientY });
+  };
+
+  return (
+    <div style={{ height: '100vh' }} onMouseMove={handleMouseMove}>
+      {render(position)}
+    </div>
+  );
+}
+
+// 使用render prop
+function App() {
+  return (
+    <MouseTracker
+      render={({ x, y }) => (
+        <h1>
+          Mouse position: ({x}, {y})
+        </h1>
+      )}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 ref和forwardRef
+
+使用`forwardRef`创建可以被父组件访问的ref。
+
+<CodeBlock>
+
+```jsx
+// 使用forwardRef
+const Input = React.forwardRef((props, ref) => {
+  return <input ref={ref} {...props} />;
+});
+
+function App() {
+  const inputRef = React.useRef(null);
+
+  const handleClick = () => {
+    inputRef.current.focus();
+  };
+
+  return (
+    <div>
+      <Input ref={inputRef} type="text" />
+      <button onClick={handleClick}>Focus Input</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 组件组合
+
+### 6.1 组合多个组件
+
+<CodeBlock>
+
+```jsx
+// 创建子组件
+function Header() {
+  return <header style={{ background: '#333', color: 'white', padding: '20px' }}>
+    <h1>My Website</h1>
+  </header>;
+}
+
+function Navigation() {
+  return (
+    <nav style={{ background: '#555', color: 'white', padding: '10px' }}>
+      <a href="/" style={{ marginRight: '10px' }}>Home</a>
+      <a href="/about" style={{ marginRight: '10px' }}>About</a>
+      <a href="/contact">Contact</a>
+    </nav>
+  );
+}
+
+function MainContent() {
+  return <main style={{ padding: '20px' }}>
+    <h2>Main Content</h2>
+    <p>This is the main content area.</p>
+  </main>;
+}
+
+function Footer() {
+  return <footer style={{ background: '#f0f0f0', padding: '20px', textAlign: 'center' }}>
+    <p>&copy; 2024 My Website</p>
+  </footer>;
+}
+
+// 组合所有组件
+function App() {
+  return (
+    <div>
+      <Header />
+      <Navigation />
+      <MainContent />
+      <Footer />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 容器组件 vs 展示组件
+
+将逻辑与UI分离，提高代码可维护性。
+
+<CodeBlock>
+
+```jsx
+// 容器组件 - 负责逻辑和数据获取
+function UserListContainer() {
+  const [users, setUsers] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    setLoading(true);
+    // 模拟数据获取
+    setTimeout(() => {
+      setUsers([
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+      ]);
+      setLoading(false);
+    }, 1000);
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+
+  return <UserList users={users} />;
+}
+
+// 展示组件 - 负责UI渲染
+function UserList({ users }) {
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 组件的子组件
+
+使用组合模式构建复杂的组件。
+
+<CodeBlock>
+
+```jsx
+// 设计可组合的组件
+function Modal({ children }) {
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '20px',
+        borderRadius: '8px'
+      }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// 使用组合
+function App() {
+  const [showModal, setShowModal] = React.useState(false);
+
+  return (
+    <div>
+      <button onClick={() => setShowModal(true)}>
+        Open Modal
+      </button>
+
+      {showModal && (
+        <Modal>
+          <h2>Modal Title</h2>
+          <p>Modal content goes here</p>
+          <button onClick={() => setShowModal(false)}>
+            Close
+          </button>
+        </Modal>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 组件设计最佳实践
+
+### 7.1 单一职责原则
+
+每个组件只负责一个功能。
+
+<GoodBad>
+
+```jsx
+// ✅ 好 - 单一职责
+function UserCard({ user }) {
+  return (
+    <div className="user-card">
+      <Avatar src={user.avatar} />
+      <div className="user-info">
+        <h3>{user.name}</h3>
+        <p>{user.email}</p>
+      </div>
+    </div>
+  );
+}
+
+// ❌ 不好 - 职责过多
+function UserCardWithActions({ user, onEdit, onDelete }) {
+  return (
+    <div className="user-card">
+      <Avatar src={user.avatar} />
+      <div className="user-info">
+        <h3>{user.name}</h3>
+        <p>{user.email}</p>
+        <div className="actions"> {/* 额外职责 */}
+          <button onClick={() => onEdit(user)}>Edit</button>
+          <button onClick={() => onDelete(user.id)}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ 好 - 分离职责
+function UserCard({ user }) {
+  return (
+    <div className="user-card">
+      <Avatar src={user.avatar} />
+      <div className="user-info">
+        <h3>{user.name}</h3>
+        <p>{user.email}</p>
+      </div>
+    </div>
+  );
+}
+
+function UserCardActions({ user, onEdit, onDelete }) {
+  return (
+    <div className="user-card-actions">
+      <button onClick={() => onEdit(user)}>Edit</button>
+      <button onClick={() => onDelete(user.id)}>Delete</button>
+    </div>
+  );
+}
+```
+
+</GoodBad>
+
+### 7.2 Props最小化
+
+只传递组件真正需要的props。
+
+<GoodBad>
+
+```jsx
+// ✅ 好 - 最小化props
+function UserCard({ name, email, avatar }) {
+  return (
+    <div>
+      <img src={avatar} alt={name} />
+      <h3>{name}</h3>
+      <p>{email}</p>
+    </div>
+  );
+}
+
+// ❌ 不好 - 传递多余props
+function UserCard(props) {
+  const { name, email, avatar, phone, address, website, ...rest } = props;
+  return (
+    <div {...rest}>
+      <img src={avatar} alt={name} />
+      <h3>{name}</h3>
+      <p>{email}</p>
+      {/* phone, address, website未被使用 */}
+    </div>
+  );
+}
+```
+
+</GoodBad>
+
+### 7.3 避免深层嵌套
+
+使用组合或Provider避免深层传递props。
+
+<GoodBad>
+
+```jsx
+// ❌ 不好 - Props层层传递（Prop Drilling）
+function App() {
+  const [theme, setTheme] = useState('light');
+  return <Page theme={theme} setTheme={setTheme} />;
+}
+
+function Page({ theme, setTheme }) {
+  return <Section theme={theme} setTheme={setTheme} />;
+}
+
+function Section({ theme, setTheme }) {
+  return <Button theme={theme} setTheme={setTheme} />;
+}
+
+function Button({ theme, setTheme }) {
+  return (
+    <button style={{ color: theme === 'light' ? 'black' : 'white' }}>
+      Click me
+    </button>
+  );
+}
+
+// ✅ 好 - 使用Context
+const ThemeContext = React.createContext();
+
+function App() {
+  const [theme, setTheme] = useState('light');
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      <Page />
+    </ThemeContext.Provider>
+  );
+}
+
+function Button() {
+  const { theme, setTheme } = useContext(ThemeContext);
+  return (
+    <button style={{ color: theme === 'light' ? 'black' : 'white' }}>
+      Click me
+    </button>
+  );
+}
+```
+
+</GoodBad>
+
+### 7.4 保持组件纯函数
+
+相同输入应该产生相同输出，避免副作用。
+
+<GoodBad>
+
+```jsx
+// ✅ 好 - 纯函数
+function UserCard({ name, email }) {
+  return (
+    <div>
+      <h3>{name}</h3>
+      <p>{email}</p>
+    </div>
+  );
+}
+
+// ❌ 不好 - 不纯函数
+function UserCard({ name, email }) {
+  const [greeting, setGreeting] = useState('');
+
+  // 副作用，应该通过useEffect处理
+  if (!greeting) {
+    setGreeting(`Hello, ${name}`);
+  }
+
+  return (
+    <div>
+      <h3>{greeting}</h3>
+      <p>{email}</p>
+    </div>
+  );
+}
+```
+
+</GoodBad>
+
+### 7.5 使用解构赋值
+
+提高代码可读性。
+
+<GoodBad>
+
+```jsx
+// ✅ 好 - 使用解构
+function UserCard({ name, email, avatar, onSelect }) {
+  return (
+    <div>
+      <img src={avatar} alt={name} />
+      <h3>{name}</h3>
+      <p>{email}</p>
+      <button onClick={() => onSelect(name)}>Select</button>
+    </div>
+  );
+}
+
+// ❌ 不好 - 使用props对象
+function UserCard(props) {
+  return (
+    <div>
+      <img src={props.avatar} alt={props.name} />
+      <h3>{props.name}</h3>
+      <p>{props.email}</p>
+      <button onClick={() => props.onSelect(props.name)}>Select</button>
+    </div>
+  );
+}
+```
+
+</GoodBad>
+
+---
+
+## 8. 实践练习
+
+### 练习1：创建可复用按钮组件
+
+创建一个`Button`组件，支持：
+
+<Expandable title="点击查看要求">
+
+**要求**：
+- 接收`variant`属性（primary, secondary, danger）
+- 接收`size`属性（small, medium, large）
+- 接收`children`属性
+- 接收`onClick`事件处理器
+- 根据属性动态设置样式
+
+**提示**：
+- 使用对象映射不同变体和尺寸的样式
+- 使用展开运算符传递未处理的属性
+
+</Expandable>
+
+### 练习2：创建表单组件
+
+创建一个`Form`组件，包含：
+
+<Expandable title="点击查看要求">
+
+**要求**：
+- 包含姓名、邮箱、密码输入字段
+- 使用`controlled components`（受控组件）
+- 支持表单验证（必填字段验证）
+- 提交成功后显示确认信息
+- 重置功能
+
+**数据结构**：
+```javascript
+const [formData, setFormData] = useState({
+  name: '',
+  email: '',
+  password: ''
+});
+```
+
+</Expandable>
+
+### 练习3：创建数据列表组件
+
+创建一个`DataList`组件，支持：
+
+<Expandable title="点击查看要求">
+
+**要求**：
+- 接收`items`数组作为prop
+- 支持自定义`renderItem`函数
+- 支持`emptyMessage`属性（当列表为空时显示）
+- 支持`loading`状态
+- 提供`key`属性（使用item.id或index）
+
+**使用示例**：
+```jsx
+<DataList
+  items={users}
+  renderItem={(user) => <div>{user.name}</div>}
+  emptyMessage="No users found"
+  loading={false}
+/>
+```
+
+</Expandable>
+
+---
+
+## 9. 常见错误
+
+### 错误1：修改Props
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+function MyComponent(props) {
+  props.title = 'New Title'; // 不能修改props
+  return <div>{props.title}</div>;
+}
+
+// ✅ 正确
+function MyComponent(props) {
+  const newTitle = props.title + '!'; // 创建新变量
+  return <div>{newTitle}</div>;
+}
+```
+
+</ErrorBox>
+
+### 错误2：忘记传递Required Props
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 忘记传递required prop
+function UserCard({ name, email }) {
+  return <div>{name}</div>;
+}
+
+<UserCard name="Alice" /> {/* email缺失，但被标记为required */}
+```
+
+</ErrorBox>
+
+### 错误3：直接传递对象而不解构
+
+<ErrorBox>
+
+```jsx
+// ❌ 可以但不够清晰
+function UserCard(props) {
+  return <div>{props.user.name}</div>;
+}
+
+// ✅ 更好 - 明确所需属性
+function UserCard({ user }) {
+  return <div>{user.name}</div>;
+}
+
+// ✅ 最好 - 直接提取需要的属性
+function UserCard({ name }) {
+  return <div>{name}</div>;
+}
+```
+
+</ErrorBox>
+
+### 错误4：在组件内部定义组件
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 每次渲染都重新创建组件
+function Parent() {
+  function Child() {
+    return <div>Child</div>;
+  }
+
+  return <Child />;
+}
+
+// ✅ 好 - 在外部定义组件
+function Child() {
+  return <div>Child</div>;
+}
+
+function Parent() {
+  return <Child />;
+}
+
+// ✅ 或使用useMemo缓存
+function Parent() {
+  const Child = React.useMemo(() => {
+    return function Child() {
+      return <div>Child</div>;
+    };
+  }, []);
+
+  return <Child />;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 组件是React应用的基本构建块，支持可复用UI
+- ✅ 函数组件是现代React的首选写法（简洁、性能好）
+- ✅ Props是组件的输入，是只读的，不能在子组件中修改
+- ✅ 使用解构赋值从props中提取属性，提高可读性
+- ✅ 使用PropTypes或TypeScript进行props类型验证
+- ✅ `children`是特殊的prop，包含组件标签之间的内容
+- ✅ 容器组件负责逻辑，展示组件负责UI渲染
+- ✅ 遵循单一职责原则和Props最小化原则
+
+</Checklist>
+
+### 最佳实践总结
+
+<BestPractices>
+
+1. **使用函数组件** - 现代React推荐函数组件配合Hooks
+2. **解构props** - 使用解构赋值明确组件需要的属性
+3. **单一职责** - 每个组件只负责一个功能
+4. **分离关注点** - 容器组件处理逻辑，展示组件处理UI
+5. **避免Prop Drilling** - 使用Context或状态管理库
+6. **类型验证** - 使用PropTypes或TypeScript验证props
+7. **组件纯函数** - 相同输入产生相同输出
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了组件和Props的基础知识，接下来我们将学习：
+
+1. **[State与生命周期](state-lifecycle)** - 学习组件状态管理和生命周期
+2. **[React Hooks](hooks/basics/useState)** - 深入学习React Hooks
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [组件和Props官方文档](https://react.dev/learn/components-and-props) - React官方指南
+- [PropTypes文档](https://www.npmjs.com/package/prop-types) - PropTypes使用指南
+- [TypeScript React](https://www.typescriptlang.org/docs/handbook/react.html) - TypeScript React支持
+
+### 设计模式
+
+- [组合 vs 继承](https://react.dev/learn/composition-vs-inheritance) - React设计哲学
+- [Render Props](https://react.dev/learn/render-props) - 高级组合模式
+- [Higher-Order Components](https://react.dev/learn/reusing-logic-with-higher-order-components-and-render-props) - HOC模式
+
+---
+
+[← 上一章：JSX语法详解](jsx-syntax) | [下一章：State与生命周期 →](state-lifecycle)

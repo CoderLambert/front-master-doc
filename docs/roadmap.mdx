@@ -1,0 +1,357 @@
+# React学习路线图
+
+这份路线图将指导你系统地学习React，从零基础到高级应用。
+
+## 🗺️ 学习路径总览
+
+```
+React学习中心
+│
+├── 🎯 阶段一：基础入门 (2-3周)
+│   ├── 什么是React
+│   ├── JSX语法
+│   ├── 组件与Props
+│   └── State与生命周期
+│
+├── 🎣 阶段二：React Hooks精通 (3-4周)
+│   ├── 基础Hooks (useState, useEffect, useContext)
+│   ├── 高级Hooks (useReducer, useCallback, useMemo)
+│   └── 自定义Hooks设计
+│
+├── 🧩 阶段三：组件模式掌握 (2-3周)
+│   ├── 基础组件模式
+│   ├── 高级组件模式
+│   └── 组件组合技巧
+│
+├── 🌊 阶段四：状态管理 (2-3周)
+│   ├── 状态管理基础概念
+│   ├── Context API深度应用
+│   ├── 第三方状态管理库 (Redux, Zustand)
+│   └── 状态模式与最佳实践
+│
+└── ⚡ 阶段五：性能优化 (2-3周)
+    ├── 渲染优化
+    ├── 代码分割与懒加载
+    ├── 性能分析与调试
+    └── 高级优化技巧
+```
+
+## 📊 详细学习路径
+
+### 阶段一：基础入门 (12-15天)
+
+**目标**：建立React基础概念，能够创建简单的React应用
+
+#### 第1-3天：React基础概念
+- **第1天**：[什么是React](foundations/what-is-react)
+  - React历史与设计哲学
+  - 虚拟DOM原理
+  - 组件化思想
+  - 动手实践：创建第一个React应用
+
+- **第2天**：[JSX语法详解](foundations/jsx-syntax)
+  - JSX基础语法
+  - 嵌入表达式
+  - 条件渲染
+  - 列表渲染
+  - 事件处理
+  - 动手实践：JSX练习
+
+- **第3天**：[组件与Props](foundations/components-props)
+  - 函数组件 vs 类组件
+  - Props传递与使用
+  - Props验证
+  - 默认Props
+  - 动手实践：创建可复用组件
+
+#### 第4-6天：状态管理
+- **第4-5天**：[State与生命周期](foundations/state-lifecycle)
+  - 理解State概念
+  - useState Hook使用
+  - 状态更新机制
+  - 组件生命周期概念
+
+- **第6天**：
+  - 综合练习：构建待办事项应用
+  - 回顾与总结
+
+**阶段一成果**：
+- ✅ 理解React核心概念
+- ✅ 能够编写JSX代码
+- ✅ 创建简单的函数组件
+- ✅ 使用useState管理组件状态
+- ✅ 完成一个简单的待办事项应用
+
+---
+
+### 阶段二：React Hooks精通 (15-20天)
+
+**目标**：深入理解并熟练使用React Hooks
+
+#### 第7-10天：基础Hooks
+- **第7天**：[useState深入](hooks/basics/useState)
+  - useState进阶用法
+  - 函数式更新
+  - 多个状态管理
+  - 懒初始化
+
+- **第8天**：[useEffect深入](hooks/basics/useEffect)
+  - useEffect用法详解
+  - 依赖数组
+  - 副作用清理
+  - 常见用例（数据获取、订阅、计时器）
+
+- **第9天**：[useContext](hooks/basics/useContext)
+  - Context概念
+  - createContext
+  - useContext使用
+  - 性能考虑
+
+- **第10天**：
+  - 基础Hooks综合练习
+  - 常见错误与调试
+
+#### 第11-15天：高级Hooks
+- **第11-12天**：[useReducer](hooks/advanced/useReducer)
+  - useReducer语法
+  - Reducer模式
+  - 与useState对比
+  - 适用场景
+
+- **第13天**：[useCallback](hooks/advanced/useCallback)
+  - 原理与用法
+  - 性能优化
+  - 常见误区
+
+- **第14天**：[useMemo](hooks/advanced/useMemo)
+  - 原理与用法
+  - 计算优化
+  - 适用场景
+
+- **第15天**：[自定义Hooks](hooks/advanced/custom-hooks)
+  - 设计原则
+  - 常见模式
+  - 最佳实践
+
+**阶段二成果**：
+- ✅ 精通所有React内置Hooks
+- ✅ 能够设计自定义Hooks
+- ✅ 理解Hooks规则与原理
+- ✅ 构建复杂的Hook-based组件
+- ✅ 完成一个功能完整的应用
+
+---
+
+### 阶段三：组件模式掌握 (10-15天)
+
+**目标**：掌握React组件设计模式和最佳实践
+
+#### 第16-20天：组件模式
+- **第16-17天**：基础组件模式
+  - [函数组件](patterns/basics/functional-components)
+  - [高阶组件](patterns/basics/higher-order-components)
+  - [Render Props模式](patterns/basics/render-props)
+
+- **第18-19天**：高级组件模式
+  - [组合模式](patterns/basics/compound-components)
+  - [容器组件与展示组件](patterns/basics/container-presentational)
+  - [组合 vs 继承](patterns/basics/composition-vs-inheritance)
+
+- **第20天**：
+  - 组件模式综合练习
+  - 最佳实践总结
+
+**阶段三成果**：
+- ✅ 理解各种组件模式
+- ✅ 能够选择合适的组件模式
+- ✅ 设计可复用的组件架构
+- ✅ 构建组件库
+
+---
+
+### 阶段四：状态管理 (10-15天)
+
+**目标**：掌握不同状态管理方案，能够选择合适的解决方案
+
+#### 第21-23天：状态管理基础
+- **第21天**：[局部 vs 全局状态](state-management/basics/local-vs-global)
+  - 状态范围概念
+  - 状态提升
+  - 何时使用全局状态
+
+- **第22-23天**：[Context API深入](state-management/intermediate/context-api)
+  - Context深度解析
+  - 性能优化
+  - Context重构指南
+
+#### 第24-27天：第三方状态管理
+- **第24-25天**：[Redux基础](state-management/intermediate/redux-fundamentals)
+  - Redux三大原则
+  - Store、Action、Reducer
+  - React-Redux连接
+  - Redux Toolkit
+
+- **第26-27天**：[Zustand轻量方案](state-management/intermediate/zustand)
+  - Zustand介绍
+  - 与Redux对比
+  - 实际应用
+
+**阶段四成果**：
+- ✅ 理解状态管理概念
+- ✅ 精通Context API
+- ✅ 掌握Redux使用
+- ✅ 了解Zustand等轻量方案
+- ✅ 能够选择合适的状态管理方案
+
+---
+
+### 阶段五：性能优化 (10-15天)
+
+**目标**：优化React应用性能，构建高性能应用
+
+#### 第28-30天：渲染优化
+- **第28天**：[React.memo](performance/basics/react-memo)
+  - 原理与用法
+  - 适用场景
+  - 常见误区
+
+- **第29天**：[虚拟化](performance/basics/virtualization)
+  - 虚拟滚动原理
+  - react-window使用
+  - 性能对比
+
+- **第30天**：[代码分割](performance/basics/code-splitting)
+  - 路由懒加载
+  - 动态import
+  - Bundle分析
+
+#### 第31-33天：高级优化
+- **第31-32天**：[性能分析](performance/advanced/profiling)
+  - React Profiler使用
+  - 性能分析工具
+  - 瓶颈识别
+
+- **第33天**：
+  - 优化实战
+  - 性能优化总结
+
+**阶段五成果**：
+- ✅ 掌握各种优化技巧
+- ✅ 能够分析应用性能
+- ✅ 构建高性能React应用
+- ✅ 了解最新优化技术
+
+---
+
+## 🎯 每个阶段的能力检验
+
+### 阶段一检验
+构建一个包含以下功能的简单应用：
+- [ ] 用户信息展示组件
+- [ ] 计数器组件
+- [ ] 待办事项列表（添加、删除、完成）
+- [ ] 简单的状态管理
+
+### 阶段二检验
+使用Hooks重构阶段一的应用：
+- [ ] 使用useState管理所有状态
+- [ ] 使用useEffect处理副作用
+- [ ] 创建3个自定义Hooks
+- [ ] 优化组件性能（useMemo/useCallback）
+
+### 阶段三检验
+重构应用使用组件模式：
+- [ ] 使用HOC或Render Props抽象逻辑
+- [ ] 实现Compound Components
+- [ ] 分离容器组件和展示组件
+- [ ] 创建可复用组件库
+
+### 阶段四检验
+实现复杂状态管理：
+- [ ] 使用Context管理全局状态
+- [ ] 集成Redux管理应用状态
+- [ ] 对比不同方案的优缺点
+- [ ] 实现状态同步和优化
+
+### 阶段五检验
+优化应用性能：
+- [ ] 使用React.memo优化渲染
+- [ ] 实现虚拟滚动处理大列表
+- [ ] 代码分割优化首屏加载
+- [ ] 使用Profiler分析性能
+
+---
+
+## ⏰ 时间分配建议
+
+### 每日学习时间
+- **全职学习者**：建议每天2-3小时
+- **在职学习者**：建议每天1小时
+
+### 学习节奏
+- **理论学习**：30-40%的时间
+- **实践编码**：50-60%的时间
+- **复习总结**：10-15%的时间
+
+### 里程碑检查点
+- 每3天一个小结
+- 每7天一个阶段回顾
+- 每2周一个项目实战
+
+---
+
+## 🎓 学习成果预期
+
+完成整个学习路径后，你将能够：
+
+### 基础能力
+- ✅ 熟练使用React构建用户界面
+- ✅ 精通React Hooks的各种用法
+- ✅ 理解并应用组件模式
+
+### 进阶能力
+- ✅ 设计复杂的状态管理方案
+- ✅ 优化React应用性能
+- ✅ 构建可维护的组件架构
+
+### 高级能力
+- ✅ 设计和实现组件库
+- ✅ 解决复杂的React应用问题
+- ✅ 指导他人学习React
+
+---
+
+## 💡 学习心得分享
+
+### 成功经验
+1. **循序渐进** - 不要跳跃式学习，每个概念都建立在前一个概念之上
+2. **多动手** - 每个概念都要通过代码实践来理解
+3. **做项目** - 通过实际项目巩固所学知识
+4. **多思考** - 不仅要知道怎么做，更要理解为什么这样做
+5. **持续学习** - React生态系统在不断发展，保持学习热情
+
+### 常见陷阱
+1. **过度使用Hooks** - 不要所有情况都使用Hooks，理解何时使用类组件
+2. **忽略性能** - 早期就开始关注性能问题
+3. **过度优化** - 避免过早优化，先确保功能正确
+4. **不遵循最佳实践** - 学习并遵循React社区的最佳实践
+5. **孤立学习** - 多参考开源项目，学习他人的代码
+
+---
+
+## 🚀 下一步
+
+准备好开始学习了吗？
+
+[→ 开始学习：什么是React](foundations/what-is-react)
+
+**记住**：学习React是一个渐进的过程，保持耐心，多动手实践，你一定能掌握它！
+
+---
+
+## 📚 补充资源
+
+- [React官方学习路径](https://react.dev/learn)
+- [React官方教程](https://react.dev/learn/tutorial-tic-tac-toe)
+- [React模式参考](https://reactpatterns.com/)
+- [React性能优化指南](https://react.dev/learn/render-and-commit)

@@ -10,8 +10,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'React学习中心',
+  tagline: '从零基础到精通React的完整学习路径',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -83,21 +83,22 @@ const config = {
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: 'My Site',
+        title: 'React学习中心',
         logo: {
-          alt: 'My Site Logo',
+          alt: 'React Logo',
           src: 'img/logo.svg',
         },
         items: [
           {
             type: 'docSidebar',
-            sidebarId: 'tutorialSidebar',
+            sidebarId: 'reactLearningCenter',
             position: 'left',
-            label: 'Tutorial',
+            label: '学习路径',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          {to: '/docs/intro', label: '入门指南', position: 'left'},
+          {to: '/docs/roadmap', label: '学习路线图', position: 'left'},
           {
-            href: 'https://github.com/facebook/docusaurus',
+            href: 'https://github.com/facebook/react',
             label: 'GitHub',
             position: 'right',
           },
@@ -107,46 +108,54 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: '学习资源',
             items: [
               {
-                label: 'Tutorial',
+                label: '入门指南',
                 to: '/docs/intro',
               },
+              {
+                label: '学习路线图',
+                to: '/docs/roadmap',
+              },
+              {
+                label: '基础入门',
+                to: '/docs/foundations/what-is-react',
+              },
             ],
           },
           {
-            title: 'Community',
+            title: '社区',
             items: [
+              {
+                label: 'React官方文档',
+                href: 'https://react.dev',
+              },
               {
                 label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+                href: 'https://stackoverflow.com/questions/tagged/reactjs',
               },
               {
-                label: 'Discord',
-                href: 'https://discordapp.com/invite/docusaurus',
-              },
-              {
-                label: 'X',
-                href: 'https://x.com/docusaurus',
+                label: 'React中文社区',
+                href: 'https://react.docschina.org/',
               },
             ],
           },
           {
-            title: 'More',
+            title: '更多',
             items: [
               {
-                label: 'Blog',
-                to: '/blog',
+                label: 'React官方博客',
+                href: 'https://react.dev/blog',
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/facebook/docusaurus',
+                href: 'https://github.com/facebook/react',
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} React学习中心. Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,
