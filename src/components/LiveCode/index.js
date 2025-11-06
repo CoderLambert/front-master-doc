@@ -4,7 +4,7 @@ import { FiEdit2, FiEye } from 'react-icons/fi';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 import { useColorMode } from '@docusaurus/theme-common';
 import * as ReactModule from 'react';
-import { github, dracula } from 'prism-react-renderer';
+import { themes } from 'prism-react-renderer';
 
 const LiveCode = ({
   code,
@@ -40,7 +40,7 @@ const LiveCode = ({
 
   // 主题
   const reactLiveTheme = theme === 'auto'
-    ? (colorMode === 'dark' ? dracula : github)
+    ? (colorMode === 'dark' ? themes.dracula : themes.github)
     : theme;
 
   // 复制代码
@@ -60,9 +60,11 @@ const LiveCode = ({
       return transformCode(code);
     }
 
-    // 默认转换：如果代码中没有import React，添加它
-    if (!code.includes('import React') && !code.includes('from \'react\'')) {
-      return `import React from 'react';\n${code}`;
+    // 默认转换：如果代码中已包含React import，则保留；否则不添加，因为默认scope已提供React
+    const hasReactImport = /import\s+React\s+from\s+['"]react['"]/.test(code);
+
+    if (hasReactImport) {
+      return code;
     }
     return code;
   };

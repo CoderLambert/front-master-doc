@@ -104,8 +104,9 @@ function Counter() {
         <section>
           <h2>5. 综合示例</h2>
           <p>多个组件一起使用</p>
-
+          <p> noInline={true}  时必须使用 render 渲染组件</p>
           <LiveCode
+            noInline={true}
             code={`
 function TodoList() {
   const [todos, setTodos] = React.useState([]);
@@ -169,6 +170,7 @@ function TodoList() {
     </div>
   );
 }
+  render(<TodoList/>)
             `.trim()}
           />
         </section>

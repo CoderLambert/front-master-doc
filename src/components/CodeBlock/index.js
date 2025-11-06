@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import Highlight, { defaultProps } from 'prism-react-renderer';
-import themeLight from 'prism-react-renderer/themes/github';
-import themeDark from 'prism-react-renderer/themes/dracula';
+import { Highlight, themes } from 'prism-react-renderer';
 import { useColorMode } from '@docusaurus/theme-common';
 import { FiCopy, FiCheck, FiChevronDown, FiChevronUp } from 'react-icons/fi';
 import CopyButton from '../CopyButton';
@@ -29,7 +27,7 @@ const CodeBlock = ({
   const language = className.replace(/language-/, '') || 'jsx';
 
   // 主题
-  const theme = colorMode === 'dark' ? themeDark : themeLight;
+  const theme = colorMode === 'dark' ? themes.dracula : themes.github;
 
   // 复制处理
   const handleCopy = async (success) => {
@@ -93,7 +91,6 @@ const CodeBlock = ({
       {/* 代码块 */}
       {!isCollapsed && (
         <Highlight
-          {...defaultProps}
           code={code}
           language={language}
           theme={theme}
@@ -132,9 +129,9 @@ const CodeBlock = ({
               >
                 <code>
                   {tokens.map((line, i) => {
-                    const lineProps = getLineProps({ line, key: i });
+                    const { key, ...lineProps } = getLineProps({ line, key: i });
                     return (
-                      <div key={i} {...lineProps}>
+                      <div key={key} {...lineProps}>
                         {showLineNumbers && (
                           <span
                             className={styles.lineNumber}
@@ -150,9 +147,10 @@ const CodeBlock = ({
                             {i + 1}
                           </span>
                         )}
-                        {line.map((token, key) => (
-                          <span key={key} {...getTokenProps({ token, key })} />
-                        ))}
+                        {line.map((token, key) => {
+                          const { key: tokenKey, ...tokenProps } = getTokenProps({ token, key });
+                          return <span key={tokenKey} {...tokenProps} />;
+                        })}
                       </div>
                     );
                   })}

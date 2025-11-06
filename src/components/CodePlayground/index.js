@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Sandpack } from '@codesandbox/sandpack-react';
 import { FaCopy, FaCheck } from 'react-icons/fa';
-import { oneDark, oneLight } from '@codesandbox/sandpack-themes';
 import { useColorMode } from '@docusaurus/theme-common';
 import { FiSun, FiMoon } from 'react-icons/fi';
 
@@ -78,8 +77,8 @@ root.render(<App />);
     ...files,
   };
 
-  // 主题
-  const theme = customTheme || (colorMode === 'dark' ? oneDark : oneLight);
+  // 主题 - 使用默认主题，根据colorMode调整
+  const theme = customTheme || (colorMode === 'dark' ? 'dark' : 'light');
 
   // Sandpack配置
   const options = {
