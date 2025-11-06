@@ -2,30 +2,12 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import { CodePlayground, LiveCode, CodeBlock, CopyButton } from '@site/src/components';
 
-function ComponentsDemo() {
-  const codeExample = `
-function Counter() {
-  const [count, setCount] = React.useState(0);
+// Import code examples
+import CounterCode from '@site/src/code-examples/Counter.js';
+import TodoListCode from '@site/src/code-examples/TodoList.js';
 
-  return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
-      <h2>计数器</h2>
-      <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{count}</p>
-      <button
-        onClick={() => setCount(count + 1)}
-        style={{
-          margin: '5px',
-          padding: '10px 20px',
-          fontSize: '16px',
-          cursor: 'pointer'
-        }}
-      >
-        +1
-      </button>
-    </div>
-  );
-}
-  `.trim();
+function ComponentsDemo() {
+  const codeExample = CounterCode.trim();
 
   return (
     <Layout
@@ -104,74 +86,11 @@ function Counter() {
         <section>
           <h2>5. 综合示例</h2>
           <p>多个组件一起使用</p>
-          <p> noInline={true}  时必须使用 render 渲染组件</p>
+          <p>noInline={true} 时必须使用 render 渲染组件</p>
           <LiveCode
             noInline={true}
-            code={`
-function TodoList() {
-  const [todos, setTodos] = React.useState([]);
-  const [inputValue, setInputValue] = React.useState('');
-
-  const addItem = () => {
-    if (inputValue.trim()) {
-      setTodos([...todos, {
-        id: Date.now(),
-        text: inputValue,
-        completed: false
-      }]);
-      setInputValue('');
-    }
-  };
-
-  const toggleItem = (id) => {
-    setTodos(todos.map(item =>
-      item.id === id ? { ...item, completed: !item.completed } : item
-    ));
-  };
-
-  return (
-    <div style={{ padding: '20px' }}>
-      <h3>待办事项列表</h3>
-      <div style={{ marginBottom: '10px' }}>
-        <input
-          type="text"
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && addItem()}
-          placeholder="添加新任务..."
-          style={{ padding: '8px', width: '250px', marginRight: '10px' }}
-        />
-        <button onClick={addItem} style={{ padding: '8px 15px' }}>
-          添加
-        </button>
-      </div>
-      <ul style={{ marginTop: '20px', listStyle: 'none' }}>
-        {todos.map(item => (
-          <li key={item.id} style={{
-            marginBottom: '10px',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <input
-              type="checkbox"
-              checked={item.completed}
-              onChange={() => toggleItem(item.id)}
-              style={{ marginRight: '10px' }}
-            />
-            <span style={{
-              textDecoration: item.completed ? 'line-through' : 'none',
-              flex: 1
-            }}>
-              {item.text}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-  render(<TodoList/>)
-            `.trim()}
+            code={`${TodoListCode.trim()}
+render(<TodoList/>)`}
           />
         </section>
       </div>

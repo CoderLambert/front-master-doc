@@ -1,0 +1,25 @@
+const CounterCode = `
+function Counter() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h2>计数器</h2>
+      <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{count}</p>
+      <button
+        onClick={() => setCount(count + 1)}
+        style={{
+          margin: '5px',
+          padding: '10px 20px',
+          fontSize: '16px',
+          cursor: 'pointer'
+        }}
+      >
+        +1
+      </button>
+    </div>
+  );
+}
+`;
+
+export default CounterCode;

@@ -1,0 +1,66 @@
+const TodoListCode = `
+function TodoList() {
+  const [todos, setTodos] = React.useState([]);
+  const [inputValue, setInputValue] = React.useState('');
+
+  const addItem = () => {
+    if (inputValue.trim()) {
+      setTodos([...todos, {
+        id: Date.now(),
+        text: inputValue,
+        completed: false
+      }]);
+      setInputValue('');
+    }
+  };
+
+  const toggleItem = (id) => {
+    setTodos(todos.map(item =>
+      item.id === id ? { ...item, completed: !item.completed } : item
+    ));
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3>待办事项列表</h3>
+      <div style={{ marginBottom: '10px' }}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={e => setInputValue(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && addItem()}
+          placeholder="添加新任务..."
+          style={{ padding: '8px', width: '250px', marginRight: '10px' }}
+        />
+        <button onClick={addItem} style={{ padding: '8px 15px' }}>
+          添加
+        </button>
+      </div>
+      <ul style={{ marginTop: '20px', listStyle: 'none' }}>
+        {todos.map(item => (
+          <li key={item.id} style={{
+            marginBottom: '10px',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <input
+              type="checkbox"
+              checked={item.completed}
+              onChange={() => toggleItem(item.id)}
+              style={{ marginRight: '10px' }}
+            />
+            <span style={{
+              textDecoration: item.completed ? 'line-through' : 'none',
+              flex: 1
+            }}>
+              {item.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+`;
+
+export default TodoListCode;
