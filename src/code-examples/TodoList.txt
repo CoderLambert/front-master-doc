@@ -1,4 +1,3 @@
-const TodoListCode = `
 function TodoList() {
   const [todos, setTodos] = React.useState([]);
   const [inputValue, setInputValue] = React.useState('');
@@ -61,6 +60,5 @@ function TodoList() {
     </div>
   );
 }
-`;
 
-export default TodoListCode;
+export default TodoList;

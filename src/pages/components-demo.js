@@ -2,9 +2,9 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import { CodePlayground, LiveCode, CodeBlock, CopyButton } from '@site/src/components';
 
-// Import code examples
-import CounterCode from '@site/src/code-examples/Counter.js';
-import TodoListCode from '@site/src/code-examples/TodoList.js';
+// Import code examples as raw text (raw-loader handles .txt files)
+import CounterCode from '!!raw-loader!@site/src/code-examples/Counter.txt';
+import TodoListCode from '!!raw-loader!@site/src/code-examples/TodoList.txt';
 
 function ComponentsDemo() {
   const codeExample = CounterCode.trim();
