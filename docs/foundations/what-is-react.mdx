@@ -218,27 +218,36 @@ function App() {
 
 React生态系统提供了丰富的工具和库。
 
-<Grid>
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', margin: '20px 0' }}>
 
-**开发工具**：
+  <div>
+    <h4>开发工具</h4>
+    <ul>
+      <li><strong>Create React App</strong> - 快速搭建开发环境</li>
+      <li><strong>React Developer Tools</strong> - 浏览器调试工具</li>
+      <li><strong>React Hot Loader</strong> - 热更新开发</li>
+    </ul>
+  </div>
 
-- **Create React App** - 快速搭建开发环境
-- **React Developer Tools** - 浏览器调试工具
-- **React Hot Loader** - 热更新开发
+  <div>
+    <h4>UI库</h4>
+    <ul>
+      <li><strong>Material-UI</strong> - Material Design组件</li>
+      <li><strong>Ant Design</strong> - 企业级UI组件</li>
+      <li><strong>Chakra UI</strong> - 简单模块化的组件</li>
+    </ul>
+  </div>
 
-**UI库**：
+  <div>
+    <h4>状态管理</h4>
+    <ul>
+      <li><strong>Redux</strong> - 预测性状态管理</li>
+      <li><strong>Zustand</strong> - 轻量级状态管理</li>
+      <li><strong>React Query</strong> - 服务器状态管理</li>
+    </ul>
+  </div>
 
-- **Material-UI** - Material Design组件
-- **Ant Design** - 企业级UI组件
-- **Chakra UI** - 简单模块化的组件
-
-**状态管理**：
-
-- **Redux** - 预测性状态管理
-- **Zustand** - 轻量级状态管理
-- **React Query** - 服务器状态管理
-
-</Grid>
+</div>
 
 ### 3.3 生态系统
 
