@@ -34,13 +34,34 @@ const sidebars = {
         'foundations/forms',
       ]
     },
-    // 注：更多学习模块即将推出
-    // {
-    //   type: 'category',
-    //   label: '🎣 React Hooks',
-    //   collapsed: true,
-    //   items: []
-    // },
+    {
+      type: 'category',
+      label: '🎣 React Hooks',
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: '基础Hooks',
+          collapsed: true,
+          items: [
+            'hooks/basics/useState',
+            'hooks/basics/useEffect',
+            'hooks/basics/useContext',
+          ]
+        },
+        {
+          type: 'category',
+          label: '进阶Hooks',
+          collapsed: true,
+          items: [
+            'hooks/advanced/useReducer',
+            'hooks/advanced/useCallback',
+            'hooks/advanced/useMemo',
+            'hooks/advanced/custom-hooks',
+          ]
+        }
+      ]
+    },
     // {
     //   type: 'category',
     //   label: '🧩 组件模式',
@@ -77,6 +98,19 @@ const sidebars = {
         'foundations/conditional-rendering',
         'foundations/lists-and-keys',
         'foundations/forms',
+      ]
+    },
+    {
+      type: 'category',
+      label: 'React Hooks',
+      items: [
+        'hooks/basics/useState',
+        'hooks/basics/useEffect',
+        'hooks/basics/useContext',
+        'hooks/advanced/useReducer',
+        'hooks/advanced/useCallback',
+        'hooks/advanced/useMemo',
+        'hooks/advanced/custom-hooks',
       ]
     }
   ]

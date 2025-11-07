@@ -1,0 +1,1083 @@
+# useEffect - 副作用处理
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+`useEffect`是React Hooks系统中最重要的Hook之一，它用于处理组件中的副作用（Side Effects）。副作用是指那些影响组件外部世界的操作，如数据获取、订阅、DOM操作等。在本章中，我们将全面学习useEffect的使用方法、依赖数组的工作原理以及最佳实践。
+
+## 本章学习目标
+
+- 理解useEffect的作用和时机
+- 掌握useEffect的基本语法
+- 学会使用依赖数组控制执行时机
+- 理解清理函数的作用
+- 掌握常见useEffect用例
+- 避免useEffect的常见错误和陷阱
+- 理解useEffect与生命周期的关系
+
+---
+
+## 1. 什么是useEffect？
+
+useEffect是React提供的Hook，用于在函数组件中执行副作用操作。它让函数组件能够完成类组件中`componentDidMount`、`componentDidUpdate`和`componentWillUnmount`的工作。
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>副作用（Side Effect）</strong>是指那些不在函数计算范围内的操作，如：数据获取、设置订阅、手动修改DOM、记录日志等。
+  </p>
+</Box>
+
+### 1.1 基本语法
+
+```javascript
+useEffect(() => {
+  // 执行副作用
+  return () => {
+    // 清理副作用
+  };
+}, [dependencies]);
+```
+
+- 第一个参数：执行副作用的函数
+- 第二个参数：依赖数组（可选）
+- 返回值：清理函数（可选）
+
+### 1.2 简单示例
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function Example() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    // 每次count变化时执行
+    document.title = `点击了 ${count} 次`;
+  }, [count]);  // 依赖数组：只有count变化时才执行
+
+  return (
+    <div>
+      <p>点击次数: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        点击
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. useEffect的执行时机
+
+### 2.1 每次渲染后执行
+
+不提供依赖数组时，useEffect在每次渲染后都会执行：
+
+<CodeBlock>
+
+```jsx
+function EffectOnEveryRender() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    console.log('组件渲染了，当前count:', count);
+    // 每次组件渲染后都会执行
+  });  // 没有依赖数组
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      点击: {count}
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 首次渲染后执行
+
+提供空依赖数组时，useEffect只在首次渲染后执行一次：
+
+<CodeBlock>
+
+```jsx
+function EffectOnMount() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    console.log('组件首次挂载');
+    // 只在首次渲染后执行一次
+  }, []);  // 空依赖数组
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      点击: {count}
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 依赖变化时执行
+
+提供依赖数组时，useEffect在首次渲染和依赖变化时执行：
+
+<CodeBlock>
+
+```jsx
+function EffectOnDependencyChange() {
+  const [count, setCount] = useState(0);
+  const [name, setName] = useState('Alice');
+
+  useEffect(() => {
+    console.log('count变化了:', count);
+    // 当count变化时执行
+  }, [count]);  // 依赖count
+
+  useEffect(() => {
+    console.log('name变化了:', name);
+    // 当name变化时执行
+  }, [name]);  // 依赖name
+
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>
+        计数: {count}
+      </button>
+      <button onClick={() => setName('Bob')}>
+        改名为: {name}
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 清理副作用
+
+useEffect可以返回一个清理函数，用于取消副作用（如取消订阅、清除定时器等）：
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function CleanupExample() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    // 设置定时器
+    const timer = setInterval(() => {
+      console.log('定时器执行，count:', count);
+    }, 1000);
+
+    // 清理函数：清除定时器
+    return () => {
+      clearInterval(timer);
+      console.log('清理定时器');
+    };
+  }, [count]);  // count变化时，会先清理旧的，再创建新的
+
+  return (
+    <div>
+      <p>count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>增加</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+<Box style={{ padding: '20px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>清理函数在组件卸载前和下次effect执行前都会被调用</strong>，确保不会造成内存泄漏。
+  </p>
+</Box>
+
+---
+
+## 4. 常见用例
+
+### 4.1 数据获取
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function DataFetching() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // 获取用户数据
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/users');
+        const data = await response.json();
+        setUsers(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);  // 只在首次加载时获取数据
+
+  if (loading) return <p>加载中...</p>;
+  if (error) return <p>错误: {error}</p>;
+
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 订阅事件
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function EventSubscription() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      setMousePosition({
+        x: event.clientX,
+        y: event.clientY
+      });
+    };
+
+    // 订阅鼠标移动事件
+    window.addEventListener('mousemove', handleMouseMove);
+
+    // 清理函数：取消订阅
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);  // 只需要订阅一次
+
+  return (
+    <p>
+      鼠标位置: ({mousePosition.x}, {mousePosition.y})
+    </p>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 修改DOM
+
+<CodeBlock>
+
+```jsx
+import { useEffect } from 'react';
+
+function DOMManipulation() {
+  useEffect(() => {
+    // 修改页面标题
+    const originalTitle = document.title;
+    document.title = '页面已激活';
+
+    // 清理函数：恢复原始标题
+    return () => {
+      document.title = originalTitle;
+    };
+  }, []);
+
+  return <div>查看浏览器标签页标题</div>;
+}
+```
+
+</CodeBlock>
+
+### 4.4 本地存储
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function LocalStorageSync() {
+  const [theme, setTheme] = useState('light');
+
+  // 从localStorage读取初始值
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // 主题变化时保存到localStorage
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  return (
+    <button onClick={toggleTheme}>
+      当前主题: {theme}
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 条件执行Effect
+
+通过依赖数组控制effect的执行时机：
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function ConditionalEffect() {
+  const [userId, setUserId] = useState(null);
+  const [userData, setUserData] = useState(null);
+
+  // 只有当userId存在时才获取用户数据
+  useEffect(() => {
+    if (userId) {
+      const fetchUserData = async () => {
+        const response = await fetch(`/api/users/${userId}`);
+        const data = await response.json();
+        setUserData(data);
+      };
+      fetchUserData();
+    }
+  }, [userId]);  // userId变化时重新获取
+
+  return (
+    <div>
+      <button onClick={() => setUserId(1)}>
+        加载用户1
+      </button>
+      <button onClick={() => setUserId(2)}>
+        加载用户2
+      </button>
+      <button onClick={() => setUserId(null)}>
+        清空
+      </button>
+      {userData && <p>用户: {userData.name}</p>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 多个Effect
+
+一个组件可以使用多个useEffect，按顺序执行：
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function MultipleEffects() {
+  const [count, setCount] = useState(0);
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Effect 1: 跟踪在线状态
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Effect 2: 更新标题
+  useEffect(() => {
+    document.title = `计数: ${count}`;
+  }, [count]);
+
+  // Effect 3: 记录日志
+  useEffect(() => {
+    console.log('在线状态变化:', isOnline);
+  }, [isOnline]);
+
+  return (
+    <div>
+      <p>在线状态: {isOnline ? '在线' : '离线'}</p>
+      <p>计数: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        +1
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 异步Effect
+
+useEffect中的异步操作需要使用async/await：
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function AsyncEffect() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // 定义异步函数
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('https://api.github.com/users/octocat');
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('获取数据失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) return <p>加载中...</p>;
+  if (data) return <p>用户名: {data.login}</p>;
+  return <p>暂无数据</p>;
+}
+```
+
+</CodeBlock>
+
+<Box style={{ padding: '20px', background: '#ffebee', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#c62828' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>注意</strong>：不能直接在useEffect中写<code>async</code>函数。需要在内部定义异步函数并调用。
+  </p>
+</Box>
+
+---
+
+## 8. 依赖数组详解
+
+### 8.1 空依赖数组
+
+只在首次渲染时执行一次：
+
+<CodeBlock>
+
+```jsx
+// 组件挂载时执行，类似 componentDidMount
+useEffect(() => {
+  const subscription = createSubscription();
+  return () => {
+    subscription.unsubscribe();  // 组件卸载时清理
+  };
+}, []);  // 空数组
+```
+
+</CodeBlock>
+
+### 8.2 一个依赖
+
+<CodeBlock>
+
+```jsx
+// 当userId变化时重新执行
+useEffect(() => {
+  fetchUserData(userId);
+}, [userId]);  // userId是依赖
+```
+
+</CodeBlock>
+
+### 8.3 多个依赖
+
+<CodeBlock>
+
+```jsx
+// 当userId或filter变化时重新执行
+useEffect(() => {
+  fetchUsers(userId, filter);
+}, [userId, filter]);  // 多个依赖
+```
+
+</CodeBlock>
+
+### 8.4 无依赖数组
+
+<CodeBlock>
+
+```jsx
+// 每次渲染都执行
+useEffect(() => {
+  console.log('每次渲染都执行');
+});  // 没有依赖数组
+```
+
+</CodeBlock>
+
+---
+
+## 9. 常见错误与陷阱
+
+### 9.1 忘记依赖数组
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 缺少依赖
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    document.title = `计数: ${count}`;
+    // 缺少依赖数组！
+  });
+
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    document.title = `计数: ${count}`;
+  }, [count]);  // 添加依赖
+
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+</ErrorBox>
+
+### 9.2 依赖数组过多
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 不必要的依赖
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    document.title = '固定标题';
+  }, [count]);  // count变化时重新执行，但标题不变！
+
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    document.title = '固定标题';
+  }, []);  // 不依赖任何值
+
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+</ErrorBox>
+
+### 9.3 在effect中直接使用async
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 异步函数作为effect
+function BadExample() {
+  useEffect(async () => {
+    const data = await fetchData();  // 错误！
+  }, []);
+}
+
+// ✅ 正确 - 内部定义异步函数
+function GoodExample() {
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await fetchData();
+    };
+    fetchData();
+  }, []);
+}
+```
+
+</ErrorBox>
+
+### 9.4 无限循环
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 依赖不当导致无限循环
+function BadExample() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchData().then(setData);  // 设置data触发重新渲染
+  }, [data]);  // data变化又触发effect！
+
+  return <div>{data}</div>;
+}
+
+// ✅ 正确 - 移除不当依赖
+function GoodExample() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    fetchData().then(result => {
+      if (mounted) setData(result);
+    });
+    return () => { mounted = false; };
+  }, []);  // 只执行一次
+
+  return <div>{data}</div>;
+}
+```
+
+</ErrorBox>
+
+### 9.5 忘记清理
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有清理副作用
+function BadExample() {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      console.log('定时器执行');
+    }, 1000);
+    // 没有清理函数！
+  }, []);
+
+  return <div>定时器</div>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  useEffect(() => {
+    const timer = setInterval(() => {
+      console.log('定时器执行');
+    }, 1000);
+
+    return () => {
+      clearInterval(timer);  // 清理定时器
+    };
+  }, []);
+
+  return <div>定时器</div>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 10. 高级用法
+
+### 10.1 使用Ref存储可变值
+
+<CodeBlock>
+
+```jsx
+import { useEffect, useRef } from 'react';
+
+function UseRefInEffect() {
+  const countRef = useRef(0);
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    countRef.current = count;
+    console.log('当前计数:', count);
+  }, [count]);
+
+  useEffect(() => {
+    // 可以在其他effect中读取ref值
+    console.log('上次计数:', countRef.current);
+  }, []);
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      点击: {count}
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+### 10.2 条件effect
+
+<CodeBlock>
+
+```jsx
+import { useEffect } from 'react';
+
+function ConditionalEffect({ user, isLoggedIn }) {
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    // 只有登录后才记录用户行为
+    trackUserBehavior(user.id);
+  }, [user, isLoggedIn]);  // 依赖
+
+  return <div>用户信息</div>;
+}
+```
+
+</CodeBlock>
+
+### 10.3 并发渲染
+
+<CodeBlock>
+
+```jsx
+import { useEffect, useState } from 'react';
+
+function ConcurrentEffect() {
+  const [data, setData] = useState(null);
+  const [isStale, setIsStale] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchData = async () => {
+      try {
+        const result = await apiCall();
+        if (isMounted) {
+          setData(result);
+          setIsStale(false);
+        }
+      } catch {
+        if (isMounted) {
+          setIsStale(true);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;  // 组件卸载时标记
+    };
+  }, []);
+
+  if (isStale) {
+    return <p>数据已过期，请刷新</p>;
+  }
+
+  return <div>{data}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 11. 实际应用场景
+
+### 11.1 数据缓存
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect, useRef } from 'react';
+
+function DataCache() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const cacheRef = useRef(new Map());
+
+  const fetchWithCache = async (key) => {
+    // 检查缓存
+    if (cacheRef.current.has(key)) {
+      return cacheRef.current.get(key);
+    }
+
+    // 模拟API调用
+    const response = await fetch(`/api/data/${key}`);
+    const result = await response.json();
+
+    // 存入缓存
+    cacheRef.current.set(key, result);
+    return result;
+  };
+
+  useEffect(() => {
+    setLoading(true);
+    fetchWithCache('users').then(result => {
+      setData(result);
+      setLoading(false);
+    });
+  }, []);
+
+  return loading ? <p>加载中...</p> : <ul>{data}</ul>;
+}
+```
+
+</CodeBlock>
+
+### 11.2 轮询
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+function Polling() {
+  const [data, setData] = useState(null);
+  const [intervalId, setIntervalId] = useState(null);
+
+  useEffect(() => {
+    // 初始获取
+    fetchData();
+
+    // 设置轮询
+    const id = setInterval(() => {
+      fetchData();
+    }, 5000);
+
+    setIntervalId(id);
+
+    // 清理轮询
+    return () => {
+      clearInterval(id);
+    };
+  }, []);
+
+  const fetchData = async () => {
+    const response = await fetch('/api/status');
+    const result = await response.json();
+    setData(result);
+  };
+
+  return <div>状态: {data?.status || '未知'}</div>;
+}
+```
+
+</CodeBlock>
+
+### 11.3 键盘快捷键
+
+<CodeBlock>
+
+```jsx
+import { useEffect } from 'react';
+
+function KeyboardShortcuts({ onSave, onDelete }) {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Ctrl/Cmd + S 保存
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        onSave();
+      }
+
+      // Ctrl/Cmd + Delete 删除
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Delete') {
+        event.preventDefault();
+        onDelete();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onSave, onDelete]);
+
+  return <div>使用 Ctrl+S 保存，Ctrl+Delete 删除</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 12. 实践练习
+
+### 练习1：定时器组件
+
+创建一个数字时钟，显示当前时间并每秒更新。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 显示当前时间（格式：YYYY-MM-DD HH:mm:ss）
+- 每秒自动更新
+- 组件卸载时清理定时器
+- 可选择显示/隐藏秒数
+
+**提示**：
+- 使用`setInterval`创建定时器
+- 在useEffect中设置和清理定时器
+- 使用`new Date()`获取当前时间
+- 使用`toLocaleString()`格式化时间
+
+</Expandable>
+
+### 练习2：窗口尺寸监听
+
+创建一个组件，实时显示浏览器窗口的尺寸。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 实时显示窗口宽度和高度
+- 窗口尺寸变化时自动更新
+- 添加resize防抖（延迟更新）
+- 响应式断点提示
+
+**提示**：
+- 监听`window.resize`事件
+- 使用useRef存储定时器ID
+- 使用useEffect的清理函数
+
+</Expandable>
+
+### 练习3：搜索防抖
+
+创建一个搜索输入框，延迟执行搜索请求。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 用户输入时延迟300ms执行搜索
+- 输入过程中显示加载状态
+- 搜索结果展示
+- 取消上一次的搜索请求
+
+**提示**：
+- 使用useRef存储最新的搜索词
+- 在useEffect中设置和清理防抖定时器
+- 使用AbortController取消请求
+
+</Expandable>
+
+### 练习4：深浅色主题切换
+
+创建一个主题切换组件，保存用户偏好。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 按钮切换深色/浅色主题
+- 从localStorage读取主题偏好
+- 主题变化时更新DOM类名
+- 页面加载时应用保存的主题
+
+**提示**：
+- 使用两个useEffect：一个读取，一个保存
+- 修改`<body>`的className
+- 使用CSS变量实现主题切换
+
+</Expandable>
+
+---
+
+## 13. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ useEffect用于处理副作用（数据获取、订阅、DOM操作等）
+- ✅ 依赖数组控制effect的执行时机
+- ✅ 空依赖数组`[]`只在首次渲染时执行
+- ✅ 清理函数用于取消副作用，防止内存泄漏
+- ✅ useEffect在每次渲染后都会执行（包括首次）
+- ✅ 不能直接在useEffect中写async函数
+- ✅ 依赖数组应包含effect中使用的所有变量
+- ✅ 合理使用useEffect优化性能
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **始终清理副作用** - 特别是定时器、订阅和异步请求
+2. **准确列出依赖** - 不要多也不要少
+3. **避免无限循环** - 检查依赖项是否会被effect修改
+4. **使用条件effect** - 减少不必要的effect执行
+5. **分离关注点** - 将不同的逻辑放在不同的useEffect中
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了useEffect，接下来我们将学习：
+
+1. **[useContext](useContext)** - 学习跨组件状态共享
+2. **[useReducer](advanced/useReducer)** - 掌握复杂状态逻辑
+3. **[useCallback](advanced/useCallback)** - 优化性能
+
+---
+
+## 14. 延伸阅读
+
+### 官方资源
+
+- [useEffect API参考](https://react.dev/reference/react/useEffect) - React官方文档
+- [使用Effect](https://react.dev/learn/synchronizing-with-effects) - 官方指南
+- [Effect依赖详解](https://react.dev/reference/react/useEffect#specifying-dependencies) - 依赖数组
+
+### 推荐阅读
+
+- [React Hooks完全指南](https://legacy.reactjs.org/docs/hooks-effect.html) - useEffect详解
+- [并发特性](https://react.dev/blog/2018/03/27/introducing-time-slicing) - 理解并发渲染
+- [性能优化](https://react.dev/learn/render-and-commit) - 与useEffect的配合
+
+---
+
+[← 上一章：useState](useState) | [下一章：useContext →](useContext)

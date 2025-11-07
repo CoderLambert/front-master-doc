@@ -1,0 +1,1187 @@
+# useCallback - 函数记忆化
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+`useCallback`是React提供的性能优化Hook，用于缓存函数实例。当组件频繁渲染时，使用useCallback可以避免创建新的函数实例，从而减少子组件的不必要重新渲染。在本章中，我们将深入学习useCallback的工作原理、使用场景、性能影响以及最佳实践。
+
+## 本章学习目标
+
+- 理解useCallback的作用和原理
+- 掌握useCallback的语法和参数
+- 学会判断何时使用useCallback
+- 理解依赖数组的作用
+- 掌握useCallback与useEffect的配合
+- 理解useCallback vs useMemo的区别
+- 学会在组件中正确应用useCallback
+- 避免useCallback的误用和过度使用
+
+---
+
+## 1. 什么是useCallback？
+
+useCallback是React的Hook，它返回一个记忆化的回调函数。当组件频繁重新渲染时，useCallback可以确保函数引用在依赖项不变时保持不变。
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>记忆化（Memoization）</strong>是一种优化技术，缓存计算结果，避免重复计算。<br/>
+    <strong>useCallback</strong>缓存函数，<strong>useMemo</strong>缓存值，<strong>React.memo</strong>缓存组件。
+  </p>
+</Box>
+
+### 1.1 基本语法
+
+```javascript
+const memoizedCallback = useCallback(
+  () => {
+    // 函数逻辑
+  },
+  [dependency1, dependency2]
+);
+```
+
+- 第一个参数：要缓存的函数
+- 第二个参数：依赖数组
+- 返回值：记忆化的函数（仅在依赖项变化时更新）
+
+### 1.2 简单示例
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function CallbackExample() {
+  const [count, setCount] = useState(0);
+
+  // 不使用useCallback - 每次渲染都创建新函数
+  const handleClick1 = () => {
+    console.log('点击次数:', count);
+  };
+
+  // 使用useCallback - 依赖项不变时不重新创建
+  const handleClick2 = useCallback(() => {
+    console.log('点击次数:', count);
+  }, [count]);  // 仅当count变化时重新创建
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        增加
+      </button>
+      <button onClick={handleClick1}>
+        事件1 (未缓存)
+      </button>
+      <button onClick={handleClick2}>
+        事件2 (已缓存)
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. 深入理解useCallback
+
+### 2.1 函数创建vs函数调用
+
+<CodeBlock>
+
+```jsx
+function WithoutUseCallback() {
+  const [count, setCount] = useState(0);
+
+  // 每次组件渲染都创建一个新函数
+  const handleClick = () => {
+    console.log('Count:', count);
+  };
+
+  // 将函数作为props传递给子组件时
+  return (
+    <ChildComponent onClick={handleClick} />
+  );
+}
+
+function WithUseCallback() {
+  const [count, setCount] = useState(0);
+
+  // 只有当count变化时才重新创建函数
+  const handleClick = useCallback(() => {
+    console.log('Count:', count);
+  }, [count]);
+
+  return (
+    <ChildComponent onClick={handleClick} />
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 依赖数组的作用
+
+<CodeBlock>
+
+```jsx
+function DependencyExamples() {
+  const [count, setCount] = useState(0);
+  const [text, setText] = useState('');
+
+  // 1. 空依赖数组 - 只在首次渲染时创建
+  const callback1 = useCallback(() => {
+    console.log('按钮1点击');
+  }, []);  // 永远不会重新创建
+
+  // 2. 依赖count - count变化时重新创建
+  const callback2 = useCallback(() => {
+    console.log('Count:', count);
+  }, [count]);  // count变化时重新创建
+
+  // 3. 依赖多个值 - 任意一个变化都重新创建
+  const callback3 = useCallback(() => {
+    console.log('Count:', count, 'Text:', text);
+  }, [count, text]);  // count或text变化时重新创建
+
+  // 4. 无依赖数组 - 每次渲染都重新创建（与不用useCallback相同）
+  const callback4 = useCallback(() => {
+    console.log('按钮4点击');
+  });  // 不推荐，相当于不用useCallback
+
+  return (
+    <div>
+      <button onClick={callback1}>按钮1</button>
+      <button onClick={callback2}>按钮2</button>
+      <button onClick={callback3}>按钮3</button>
+      <button onClick={callback4}>按钮4</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 使用场景
+
+### 3.1 传递给子组件的回调
+
+<Compare>
+
+```jsx
+// ❌ 不使用useCallback - 每次父组件渲染都创建新函数
+function Parent() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <Child
+      onIncrement={() => setCount(count + 1)}  // 每次都创建新函数
+    />
+  );
+}
+
+// ✅ 使用useCallback - 避免不必要渲染
+function Parent() {
+  const [count, setCount] = useState(0);
+
+  const handleIncrement = useCallback(() => {
+    setCount(prev => prev + 1);  // 使用函数式更新更好
+  }, []);  // 空依赖，因为不需要count的值
+
+  return <Child onIncrement={handleIncrement} />;
+}
+
+// 子组件使用React.memo优化
+const Child = React.memo(({ onIncrement }) => {
+  console.log('Child渲染了');
+  return <button onClick={onIncrement}>增加</button>;
+});
+```
+
+</Compare>
+
+### 3.2 事件处理器优化
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  const [text, setText] = useState('');
+
+  const handleAddTodo = useCallback((todo) => {
+    setTodos(prev => [...prev, todo]);
+  }, []);  // 依赖空数组，因为函数不使用任何props或state
+
+  const handleToggleTodo = useCallback((id) => {
+    setTodos(prev =>
+      prev.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  }, []);  // 依赖空数组
+
+  const handleDeleteTodo = useCallback((id) => {
+    setTodos(prev => prev.filter(todo => todo.id !== id));
+  }, []);  // 依赖空数组
+
+  return (
+    <div>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyPress={(e) => {
+          if (e.key === 'Enter' && text.trim()) {
+            handleAddTodo({ id: Date.now(), text, completed: false });
+            setText('');
+          }
+        }}
+      />
+      <TodoItems
+        todos={todos}
+        onToggle={handleToggleTodo}
+        onDelete={handleDeleteTodo}
+      />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 在useEffect中使用回调
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback, useEffect } from 'react';
+
+function EffectWithCallback() {
+  const [data, setData] = useState(null);
+  const [filter, setFilter] = useState('');
+
+  // 在useCallback中定义副作用处理
+  const fetchData = useCallback(async () => {
+    const response = await fetch(`/api/data?filter=${filter}`);
+    const result = await response.json();
+    setData(result);
+  }, [filter]);
+
+  // 在useEffect中使用
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);  // fetchData变化时重新执行
+
+  return (
+    <div>
+      <input
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="筛选..."
+      />
+      <button onClick={fetchData}>手动刷新</button>
+      {data && <p>数据已加载</p>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 性能优化案例
+
+### 4.1 避免子组件不必要渲染
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback, memo } from 'react';
+
+// 使用memo优化子组件
+const ExpensiveChild = memo(function ExpensiveChild({ onClick, count }) {
+  console.log('ExpensiveChild 渲染了');
+  return (
+    <button onClick={onClick}>
+      点击 ({count}次)
+    </button>
+  );
+});
+
+function Parent() {
+  const [count1, setCount1] = useState(0);
+  const [count2, setCount2] = useState(0);
+
+  // 使用useCallback缓存函数
+  const handleClick1 = useCallback(() => {
+    setCount1(count1 + 1);
+  }, [count1]);
+
+  const handleClick2 = useCallback(() => {
+    setCount2(count2 + 1);
+  }, [count2]);
+
+  return (
+    <div>
+      <p>Parent渲染，count1: {count1}, count2: {count2}</p>
+      {/* 只有对应的count变化时，子组件才会重新渲染 */}
+      <ExpensiveChild onClick={handleClick1} count={count1} />
+      <ExpensiveChild onClick={handleClick2} count={count2} />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 表单优化
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function OptimizedForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  // 缓存每个字段的更新函数
+  const updateField = useCallback((field) => (e) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: e.target.value
+    }));
+  }, []);  // 依赖空数组，函数本身不依赖任何值
+
+  // 缓存提交函数
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    console.log('提交数据:', formData);
+  }, [formData]);  // 依赖formData
+
+  // 缓存重置函数
+  const handleReset = useCallback(() => {
+    setFormData({
+      name: '',
+      email: '',
+      message: ''
+    });
+  }, []);  // 依赖空数组
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        placeholder="姓名"
+        value={formData.name}
+        onChange={updateField('name')}
+      />
+      <input
+        type="email"
+        placeholder="邮箱"
+        value={formData.email}
+        onChange={updateField('email')}
+      />
+      <textarea
+        placeholder="留言"
+        value={formData.message}
+        onChange={updateField('message')}
+      />
+      <button type="submit">提交</button>
+      <button type="button" onClick={handleReset}>重置</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 与useMemo的区别
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 区别总结</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>useCallback(fn, deps)</strong> = <code>useMemo(() => fn, deps)</code><br/>
+    两者本质相同，只是useCallback更语义化，专门用于函数。
+  </p>
+</Box>
+
+### 5.1 对比示例
+
+<CodeBlock>
+
+```jsx
+function CallbackVsMemo() {
+  const [count, setCount] = useState(0);
+
+  // 使用useCallback - 缓存函数
+  const handleClickWithCallback = useCallback(() => {
+    console.log('Count:', count);
+  }, [count]);
+
+  // 使用useMemo - 缓存函数（效果相同）
+  const handleClickWithMemo = useMemo(() => {
+    return () => {
+      console.log('Count:', count);
+    };
+  }, [count]);
+
+  return (
+    <div>
+      <button onClick={handleClickWithCallback}>
+        useCallback
+      </button>
+      <button onClick={handleClickWithMemo}>
+        useMemo
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 实际应用场景
+
+<Compare>
+
+```jsx
+// 场景1：传递给子组件的函数 - 推荐useCallback
+function Parent() {
+  const [value, setValue] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('点击了', value);
+  }, [value]);
+
+  return <Child onClick={handleClick} />;
+}
+
+// 场景2：需要计算复杂值的函数 - 推荐useMemo
+function ExpensiveComponent() {
+  const [list, setList] = useState([1, 2, 3, 4, 5]);
+
+  const expensiveValue = useMemo(() => {
+    return list.reduce((sum, item) => sum + item, 0);
+  }, [list]);  // 计算总和
+
+  return <div>总和: {expensiveValue}</div>;
+}
+
+// 场景3：既有计算又有回调 - 两者结合
+function ComplexComponent() {
+  const [data, setData] = useState([1, 2, 3]);
+
+  const processedData = useMemo(() => {
+    return data.map(x => x * 2);
+  }, [data]);  // 计算值
+
+  const handleItemClick = useCallback((item) => {
+    console.log('点击了', item);
+  }, []);  // 回调函数
+
+  return (
+    <List
+      data={processedData}
+      onClick={handleItemClick}
+    />
+  );
+}
+```
+
+</Compare>
+
+---
+
+## 6. 高级用法
+
+### 6.1 函数式更新
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function FunctionalUpdateExample() {
+  const [count, setCount] = useState(0);
+
+  // 使用函数式更新，减少依赖
+  const increment = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);  // 依赖空数组，不需要count
+
+  const decrement = useCallback(() => {
+    setCount(prev => prev - 1);
+  }, []);  // 依赖空数组
+
+  const reset = useCallback(() => {
+    setCount(0);
+  }, []);  // 依赖空数组
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <button onClick={increment}>+1</button>
+      <button onClick={decrement}>-1</button>
+      <button onClick={reset}>重置</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 useCallback嵌套useCallback
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function NestedCallbacks() {
+  const [user, setUser] = useState({ name: 'Alice', age: 25 });
+
+  // 内层回调 - 不依赖任何值
+  const handleNameChange = useCallback((name) => {
+    setUser(prev => ({ ...prev, name }));
+  }, []);
+
+  // 外层回调 - 依赖内层回调（实际上也依赖空数组）
+  const handleUpdate = useCallback((name, age) => {
+    handleNameChange(name);
+    setUser(prev => ({ ...prev, age }));
+  }, [handleNameChange]);  // 依赖handleNameChange，但它是稳定的
+
+  return (
+    <div>
+      <p>{user.name}, {user.age}岁</p>
+      <button onClick={() => handleUpdate('Bob', 30)}>
+        更新
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 条件性useCallback
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback } from 'react';
+
+function ConditionalCallback() {
+  const [isEnabled, setIsEnabled] = useState(true);
+  const [count, setCount] = useState(0);
+
+  // 条件性创建callback
+  const handleClick = useCallback(() => {
+    if (isEnabled) {
+      console.log('Count:', count);
+    }
+  }, [isEnabled, count]);  // 有条件但仍需正确列出依赖
+
+  // 或者在callback内部处理条件
+  const handleClick2 = useCallback(() => {
+    console.log('Count:', count);
+  }, [count]);  // 直接依赖count
+
+  return (
+    <div>
+      <p>{isEnabled ? '已启用' : '已禁用'}</p>
+      <p>计数: {count}</p>
+      <button onClick={() => setIsEnabled(!isEnabled)}>
+        切换
+      </button>
+      <button onClick={handleClick}>点击1</button>
+      <button onClick={handleClick2}>点击2</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 常见错误与陷阱
+
+### 7.1 忘记依赖数组
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 缺少依赖数组
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('Count:', count);
+  });  // 缺少依赖数组！
+
+  return <button onClick={handleClick}>点击</button>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('Count:', count);
+  }, [count]);  // 添加依赖数组
+
+  return <button onClick={handleClick}>点击</button>;
+}
+```
+
+</ErrorBox>
+
+### 7.2 依赖数组过多
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 不必要的依赖
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('按钮点击');
+  }, [count]);  // count未使用！
+
+  return <button onClick={handleClick}>点击</button>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('按钮点击');
+  }, []);  // 依赖空数组
+
+  return <button onClick={handleClick}>点击</button>;
+}
+```
+
+</ErrorBox>
+
+### 7.3 过度使用useCallback
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 过度优化
+function OverOptimized() {
+  const [count, setCount] = useState(0);
+
+  // 大多数情况下不需要useCallback
+  const increment = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+
+  const decrement = useCallback(() => {
+    setCount(count - 1);
+  }, [count]);
+
+  // 这种简单场景useState更简洁
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={increment}>+1</button>
+      <button onClick={decrement}>-1</button>
+    </div>
+  );
+}
+
+// ✅ 简单场景 - 不使用useCallback
+function SimpleCase() {
+  const [count, setCount] = useState(0);
+
+  // 简洁明了，不需要useCallback
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        +1
+      </button>
+      <button onClick={() => setCount(count - 1)}>
+        -1
+      </button>
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+### 7.4 使用内联函数
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 内联函数每次都创建
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      点击 {count}
+    </button>
+  );
+}
+
+// ✅ 更好 - 提取到useCallback
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+
+  return (
+    <button onClick={handleClick}>
+      点击 {count}
+    </button>
+  );
+}
+
+// 但对于简单场景，React推荐内联函数
+function BestPractice() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      点击 {count}
+    </button>
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 8. 性能考量
+
+### 8.1 何时使用useCallback
+
+<Rules>
+
+1. **将函数作为props传递给子组件**且子组件使用`React.memo`优化时
+2. **在useEffect中作为依赖**的函数
+3. **函数被多次使用**，创建成本高
+4. **避免闭包陷阱**时（使用函数式更新）
+
+</Rules>
+
+### 8.2 性能影响
+
+<CodeBlock>
+
+```jsx
+import { useCallback, useState } from 'react';
+
+function PerformanceComparison() {
+  const [count, setCount] = useState(0);
+  const [text, setText] = useState('');
+
+  // 场景1：简单场景 - 内联函数更简洁
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>
+        简单场景 - 内联
+      </button>
+    </div>
+  );
+
+  // 场景2：复杂事件处理 - useCallback更好
+  const handleComplexEvent = useCallback((event) => {
+    // 复杂逻辑
+    if (event.type === 'click') {
+      setCount(count + 1);
+    } else if (event.type === 'change') {
+      setText(event.target.value);
+    }
+  }, [count]);
+
+  return (
+    <div>
+      <button onClick={(e) => handleComplexEvent(e)}>
+        复杂场景 - useCallback
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.3 useCallback的代价
+
+<Box style={{ padding: '20px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>⚠️ 性能权衡</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    useCallback本身也有性能开销（记忆化、检查依赖等）。对于简单函数，<strong>内联函数可能更快</strong>。只有在需要避免不必要渲染时再使用。
+  </p>
+</Box>
+
+---
+
+## 9. 实际应用场景
+
+### 9.1 列表优化
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback, memo } from 'react';
+
+// 子组件 - 使用memo优化
+const ListItem = memo(function ListItem({ item, onToggle, onDelete }) {
+  console.log('ListItem渲染:', item.id);
+  return (
+    <li>
+      <input
+        type="checkbox"
+        checked={item.completed}
+        onChange={() => onToggle(item.id)}
+      />
+      <span style={{ textDecoration: item.completed ? 'line-through' : 'none' }}>
+        {item.text}
+      </span>
+      <button onClick={() => onDelete(item.id)}>删除</button>
+    </li>
+  );
+});
+
+function TodoList() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习React', completed: false },
+    { id: 2, text: '构建应用', completed: false }
+  ]);
+
+  // 缓存回调，避免子组件不必要渲染
+  const handleToggle = useCallback((id) => {
+    setTodos(prev =>
+      prev.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  }, []);  // 依赖空数组
+
+  const handleDelete = useCallback((id) => {
+    setTodos(prev => prev.filter(todo => todo.id !== id));
+  }, []);  // 依赖空数组
+
+  return (
+    <ul>
+      {todos.map(todo => (
+        <ListItem
+          key={todo.id}
+          item={todo}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+        />
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.2 搜索防抖
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback, useEffect } from 'react';
+
+function SearchBox({ onSearch }) {
+  const [query, setQuery] = useState('');
+
+  // 防抖函数
+  const debounce = (func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  };
+
+  // 缓存搜索函数
+  const debouncedSearch = useCallback(
+    debounce((searchQuery) => {
+      onSearch(searchQuery);
+    }, 300),
+    [onSearch]
+  );
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    debouncedSearch(value);
+  };
+
+  return (
+    <input
+      type="text"
+      value={query}
+      onChange={handleChange}
+      placeholder="搜索..."
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.3 WebSocket连接
+
+<CodeBlock>
+
+```jsx
+import { useState, useCallback, useEffect, useRef } from 'react';
+
+function ChatComponent() {
+  const [messages, setMessages] = useState([]);
+  const [status, setStatus] = useState('disconnected');
+  const wsRef = useRef(null);
+
+  // 缓存消息发送函数
+  const sendMessage = useCallback((message) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({
+        type: 'message',
+        content: message,
+        timestamp: Date.now()
+      }));
+    }
+  }, []);
+
+  // 缓存消息接收处理
+  const handleMessage = useCallback((event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'message') {
+      setMessages(prev => [...prev, data]);
+    }
+  }, []);
+
+  // 缓存连接函数
+  const connect = useCallback(() => {
+    const ws = new WebSocket('ws://localhost:8080');
+    wsRef.current = ws;
+
+    ws.onopen = () => setStatus('connected');
+    ws.onclose = () => setStatus('disconnected');
+    ws.onmessage = handleMessage;
+
+    return ws;
+  }, [handleMessage]);
+
+  useEffect(() => {
+    const ws = connect();
+    return () => ws.close();
+  }, [connect]);
+
+  return (
+    <div>
+      <p>状态: {status}</p>
+      <ul>
+        {messages.map(msg => (
+          <li key={msg.timestamp}>{msg.content}</li>
+        ))}
+      </ul>
+      <button onClick={() => sendMessage('Hello!')}>
+        发送消息
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 10. 实践练习
+
+### 练习1：优化子组件渲染
+
+创建父组件和子组件，传递多个回调函数，观察useCallback对性能的影响。
+
+<Expandable title="点击查看要求">
+
+**要求**：
+- 父组件有两个独立的state
+- 传递多个回调函数给子组件
+- 使用React.memo优化子组件
+- 对比使用和不使用useCallback的性能
+
+**提示**：
+- 在子组件中添加console.log来观察渲染次数
+- 一个state变化时，只有相关的子组件才应该重新渲染
+- 使用useCallback缓存传递给子组件的函数
+
+</Expandable>
+
+### 练习2：表单状态管理
+
+创建一个复杂表单，包含多个字段和验证。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 多个输入字段
+- 实时验证
+- 保存草稿功能
+- 提交功能
+- 重置功能
+
+**要求**：
+- 使用useCallback优化事件处理函数
+- 避免表单组件不必要的重新渲染
+- 将验证逻辑分离到独立函数
+
+**提示**：
+- 每个字段的onChange使用useCallback
+- 提交和重置函数也需要使用useCallback
+- 考虑使用useMemo缓存验证结果
+
+</Expandable>
+
+### 练习3：异步数据获取
+
+创建一个数据获取组件，支持搜索和分页。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 搜索输入框（支持防抖）
+- 页面切换
+- 数据列表展示
+- 加载状态
+- 错误处理
+
+**要求**：
+- 使用useCallback优化搜索函数
+- 缓存API请求函数
+- 避免不必要的请求
+
+**提示**：
+- 搜索使用防抖和useCallback
+- API请求函数使用useCallback
+- 分页函数也需要优化
+
+</Expandable>
+
+### 练习4：拖拽排序
+
+创建一个可拖拽排序的列表。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 列表项可拖拽
+- 实时预览排序结果
+- 确认排序后更新数据
+- 支持撤销
+
+**要求**：
+- 拖拽事件处理函数使用useCallback
+- 避免拖拽时不必要的重新渲染
+- 性能优化列表项
+
+**提示**：
+- 拖拽开始、移动、结束都需要回调
+- 列表项组件使用React.memo
+- 使用useCallback避免闭包问题
+
+</Expandable>
+
+---
+
+## 11. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ useCallback返回记忆化的回调函数
+- ✅ 只有在依赖项变化时，函数才会重新创建
+- ✅ 主要用于将函数作为props传递给子组件时
+- ✅ 避免子组件不必要的重新渲染
+- ✅ 依赖数组必须正确列出所有依赖
+- ✅ 与React.memo配合使用效果最佳
+- ✅ useCallback(fn, deps) = useMemo(() => fn, deps)
+- ✅ 不要过度使用useCallback，简单场景用内联函数即可
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **优先使用函数式更新** - 减少useCallback的依赖项
+2. **只在必要时使用** - 将函数传递给子组件时
+3. **正确列出依赖** - 所有用到的值都要在依赖数组中
+4. **保持函数简洁** - 复杂的逻辑单独提取
+5. **配合React.memo** - 最大化性能优化效果
+6. **避免过度优化** - 简单场景不需要useCallback
+
+</BestPractices>
+
+### 性能优化策略
+
+**何时使用**：
+- 函数作为props传递给使用memo的子组件
+- 函数在useEffect的依赖数组中
+- 函数创建成本高且频繁使用
+
+**何时不用**：
+- 简单的内联事件处理器
+- 仅在父组件内部使用的函数
+- 性能开销大于收益时
+
+### 下一步学习
+
+现在你已经掌握了useCallback，接下来我们将学习：
+
+1. **[useMemo](useMemo)** - 优化计算值
+2. **[自定义Hooks](custom-hooks)** - 创建可复用的逻辑
+3. **[组件性能优化](../performance/optimization)** - 综合性能优化
+
+---
+
+## 12. 延伸阅读
+
+### 官方资源
+
+- [useCallback API参考](https://react.dev/reference/react/useCallback) - React官方文档
+- [性能优化](https://react.dev/learn/render-and-commit) - 渲染和性能
+- [useCallback vs useMemo](https://kentcdodds.com/blog/usememo-and-usecallback) - 何时使用哪个
+
+### 推荐阅读
+
+- [React优化指南](https://kentcdodds.com/blog/application-state-management-with-react) - 状态管理和优化
+- [useCallback反模式](https://kentcdodds.com/blog/dont-use-usecallback-as-a-performance-optimization-in-react) - 避免误用
+- [性能优化技巧](https://react.dev/learn/rendering-lists) - 列表渲染优化
+
+---
+
+[← 上一章：useReducer](useReducer) | [下一章：useMemo →](useMemo)

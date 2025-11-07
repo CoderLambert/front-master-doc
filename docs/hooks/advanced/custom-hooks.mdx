@@ -1,0 +1,1442 @@
+# 自定义Hooks - 逻辑复用
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+自定义Hook是React Hooks系统的强大特性，它允许你将组件逻辑提取为可重用的函数。通过自定义Hook，你可以将状态逻辑、副作用逻辑等在多个组件之间共享，而无需使用高阶组件或render props。在本章中，我们将深入学习如何设计、创建和使用自定义Hook。
+
+## 本章学习目标
+
+- 理解自定义Hook的概念和作用
+- 掌握自定义Hook的命名规则和约定
+- 学会创建各种类型的自定义Hook
+- 掌握自定义Hook的设计模式
+- 理解Hook调用规则
+- 学会在自定义Hook中使用其他Hook
+- 掌握自定义Hook的测试方法
+- 了解常见自定义Hook模式
+
+---
+
+## 1. 什么是自定义Hook？
+
+自定义Hook是以`use`开头的JavaScript函数，它可以在内部调用其他Hook。自定义Hook不是React API，而是JavaScript函数的命名约定，它让你能够将组件逻辑提取到可重用的函数中。
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>自定义Hook</strong>是一个函数，函数名以<code>use</code>开头，内部可以调用其他Hook（如useState、useEffect等）。
+  </p>
+</Box>
+
+### 1.1 基本规则
+
+<Rules>
+
+1. **命名约定** - 函数名必须以`use`开头
+2. **Hook调用** - 可以调用其他React Hook
+3. **纯逻辑** - 负责处理逻辑，不关心UI
+4. **可复用** - 可在多个组件中使用
+5. **条件调用** - 不能在条件语句、循环或嵌套函数中调用
+
+</Rules>
+
+### 1.2 简单示例
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect } from 'react';
+
+// 自定义Hook：计数器
+function useCounter(initialValue = 0) {
+  const [count, setCount] = useState(initialValue);
+
+  const increment = () => setCount(prev => prev + 1);
+  const decrement = () => setCount(prev => prev - 1);
+  const reset = () => setCount(initialValue);
+
+  return {
+    count,
+    increment,
+    decrement,
+    reset
+  };
+}
+
+// 使用自定义Hook
+function CounterComponent() {
+  const { count, increment, decrement, reset } = useCounter(10);
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <button onClick={increment}>+1</button>
+      <button onClick={decrement}>-1</button>
+      <button onClick={reset}>重置</button>
+    </div>
+  );
+}
+
+// 在另一个组件中复用
+function AnotherCounter() {
+  const { count, increment } = useCounter(0);
+
+  return (
+    <div>
+      <p>另一个计数器: {count}</p>
+      <button onClick={increment}>增加</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. 自定义Hook设计模式
+
+### 2.1 状态管理Hook
+
+<CodeBlock>
+
+```jsx
+// 1. 简单的状态Hook
+function useToggle(initialValue = false) {
+  const [value, setValue] = useState(initialValue);
+  const toggle = useCallback(() => setValue(v => !v), []);
+  return [value, toggle];
+}
+
+// 使用
+function ToggleComponent() {
+  const [isOn, toggleIsOn] = useToggle();
+
+  return (
+    <button
+      onClick={toggleIsOn}
+      style={{ backgroundColor: isOn ? 'green' : 'gray' }}
+    >
+      {isOn ? '开' : '关'}
+    </button>
+  );
+}
+
+// 2. 本地存储Hook
+function useLocalStorage(key, initialValue) {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      return initialValue;
+    }
+  });
+
+  const setValue = (value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return [storedValue, setValue];
+}
+
+// 使用
+function LocalStorageComponent() {
+  const [name, setName] = useLocalStorage('name', 'Alice');
+
+  return (
+    <input
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      placeholder="输入名字..."
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 副作用Hook
+
+<CodeBlock>
+
+```jsx
+// 1. 异步数据获取Hook
+function useFetch(url) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!url) return;
+
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(url);
+        const result = await response.json();
+        setData(result);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+  return { data, loading, error };
+}
+
+// 使用
+function UserProfile({ userId }) {
+  const { data: user, loading, error } = useFetch(`/api/users/${userId}`);
+
+  if (loading) return <p>加载中...</p>;
+  if (error) return <p>错误: {error}</p>;
+  if (!user) return <p>用户不存在</p>;
+
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <p>邮箱: {user.email}</p>
+    </div>
+  );
+}
+
+// 2. 窗口尺寸Hook
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+}
+
+// 使用
+function ResponsiveComponent() {
+  const { width, height } = useWindowSize();
+
+  return (
+    <p>
+      窗口尺寸: {width} x {height}
+    </p>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 表单处理Hook
+
+<CodeBlock>
+
+```jsx
+// 表单Hook
+function useForm(initialValues = {}, validationRules = {}) {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  // 验证单个字段
+  const validateField = (name, value) => {
+    const rule = validationRules[name];
+    if (!rule) return '';
+
+    if (rule.required && !value) {
+      return `${name}是必填项`;
+    }
+
+    if (rule.minLength && value.length < rule.minLength) {
+      return `${name}至少需要${rule.minLength}个字符`;
+    }
+
+    if (rule.pattern && !rule.pattern.test(value)) {
+      return `${name}格式不正确`;
+    }
+
+    return '';
+  };
+
+  // 处理输入变化
+  const handleChange = (name) => (e) => {
+    const value = e.target.value;
+    setValues(prev => ({ ...prev, [name]: value }));
+
+    // 实时验证
+    const error = validateField(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  // 处理失焦
+  const handleBlur = (name) => () => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, values[name]);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  // 重置表单
+  const reset = () => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  };
+
+  return {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    reset,
+    isValid: Object.keys(errors).length === 0
+  };
+}
+
+// 使用
+function RegistrationForm() {
+  const {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    reset,
+    isValid
+  } = useForm(
+    { name: '', email: '', password: '' },
+    {
+      name: { required: true, minLength: 2 },
+      email: { required: true, pattern: /^\S+@\S+\.\S+$/ },
+      password: { required: true, minLength: 6 }
+    }
+  );
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isValid) {
+      console.log('提交数据:', values);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <input
+          type="text"
+          name="name"
+          value={values.name}
+          onChange={handleChange('name')}
+          onBlur={handleBlur('name')}
+          placeholder="姓名"
+        />
+        {touched.name && errors.name && <p>{errors.name}</p>}
+      </div>
+
+      <div>
+        <input
+          type="email"
+          name="email"
+          value={values.email}
+          onChange={handleChange('email')}
+          onBlur={handleBlur('email')}
+          placeholder="邮箱"
+        />
+        {touched.email && errors.email && <p>{errors.email}</p>}
+      </div>
+
+      <div>
+        <input
+          type="password"
+          name="password"
+          value={values.password}
+          onChange={handleChange('password')}
+          onBlur={handleBlur('password')}
+          placeholder="密码"
+        />
+        {touched.password && errors.password && <p>{errors.password}</p>}
+      </div>
+
+      <button type="submit" disabled={!isValid}>
+        注册
+      </button>
+      <button type="button" onClick={reset}>
+        重置
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 高级自定义Hook
+
+### 3.1 防抖Hook
+
+<CodeBlock>
+
+```jsx
+// 防抖Hook
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
+// 使用
+function SearchComponent() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const debouncedQuery = useDebounce(query, 300);
+
+  useEffect(() => {
+    if (debouncedQuery) {
+      // 执行搜索
+      fetch(`/api/search?q=${debouncedQuery}`)
+        .then(res => res.json())
+        .then(data => setResults(data));
+    }
+  }, [debouncedQuery]);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="搜索..."
+      />
+      <ul>
+        {results.map(result => (
+          <li key={result.id}>{result.title}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 媒体查询Hook
+
+<CodeBlock>
+
+```jsx
+// 媒体查询Hook
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
+    // 服务端渲染时的默认值
+    if (typeof window !== 'undefined') {
+      return window.matchMedia(query).matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+
+    const handler = (event) => {
+      setMatches(event.matches);
+    };
+
+    // 设置初始值
+    setMatches(mediaQuery.matches);
+
+    // 订阅媒体查询变化
+    mediaQuery.addEventListener('change', handler);
+
+    return () => {
+      mediaQuery.removeEventListener('change', handler);
+    };
+  }, [query]);
+
+  return matches;
+}
+
+// 使用
+function ResponsiveLayout() {
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
+
+  return (
+    <div style={{ display: isMobile ? 'block' : 'flex' }}>
+      {isMobile ? <MobileLayout /> : <DesktopLayout />}
+      {isTablet && <TabletFeatures />}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 WebSocket Hook
+
+<CodeBlock>
+
+```jsx
+// WebSocket Hook
+function useWebSocket(url, options = {}) {
+  const { onMessage, onOpen, onClose, onError } = options;
+  const [socket, setSocket] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastMessage, setLastMessage] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    if (!url) return;
+
+    let ws;
+    let retryTimer;
+
+    const connect = () => {
+      ws = new WebSocket(url);
+
+      ws.onopen = () => {
+        setIsConnected(true);
+        setRetryCount(0);
+        onOpen && onOpen();
+      };
+
+      ws.onmessage = (event) => {
+        setLastMessage(event.data);
+        onMessage && onMessage(event.data);
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        onClose && onClose();
+
+        // 重连逻辑
+        if (retryCount < 5) {
+          retryTimer = setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            connect();
+          }, 1000 * Math.pow(2, retryCount));
+        }
+      };
+
+      ws.onerror = (error) => {
+        onError && onError(error);
+      };
+
+      setSocket(ws);
+    };
+
+    connect();
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
+    };
+  }, [url, onMessage, onOpen, onClose, onError, retryCount]);
+
+  const sendMessage = (message) => {
+    if (socket && isConnected) {
+      socket.send(message);
+    }
+  };
+
+  const disconnect = () => {
+    if (socket) {
+      socket.close();
+    }
+  };
+
+  return {
+    isConnected,
+    lastMessage,
+    sendMessage,
+    disconnect,
+    retryCount
+  };
+}
+
+// 使用
+function ChatComponent() {
+  const [messages, setMessages] = useState([]);
+  const { isConnected, lastMessage, sendMessage } = useWebSocket(
+    'ws://localhost:8080',
+    {
+      onMessage: (message) => {
+        setMessages(prev => [...prev, { id: Date.now(), text: message }]);
+      }
+    }
+  );
+
+  const handleSend = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const message = formData.get('message');
+    if (message) {
+      sendMessage(message);
+      e.target.reset();
+    }
+  };
+
+  return (
+    <div>
+      <p>状态: {isConnected ? '已连接' : '已断开'}</p>
+      <ul>
+        {messages.map(msg => (
+          <li key={msg.id}>{msg.text}</li>
+        ))}
+      </ul>
+      <form onSubmit={handleSend}>
+        <input name="message" placeholder="输入消息..." />
+        <button type="submit">发送</button>
+      </form>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.4 历史记录Hook
+
+<CodeBlock>
+
+```jsx
+// 历史记录Hook
+function useHistory(initialValue) {
+  const [past, setPast] = useState([]);
+  const [present, setPresent] = useState(initialValue);
+  const [future, setFuture] = useState([]);
+
+  const canUndo = past.length > 0;
+  const canRedo = future.length > 0;
+
+  const setValue = (newValue) => {
+    const newPresent = typeof newValue === 'function' ? newValue(present) : newValue;
+
+    setPast(prev => [...prev, present]);
+    setPresent(newPresent);
+    setFuture([]);
+  };
+
+  const undo = () => {
+    if (!canUndo) return;
+
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, past.length - 1);
+
+    setFuture(prev => [present, ...prev]);
+    setPresent(previous);
+    setPast(newPast);
+  };
+
+  const redo = () => {
+    if (!canRedo) return;
+
+    const next = future[0];
+    const newFuture = future.slice(1);
+
+    setPast(prev => [...prev, present]);
+    setPresent(next);
+    setFuture(newFuture);
+  };
+
+  const reset = (initialValue) => {
+    setPast([]);
+    setPresent(initialValue);
+    setFuture([]);
+  };
+
+  return {
+    present,
+    setValue,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    reset
+  };
+}
+
+// 使用
+function EditorWithHistory() {
+  const { present, setValue, undo, redo, canUndo, canRedo } = useHistory('');
+
+  return (
+    <div>
+      <textarea
+        value={present}
+        onChange={(e) => setValue(e.target.value)}
+        rows="10"
+        cols="50"
+      />
+      <div>
+        <button onClick={undo} disabled={!canUndo}>
+          撤销
+        </button>
+        <button onClick={redo} disabled={!canRedo}>
+          重做
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 条件渲染Hook
+
+### 4.1 设备检测Hook
+
+<CodeBlock>
+
+```jsx
+// 设备检测Hook
+function useDevice() {
+  const [device, setDevice] = useState('desktop');
+
+  useEffect(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isMobile = /mobile|android|iphone|ipad/.test(userAgent);
+    const isTablet = /tablet|ipad/.test(userAgent);
+
+    if (isTablet) {
+      setDevice('tablet');
+    } else if (isMobile) {
+      setDevice('mobile');
+    } else {
+      setDevice('desktop');
+    }
+  }, []);
+
+  const isMobile = device === 'mobile';
+  const isTablet = device === 'tablet';
+  const isDesktop = device === 'desktop';
+
+  return { device, isMobile, isTablet, isDesktop };
+}
+
+// 使用
+function DeviceSpecificComponent() {
+  const { isMobile, isTablet, device } = useDevice();
+
+  if (isMobile) {
+    return <MobileLayout />;
+  }
+
+  if (isTablet) {
+    return <TabletLayout />;
+  }
+
+  return <DesktopLayout />;
+}
+```
+
+</CodeBlock>
+
+### 4.2 权限检查Hook
+
+<CodeBlock>
+
+```jsx
+// 权限Hook
+function usePermissions() {
+  const [permissions, setPermissions] = useState([]);
+
+  useEffect(() => {
+    // 模拟获取用户权限
+    const fetchPermissions = async () => {
+      const userPermissions = await api.getUserPermissions();
+      setPermissions(userPermissions);
+    };
+    fetchPermissions();
+  }, []);
+
+  const hasPermission = (permission) => {
+    return permissions.includes(permission);
+  };
+
+  const hasAnyPermission = (permissionList) => {
+    return permissionList.some(p => permissions.includes(p));
+  };
+
+  const hasAllPermissions = (permissionList) => {
+    return permissionList.every(p => permissions.includes(p));
+  };
+
+  return {
+    permissions,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions
+  };
+}
+
+// 使用
+function AdminPanel() {
+  const { hasPermission } = usePermissions();
+
+  if (!hasPermission('admin')) {
+    return <p>没有权限访问</p>;
+  }
+
+  return (
+    <div>
+      <h1>管理员面板</h1>
+      {hasPermission('user:create') && <button>创建用户</button>}
+      {hasPermission('user:delete') && <button>删除用户</button>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 自定义Hook最佳实践
+
+### 5.1 命名约定
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的命名
+function useCounter(initialValue) { }
+function useFetch(url) { }
+function useLocalStorage(key, initialValue) { }
+function useDebounce(value, delay) { }
+function useMediaQuery(query) { }
+
+// ❌ 避免的命名
+function counter(initialValue) { }  // 缺少use前缀
+function getFetch(url) { }  // 缺少use前缀
+function storageHelper(key, value) { }  // 缺少use前缀
+```
+
+</CodeBlock>
+
+### 5.2 单一职责原则
+
+<Compare>
+
+```jsx
+// ❌ 不好 - Hook职责过多
+function useUserData(userId) {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // 既处理用户数据又处理文章数据
+  useEffect(() => {
+    // 获取用户
+    fetchUser(userId).then(setUser);
+    // 获取文章
+    fetchPosts(userId).then(setPosts);
+    setLoading(false);
+  }, [userId]);
+
+  return { user, posts, loading };
+}
+
+// ✅ 更好 - 分离职责
+function useUser(userId) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+    setLoading(false);
+  }, [userId]);
+
+  return { user, loading };
+}
+
+function useUserPosts(userId) {
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    fetchPosts(userId).then(setPosts);
+  }, [userId]);
+
+  return posts;
+}
+```
+
+</Compare>
+
+### 5.3 错误处理
+
+<CodeBlock>
+
+```jsx
+// ✅ 包含错误处理的Hook
+function useAsync(asyncFunction, immediate = true) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(immediate);
+  const [error, setError] = useState(null);
+
+  const execute = useCallback(async (...args) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await asyncFunction(...args);
+      setData(result);
+      setLoading(false);
+      return result;
+    } catch (error) {
+      setError(error);
+      setLoading(false);
+      throw error;
+    }
+  }, [asyncFunction]);
+
+  return { data, loading, error, execute };
+}
+
+// 使用
+function DataComponent() {
+  const fetchUser = useCallback(async (id) => {
+    const response = await fetch(`/api/users/${id}`);
+    if (!response.ok) {
+      throw new Error('获取用户失败');
+    }
+    return response.json();
+  }, []);
+
+  const { data: user, loading, error, execute } = useAsync(fetchUser);
+
+  if (loading) return <p>加载中...</p>;
+  if (error) return <p>错误: {error.message}</p>;
+  if (user) return <p>用户: {user.name}</p>;
+
+  return <button onClick={() => execute(1)}>加载用户</button>;
+}
+```
+
+</CodeBlock>
+
+### 5.4 类型定义（TypeScript）
+
+<CodeBlock>
+
+```typescript
+// TypeScript版本的自定义Hook
+function useCounter(initialValue: number = 0) {
+  const [count, setCount] = useState<number>(initialValue);
+
+  const increment = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);
+
+  const decrement = useCallback(() => {
+    setCount(prev => prev - 1);
+  }, []);
+
+  const reset = useCallback(() => {
+    setCount(initialValue);
+  }, [initialValue]);
+
+  return {
+    count,
+    increment,
+    decrement,
+    reset
+  };
+}
+
+// 使用
+function CounterComponent() {
+  const { count, increment } = useCounter(10);
+  // count类型为number，increment类型为() => void
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 常见自定义Hook模式
+
+### 6.1 数据缓存模式
+
+<CodeBlock>
+
+```jsx
+// 缓存Hook
+function useCache(key, fetcher, options = {}) {
+  const { ttl = 60000 } = options; // 默认缓存60秒
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [lastFetch, setLastFetch] = useState(0);
+
+  const fetchData = useCallback(async (force = false) => {
+    const now = Date.now();
+
+    // 检查缓存是否有效
+    if (!force && data && now - lastFetch < ttl) {
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await fetcher();
+      setData(result);
+      setLastFetch(now);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [data, lastFetch, fetcher, ttl]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: () => fetchData(true) };
+}
+
+// 使用
+function CachedUserProfile({ userId }) {
+  const { data: user, loading, error, refetch } = useCache(
+    `user-${userId}`,
+    () => fetch(`/api/users/${userId}`).then(r => r.json()),
+    { ttl: 300000 } // 缓存5分钟
+  );
+
+  if (loading) return <p>加载中...</p>;
+  if (error) return <p>错误: {error.message}</p>;
+  if (!user) return <p>用户不存在</p>;
+
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <button onClick={refetch}>刷新</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 事件监听模式
+
+<CodeBlock>
+
+```jsx
+// 事件监听Hook
+function useEventListener(eventType, handler, element = window) {
+  useEffect(() => {
+    if (!element || !element.addEventListener) return;
+
+    const eventListener = (event) => {
+      handler(event);
+    };
+
+    element.addEventListener(eventType, eventListener);
+
+    return () => {
+      element.removeEventListener(eventType, eventListener);
+    };
+  }, [eventType, handler, element]);
+}
+
+// 使用
+function MouseTracker() {
+  const [coordinates, setCoordinates] = useState({ x: 0, y: 0 });
+
+  useEventListener('mousemove', (e) => {
+    setCoordinates({
+      x: e.clientX,
+      y: e.clientY
+    });
+  });
+
+  return (
+    <p>
+      鼠标位置: ({coordinates.x}, {coordinates.y})
+    </p>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 状态机模式
+
+<CodeBlock>
+
+```jsx
+// 状态机Hook
+function useStateMachine(initialState, states) {
+  const [currentState, setCurrentState] = useState(initialState);
+  const [context, setContext] = useState({});
+
+  const transition = useCallback((newState, newContext = {}) => {
+    if (!states[currentState] || !states[currentState].transitions[newState]) {
+      console.error(`无效的转换: ${currentState} -> ${newState}`);
+      return;
+    }
+
+    setCurrentState(newState);
+    setContext(prev => ({ ...prev, ...newContext }));
+  }, [currentState, states]);
+
+  const state = states[currentState] || {};
+
+  return {
+    state: state.data || {},
+    currentState,
+    transition,
+    context
+  };
+}
+
+// 使用
+function LoginForm() {
+  const {
+    state: formData,
+    currentState,
+    transition
+  } = useStateMachine('idle', {
+    idle: {
+      data: {},
+      transitions: {
+        submitting: 'loading'
+      }
+    },
+    loading: {
+      data: {},
+      transitions: {
+        success: 'success',
+        error: 'error'
+      }
+    },
+    success: {
+      data: { message: '登录成功' },
+      transitions: {
+        reset: 'idle'
+      }
+    },
+    error: {
+      data: { message: '登录失败' },
+      transitions: {
+        reset: 'idle'
+      }
+    }
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    transition('submitting');
+
+    try {
+      await login(formData);
+      transition('success');
+    } catch (error) {
+      transition('error', { error: error.message });
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {currentState === 'error' && (
+        <p style={{ color: 'red' }}>{formData.message}</p>
+      )}
+      {currentState === 'success' && (
+        <p style={{ color: 'green' }}>{formData.message}</p>
+      )}
+      {/* 表单字段 */}
+      <button type="submit" disabled={currentState === 'loading'}>
+        {currentState === 'loading' ? '登录中...' : '登录'}
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实践练习
+
+### 练习1：创建完整的表单Hook
+
+创建一个功能完整的表单Hook，支持验证、错误处理、重置等功能。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 支持多种输入类型（text、email、password、number等）
+- 实时验证和失焦验证
+- 自定义验证规则
+- 错误消息自定义
+- 表单重置功能
+- 支持条件字段
+
+**Hook设计**：
+```javascript
+function useForm(options) {
+  // options: { initialValues, validationRules, validateOnChange, validateOnBlur }
+  return {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    handleSubmit,
+    reset,
+    isValid,
+    setValue
+  };
+}
+```
+
+**提示**：
+- 区分不同验证时机
+- 支持同步和异步验证
+- 处理复杂嵌套字段
+- 提供清晰的错误信息
+
+</Expandable>
+
+### 练习2：创建数据缓存Hook
+
+创建一个智能缓存Hook，支持过期时间、手动刷新、多数据源等。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 内存缓存机制
+- 过期时间控制
+- 手动刷新
+- 乐观更新
+- 错误重试
+- 并发请求合并
+
+**Hook设计**：
+```javascript
+function useCache(key, fetcher, options) {
+  // options: { ttl, retries, retryDelay, optimisticUpdate }
+  return {
+    data,
+    loading,
+    error,
+    refetch,
+    setOptimisticData
+  };
+}
+```
+
+**提示**：
+- 使用Map存储缓存
+- 实现LRU淘汰策略
+- 处理网络错误
+- 乐观更新与回滚
+
+</Expandable>
+
+### 练习3：创建权限管理Hook
+
+创建一个完整的权限系统Hook，支持角色、权限、动态检查等。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 用户角色管理
+- 权限检查
+- 条件渲染
+- 权限缓存
+- 实时权限更新
+- 权限继承
+
+**Hook设计**：
+```javascript
+function usePermissions(user, permissions) {
+  return {
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    canAccess,
+    canPerform
+  };
+}
+```
+
+**提示**：
+- 角色和权限的层次结构
+- 动态权限检查
+- 权限缓存优化
+- 实时更新机制
+
+</Expandable>
+
+### 练习4：创建媒体查询Hook库
+
+创建一系列媒体查询相关的Hook。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 窗口尺寸监听
+- 断点检测
+- 设备方向检测
+- 媒体查询匹配
+- 自定义断点
+
+**Hook设计**：
+```javascript
+function useBreakpoint(breakpoints) {
+  // breakpoints: { sm: 640, md: 768, lg: 1024 }
+  return { current, isSm, isMd, isLg };
+}
+
+function useOrientation() {
+  return { orientation, isPortrait, isLandscape };
+}
+
+function useMedia(query) {
+  return matches;
+}
+```
+
+**提示**：
+- 使用matchMedia API
+- 响应式断点管理
+- SSR兼容性
+- 性能优化
+
+</Expandable>
+
+---
+
+## 8. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 自定义Hook是以`use`开头的函数，内部可以调用其他Hook
+- ✅ Hook负责逻辑处理，组件负责UI渲染
+- ✅ 一个Hook应该只负责一个功能（单一职责原则）
+- ✅ 自定义Hook可以在多个组件中复用
+- ✅ Hook不能在条件语句、循环或嵌套函数中调用
+- ✅ 使用useCallback优化传递给Hook的函数
+- ✅ 正确处理Hook的清理和重置逻辑
+- ✅ 为自定义Hook提供清晰的TypeScript类型
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **清晰命名** - 使用描述性的名称，准确表达Hook的用途
+2. **单一职责** - 每个Hook只负责一个具体功能
+3. **文档化** - 为自定义Hook编写清晰的文档和使用示例
+4. **类型安全** - 在TypeScript中为Hook提供完整的类型定义
+5. **错误处理** - 妥善处理各种错误情况和边界情况
+6. **性能优化** - 使用useCallback和useMemo优化Hook性能
+7. **测试覆盖** - 为自定义Hook编写单元测试
+8. **可测试性** - 设计Hook时考虑可测试性
+
+</BestPractices>
+
+### 常见Hook模式
+
+**状态管理**：
+- useCounter - 简单的数值状态
+- useToggle - 布尔值状态
+- useLocalStorage - 本地存储同步
+
+**副作用**：
+- useFetch - 异步数据获取
+- useInterval - 定时器管理
+- useEventListener - 事件监听
+
+**表单处理**：
+- useForm - 表单状态管理
+- useInput - 输入框管理
+
+**性能优化**：
+- useDebounce - 防抖
+- useThrottle - 节流
+- useMemoize - 记忆化
+
+### 下一步学习
+
+现在你已经掌握了自定义Hooks，接下来可以学习：
+
+1. **[状态管理进阶](../state-management)** - 全局状态管理
+2. **[组件性能优化](../performance)** - 综合性能优化
+3. **[实际项目应用](../projects)** - 真实项目实践
+
+---
+
+## 9. 延伸阅读
+
+### 官方资源
+
+- [自定义Hook](https://react.dev/learn/reusing-logic-with-custom-hooks) - React官方文档
+- [Hook API参考](https://react.dev/reference/react) - 所有Hook的API
+- [Hook规则](https://react.dev/reference/rules-of-hooks) - Hook使用规则
+
+### 推荐阅读
+
+- [自定义Hook最佳实践](https://kentcdodds.com/blog/how-to-build-custom-react-hooks) - 构建自定义Hook
+- [Hook模式](https://usehooks.com/) - 常见Hook模式库
+- [React Hooks技巧](https://github.com/streamich/react-use) - React Hooks工具库
+
+### 优秀Hook库
+
+- [React Use](https://github.com/streamich/react-use) - 大量实用自定义Hook
+- [useHooks](https://usehooks.com/) - Hook示例和教程
+- [ahooks](https://github.com/alibaba/hooks) - 阿里开源的Hook库
+
+---
+
+[← 上一章：useMemo](useMemo) | [Hooks模块完成！🎉]

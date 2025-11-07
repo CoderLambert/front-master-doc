@@ -1,0 +1,1253 @@
+# useContext - 跨组件状态共享
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+`useContext`是React Hooks系统中的重要组成部分，它允许你在组件树中共享数据，而无需手动通过props层层传递。本章将深入探讨Context的使用方法、最佳实践以及性能优化技巧。
+
+## 本章学习目标
+
+- 理解Context的作用和适用场景
+- 掌握createContext和useContext的使用方法
+- 学会创建和使用Context Provider
+- 理解Context的更新机制
+- 掌握Context性能优化技巧
+- 避免Context的常见陷阱
+- 学会与useState和useEffect结合使用
+
+---
+
+## 1. 什么是Context？
+
+Context提供了一种通过组件树传递数据的方式，而不需要在每一层手动地向下传递props。它解决的是"Props drilling"（props穿透）问题。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Context</strong>就像一个全局的"数据仓库"，所有子组件都可以直接访问其中的数据，而不需要通过中间组件传递。
+  </p>
+</Box>
+
+### 1.1 问题场景：Props Drilling
+
+<ErrorBox>
+
+```jsx
+// ❌ 问题 - 需要层层传递props
+function App() {
+  const theme = 'dark';
+  return <Toolbar theme={theme} />;
+}
+
+function Toolbar({ theme }) {
+  return (
+    <div>
+      <ThemeSwitcher theme={theme} />
+    </div>
+  );
+}
+
+function ThemeSwitcher({ theme }) {
+  return <button className={theme}>切换主题</button>;  // 需要theme prop
+}
+```
+
+</ErrorBox>
+
+### 1.2 解决方案：使用Context
+
+<BestPractices>
+
+```jsx
+// ✅ 使用Context
+// 1. 创建Context
+const ThemeContext = createContext('light');
+
+// 2. 在顶层提供Context
+function App() {
+  const [theme, setTheme] = useState('light');
+  return (
+    <ThemeContext.Provider value={theme}>
+      <Toolbar />
+    </ThemeContext.Provider>
+  );
+}
+
+// 3. 在任意组件中使用Context
+function ThemeSwitcher() {
+  const theme = useContext(ThemeContext);  // 直接获取
+  return <button className={theme}>切换主题</button>;
+}
+```
+
+</BestPractices>
+
+---
+
+## 2. 基本用法
+
+### 2.1 创建Context
+
+<CodeBlock>
+
+```jsx
+import { createContext } from 'react';
+
+// 创建Context，并提供默认值
+const UserContext = createContext({
+  name: 'Guest',
+  age: 0,
+  email: ''
+});
+
+// 创建带类型的Context（TypeScript）
+// const UserContext = createContext<UserType | undefined>(undefined);
+```
+
+</CodeBlock>
+
+### 2.2 使用Context Provider
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState } from 'react';
+
+// 1. 创建Context
+const ThemeContext = createContext();
+
+// 2. 创建Provider组件
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+// 3. 在应用根组件使用
+function App() {
+  return (
+    <ThemeProvider>
+      <MainContent />
+    </ThemeProvider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 使用useContext
+
+<CodeBlock>
+
+```jsx
+// 4. 在子组件中使用useContext
+function Header() {
+  const { theme, setTheme } = useContext(ThemeContext);
+
+  return (
+    <header className={theme}>
+      <h1>我的应用</h1>
+      <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+        切换主题
+      </button>
+    </header>
+  );
+}
+
+// 嵌套组件也可以直接使用
+function MainContent() {
+  const { theme } = useContext(ThemeContext);
+
+  return (
+    <main className={theme}>
+      <p>当前主题: {theme}</p>
+    </main>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 实际应用场景
+
+### 3.1 主题切换
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState } from 'react';
+
+// 创建主题Context
+const ThemeContext = createContext();
+
+// Provider组件
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+// 自定义Hook
+function useTheme() {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+  return context;
+}
+
+// 使用组件
+function App() {
+  return (
+    <ThemeProvider>
+      <Header />
+      <Content />
+    </ThemeProvider>
+  );
+}
+
+function Header() {
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <div style={{
+      backgroundColor: theme === 'dark' ? '#333' : '#fff',
+      color: theme === 'dark' ? '#fff' : '#333',
+      padding: '20px'
+    }}>
+      <h1>主题示例</h1>
+      <button onClick={toggleTheme}>
+        切换到{theme === 'light' ? '深色' : '浅色'}模式
+      </button>
+    </div>
+  );
+}
+
+function Content() {
+  const { theme } = useTheme();
+
+  return (
+    <div style={{
+      backgroundColor: theme === 'dark' ? '#666' : '#f0f0f0',
+      color: theme === 'dark' ? '#fff' : '#333',
+      padding: '20px',
+      margin: '20px',
+      borderRadius: '8px'
+    }}>
+      <p>这是内容区域</p>
+      <p>当前主题: {theme}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 用户认证状态
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState, useEffect } from 'react';
+
+// 创建认证Context
+const AuthContext = createContext();
+
+// Provider组件
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 检查localStorage中的用户信息
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = async (credentials) => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials)
+      });
+      const userData = await response.json();
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// 自定义Hook
+function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+}
+
+// 使用组件
+function App() {
+  return (
+    <AuthProvider>
+      <Header />
+      <Main />
+    </AuthProvider>
+  );
+}
+
+function Header() {
+  const { user, logout } = useAuth();
+
+  return (
+    <nav>
+      {user ? (
+        <>
+          <span>欢迎, {user.name}</span>
+          <button onClick={logout}>退出</button>
+        </>
+      ) : (
+        <button>登录</button>
+      )}
+    </nav>
+  );
+}
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return <p>加载中...</p>;
+  if (!user) return <p>请先登录</p>;
+
+  return children;
+}
+```
+
+</CodeBlock>
+
+### 3.3 语言/国际化
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState } from 'react';
+
+// 创建语言Context
+const LanguageContext = createContext();
+
+// 翻译数据
+const translations = {
+  en: {
+    hello: 'Hello',
+    goodbye: 'Goodbye',
+    welcome: 'Welcome'
+  },
+  zh: {
+    hello: '你好',
+    goodbye: '再见',
+    welcome: '欢迎'
+  }
+};
+
+// Provider组件
+function LanguageProvider({ children }) {
+  const [language, setLanguage] = useState('zh');
+
+  const t = (key) => {
+    return translations[language][key] || key;
+  };
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+      {children}
+    </LanguageContext.Provider>
+  );
+}
+
+// 自定义Hook
+function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within LanguageProvider');
+  }
+  return context;
+}
+
+// 使用组件
+function App() {
+  return (
+    <LanguageProvider>
+      <Header />
+      <Content />
+    </LanguageProvider>
+  );
+}
+
+function Header() {
+  const { language, setLanguage } = useLanguage();
+
+  return (
+    <header>
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value)}
+      >
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </header>
+  );
+}
+
+function Content() {
+  const { t } = useLanguage();
+
+  return (
+    <main>
+      <h1>{t('welcome')}</h1>
+      <p>{t('hello')}</p>
+      <p>{t('goodbye')}</p>
+    </main>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 复杂状态管理
+
+### 4.1 组合多个状态
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState, useReducer } from 'react';
+
+// 创建App Context
+const AppContext = createContext();
+
+// 状态类型
+// { user: User | null, theme: string, language: string }
+
+// Reducer
+function appReducer(state, action) {
+  switch (action.type) {
+    case 'SET_USER':
+      return { ...state, user: action.payload };
+    case 'SET_THEME':
+      return { ...state, theme: action.payload };
+    case 'SET_LANGUAGE':
+      return { ...state, language: action.payload };
+    case 'RESET':
+      return { user: null, theme: 'light', language: 'zh' };
+    default:
+      return state;
+  }
+}
+
+// Provider组件
+function AppProvider({ children }) {
+  const [state, dispatch] = useReducer(appReducer, {
+    user: null,
+    theme: 'light',
+    language: 'zh'
+  });
+
+  // 组合所有需要的状态和方法
+  const value = {
+    user: state.user,
+    theme: state.theme,
+    language: state.language,
+    setUser: (user) => dispatch({ type: 'SET_USER', payload: user }),
+    setTheme: (theme) => dispatch({ type: 'SET_THEME', payload: theme }),
+    setLanguage: (language) => dispatch({ type: 'SET_LANGUAGE', payload: language }),
+    reset: () => dispatch({ type: 'RESET' })
+  };
+
+  return (
+    <AppContext.Provider value={value}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// 自定义Hook
+function useApp() {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within AppProvider');
+  }
+  return context;
+}
+```
+
+</CodeBlock>
+
+### 4.2 嵌套Provider
+
+<CodeBlock>
+
+```jsx
+// 可以嵌套多个Provider
+function App() {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <MainContent />
+        </LanguageProvider>
+      </ThemeProvider>
+    </AuthProvider>
+  );
+}
+
+// 每个Provider管理自己的状态
+function MainContent() {
+  const { user } = useAuth();
+  const { theme } = useTheme();
+  const { language } = useLanguage();
+
+  return (
+    <div className={theme}>
+      <h1>{language === 'zh' ? '我的应用' : 'My App'}</h1>
+      {user && <p>Hello, {user.name}!</p>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 性能优化
+
+### 5.1 避免不必要的重渲染
+
+<Box style={{ padding: '20px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    Context的value变化时，所有使用该Context的组件都会重新渲染。需要谨慎设计以避免性能问题。
+  </p>
+</Box>
+
+#### 5.1.1 拆分Context
+
+<Compare>
+
+```jsx
+// ❌ 不好 - 多个不相关状态在一个Context中
+const AppContext = createContext();
+
+function AppProvider() {
+  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState('light');
+  const [notifications, setNotifications] = useState([]);
+
+  return (
+    <AppContext.Provider value={{
+      user, setUser,
+      theme, setTheme,
+      notifications, setNotifications
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// ✅ 更好 - 拆分Context
+const UserContext = createContext();
+const ThemeContext = createContext();
+const NotificationContext = createContext();
+
+function UserProvider({ children }) {
+  const [user, setUser] = useState(null);
+  return (
+    <UserContext.Provider value={{ user, setUser }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState('light');
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+```
+
+</Compare>
+
+#### 5.1.2 使用useMemo优化
+
+<CodeBlock>
+
+```jsx
+import { useMemo } from 'react';
+
+function OptimizedProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState('light');
+
+  // 使用useMemo缓存value对象
+  const userValue = useMemo(() => ({ user, setUser }), [user]);
+  const themeValue = useMemo(() => ({ theme, setTheme }), [theme]);
+
+  return (
+    <UserContext.Provider value={userValue}>
+      <ThemeContext.Provider value={themeValue}>
+        {children}
+      </ThemeContext.Provider>
+    </UserContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 5.1.3 使用useCallback
+
+<CodeBlock>
+
+```jsx
+function OptimizedProvider({ children }) {
+  const [count, setCount] = useState(0);
+
+  // 使用useMemo缓存函数
+  const increment = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);
+
+  const value = useMemo(() => ({
+    count,
+    increment
+  }), [count, increment]);
+
+  return (
+    <CounterContext.Provider value={value}>
+      {children}
+    </CounterContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 使用React.memo
+
+<CodeBlock>
+
+```jsx
+// 包装组件避免不必要渲染
+const ExpensiveComponent = React.memo(({ value }) => {
+  console.log('组件渲染了');
+  return <div>{value}</div>;
+});
+
+function App() {
+  const { theme } = useTheme();
+  return (
+    <ExpensiveComponent value={theme} />
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 高级技巧
+
+### 6.1 动态Context
+
+<CodeBlock>
+
+```jsx
+import { useContext } from 'react';
+
+// 动态Context根据类型返回不同值
+function DynamicContext({ type }) {
+  const allThemes = useContext(ThemeContext);
+
+  // 根据类型返回特定主题
+  const contextValue = allThemes[type];
+
+  return (
+    <ThemeContext.Provider value={contextValue}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 多个Context组合
+
+<CodeBlock>
+
+```jsx
+// 组合多个Context
+function CombinedContextProvider({ children }) {
+  const authValue = useAuth();
+  const themeValue = useTheme();
+
+  return (
+    <AuthContext.Provider value={authValue}>
+      <ThemeContext.Provider value={themeValue}>
+        <AppContext.Provider value={{ authValue, themeValue }}>
+          {children}
+        </AppContext.Provider>
+      </ThemeContext.Provider>
+    </AuthContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 Context与useState
+
+<CodeBlock>
+
+```jsx
+// Provider内部使用useState
+function CounterProvider({ children }) {
+  const [count, setCount  = useState(0);
+
+  const value = {
+    count,
+    increment: () => setCount(count + 1),
+    decrement: () => setCount(count - 1),
+    reset: () => setCount(0)
+  };
+
+  return (
+    <CounterContext.Provider value={value}>
+      {children}
+    </CounterContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.4 Context与useReducer
+
+<CodeBlock>
+
+```jsx
+import { useReducer } from 'react';
+
+// 使用useReducer管理复杂状态
+function TodosProvider({ children }) {
+  const [todos, dispatch] = useReducer(todosReducer, []);
+
+  const value = {
+    todos,
+    addTodo: (text) => dispatch({ type: 'ADD', payload: text }),
+    removeTodo: (id) => dispatch({ type: 'REMOVE', payload: id }),
+    toggleTodo: (id) => dispatch({ type: 'TOGGLE', payload: id })
+  };
+
+  return (
+    <TodosContext.Provider value={value}>
+      {children}
+    </TodosContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 常见错误与陷阱
+
+### 7.1 Context在Provider外部使用
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 在Provider外部使用Context
+const MyContext = createContext();
+
+function BadComponent() {
+  const value = useContext(MyContext);  // 抛出错误！
+  return <div>{value}</div>;
+}
+
+// 没有使用Provider包装
+function App() {
+  return <BadComponent />;  // Error: Context is undefined
+}
+
+// ✅ 正确
+function GoodComponent() {
+  const value = useContext(MyContext);  // 正确
+  return <div>{value}</div>;
+}
+
+function App() {
+  return (
+    <MyContext.Provider value="some value">
+      <GoodComponent />
+    </MyContext.Provider>
+  );
+}
+```
+
+</ErrorBox>
+
+### 7.2 忘记使用Provider
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有Provider
+function App() {
+  return (
+    <MyContext.Provider value="value">
+      <Component1 />
+    </MyContext.Provider>
+    // Component2在Provider外部！
+  );
+}
+
+function Component2() {
+  const value = useContext(MyContext);  // 错误！
+  return <div>{value}</div>;
+}
+
+// ✅ 正确 - 确保所有使用Context的组件都在Provider内部
+function App() {
+  return (
+    <MyContext.Provider value="value">
+      <Component1 />
+      <Component2 />  // 都在Provider内部
+    </MyContext.Provider>
+  );
+}
+```
+
+</ErrorBox>
+
+### 7.3 频繁更新Context
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 每次渲染都创建新对象
+function BadProvider() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <BadContext.Provider value={{
+      count,  // 每次渲染都创建新对象
+      setCount
+    }}>
+      {children}
+    </BadContext.Provider>
+  );
+}
+
+// ✅ 更好 - 使用useMemo缓存
+function GoodProvider() {
+  const [count, setCount] = useState(0);
+
+  const value = useMemo(() => ({
+    count,
+    setCount
+  }), [count]);
+
+  return (
+    <GoodContext.Provider value={value}>
+      {children}
+    </GoodContext.Provider>
+  );
+}
+```
+
+</ErrorBox>
+
+### 7.4 使用不稳定的值作为Context
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 使用内联函数/对象
+function BadProvider({ children }) {
+  const [count, setCount] = useState(0);
+
+  return (
+    <BadContext.Provider value={{
+      // 这些函数每次都重新创建
+      onClick: () => setCount(count + 1),
+      style: { color: 'red' }
+    }}>
+      {children}
+    </BadContext.Provider>
+  );
+}
+
+// ✅ 正确 - 使用useCallback/useMemo
+function GoodProvider({ children }) {
+  const [count, setCount] = useState(0);
+
+  const onClick = useCallback(() => {
+    setCount(count + 1);
+  }, [count]);
+
+  const style = useMemo(() => ({ color: 'red' }), []);
+
+  return (
+    <GoodContext.Provider value={{ onClick, style }}>
+      {children}
+    </GoodContext.Provider>
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 8. 实际应用场景
+
+### 8.1 购物车状态
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState } from 'react';
+
+const CartContext = createContext();
+
+function CartProvider({ children }) {
+  const [items, setItems] = useState([]);
+
+  const addItem = (product) => {
+    setItems(prev => {
+      const existingItem = prev.find(item => item.id === product.id);
+      if (existingItem) {
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity: 1 }];
+    });
+  };
+
+  const removeItem = (id) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const updateQuantity = (id, quantity) => {
+    if (quantity <= 0) {
+      removeItem(id);
+      return;
+    }
+    setItems(prev =>
+      prev.map(item =>
+        item.id === id ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const clearCart = () => {
+    setItems([]);
+  };
+
+  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  return (
+    <CartContext.Provider value={{
+      items,
+      addItem,
+      removeItem,
+      updateQuantity,
+      clearCart,
+      total,
+      itemCount: items.reduce((sum, item) => sum + item.quantity, 0)
+    }}>
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+function useCart() {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within CartProvider');
+  }
+  return context;
+}
+```
+
+</CodeBlock>
+
+### 8.2 全局加载状态
+
+<CodeBlock>
+
+```jsx
+import { createContext, useContext, useState, useCallback } from 'react';
+
+const LoadingContext = createContext();
+
+function LoadingProvider({ children }) {
+  const [loadingStates, setLoadingStates] = useState({});
+
+  const setLoading = useCallback((key, isLoading) => {
+    setLoadingStates(prev => ({
+      ...prev,
+      [key]: isLoading
+    }));
+  }, []);
+
+  const isLoading = useCallback((key) => {
+    return !!loadingStates[key];
+  }, [loadingStates]);
+
+  const isAnyLoading = Object.values(loadingStates).some(Boolean);
+
+  return (
+    <LoadingContext.Provider value={{
+      setLoading,
+      isLoading,
+      isAnyLoading,
+      loadingStates
+    }}>
+      {children}
+    </LoadingContext.Provider>
+  );
+}
+
+function useLoading() {
+  const context = useContext(LoadingContext);
+  if (!context) {
+    throw new Error('useLoading must be used within LoadingProvider');
+  }
+  return context;
+}
+
+// 使用示例
+function DataComponent() {
+  const { setLoading, isLoading } = useLoading();
+
+  const fetchData = async () => {
+    setLoading('data', true);
+    try {
+      await fetch('/api/data');
+    } finally {
+      setLoading('data', false);
+    }
+  };
+
+  if (isLoading('data')) return <p>加载中...</p>;
+  return <button onClick={fetchData}>获取数据</button>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 实践练习
+
+### 练习1：全局通知系统
+
+创建一个全局通知Context，支持显示成功、警告和错误消息。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 添加通知（成功/警告/错误/信息）
+- 自动隐藏通知（可配置时间）
+- 清除单个通知
+- 清除所有通知
+- 堆叠显示多个通知
+
+**提示**：
+- 使用useState管理通知数组
+- 每个通知有id、type、message、duration属性
+- 使用useEffect实现自动隐藏
+- 提供便捷的success/warning/error/info方法
+
+</Expandable>
+
+### 练习2：用户偏好设置
+
+创建一个用户偏好Context，管理用户的主题、语言、字体大小等设置。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 保存到localStorage
+- 页面加载时自动读取
+- 实时应用设置
+- 重置为默认值
+- 可扩展（容易添加新设置）
+
+**提示**：
+- 定义偏好设置对象结构
+- 初始化时从localStorage读取
+- 修改设置时保存到localStorage
+- 提供reset方法重置所有设置
+
+</Expandable>
+
+### 练习3：媒体查询响应式
+
+创建一个Context跟踪当前视口尺寸，支持移动端/平板/桌面端。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 监听窗口resize事件
+- 根据宽度分类（mobile/tablet/desktop）
+- 提供breakpoint信息
+- 优化性能（防抖）
+
+**提示**：
+- 使用useEffect监听resize事件
+- 使用useState存储当前宽度
+- 计算当前设备类型
+- 使用useCallback优化事件处理
+
+</Expandable>
+
+### 练习4：WebSocket连接管理
+
+创建一个Context管理WebSocket连接，支持断线重连。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 自动连接WebSocket
+- 断线重连机制
+- 发送/接收消息
+- 连接状态管理
+- 错误处理
+
+**提示**：
+- 使用useEffect管理连接
+- 实现重连逻辑
+- 存储连接状态和消息历史
+- 提供send方法
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Context解决Props Drilling问题
+- ✅ 使用`createContext()`创建Context
+- ✅ 使用`Context.Provider`提供数据
+- ✅ 使用`useContext()`在组件中消费Context
+- ✅ 所有子组件都可以访问Context数据
+- ✅ Context变化会导致所有消费者重新渲染
+- ✅ 应该拆分Context避免不必要的重渲染
+- ✅ 使用useMemo和useCallback优化性能
+- ✅ 始终在Provider内部使用Context
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **拆分Context** - 将不相关的状态分离到不同的Context
+2. **性能优化** - 使用useMemo缓存Context的value
+3. **自定义Hook** - 为每个Context创建自定义Hook提供更好的开发体验
+4. **错误边界** - 捕获Provider外部使用Context的错误
+5. **类型安全** - 在TypeScript中使用泛型保证类型安全
+6. **适度使用** - 不是所有状态都需要Context，优先使用本地状态
+
+</BestPractices>
+
+### 使用场景
+
+**适合使用Context的场景**：
+- 全局用户认证状态
+- 主题/语言设置
+- 购物车状态
+- 通知系统
+- 全局加载状态
+
+**不适合使用Context的场景**：
+- 频繁变化的数据
+- 局部的、临时的状态
+- 可以通过props传递的简单数据
+
+### 下一步学习
+
+现在你已经掌握了useContext，接下来我们将学习：
+
+1. **[useReducer](advanced/useReducer)** - 掌握复杂状态逻辑
+2. **[useCallback](advanced/useCallback)** - 性能优化
+3. **[useMemo](advanced/useMemo)** - 性能优化
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [Context API](https://react.dev/reference/react/createContext) - React官方文档
+- [useContext](https://react.dev/reference/react/useContext) - useContext参考
+- [Context与性能](https://react.dev/learn/passing-data-deeply-with-context) - 性能优化指南
+
+### 推荐阅读
+
+- [React状态管理指南](https://kentcdodds.com/blog/application-state-management-with-react) - 状态管理策略
+- [Context最佳实践](https://kentcdodds.com/blog/how-to-use-react-context-effectively) - 有效使用Context
+- [避免Context陷阱](https://kentcdodds.com/blog/please-stop-using-context-for-state) - 何时避免使用Context
+
+---
+
+[← 上一章：useEffect](useEffect) | [下一章：useReducer →](advanced/useReducer)

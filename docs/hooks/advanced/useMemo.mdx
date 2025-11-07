@@ -1,0 +1,1240 @@
+# useMemo - 计算值记忆化
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+`useMemo`是React提供的性能优化Hook，用于缓存计算结果。当组件中有复杂的计算操作时，使用useMemo可以避免在每次渲染时都重新计算，从而提高性能。在本章中，我们将深入学习useMemo的工作原理、使用场景、性能影响以及最佳实践。
+
+## 本章学习目标
+
+- 理解useMemo的作用和原理
+- 掌握useMemo的语法和参数
+- 学会判断何时使用useMemo
+- 理解依赖数组的作用
+- 掌握useMemo与useCallback的区别
+- 学会在复杂计算中应用useMemo
+- 避免useMemo的误用和过度使用
+- 掌握useMemo在列表优化中的应用
+
+---
+
+## 1. 什么是useMemo？
+
+useMemo是React的Hook，它返回一个记忆化的值。当组件重新渲染时，useMemo只有在依赖项发生变化时才会重新计算，否则返回缓存的值。
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>useMemo</strong>缓存计算结果，避免重复计算昂贵的操作。<br/>
+    <strong>useCallback</strong>缓存函数引用，避免重复创建函数。<br/>
+    <strong>React.memo</strong>缓存组件渲染结果，避免重新渲染。
+  </p>
+</Box>
+
+### 1.1 基本语法
+
+```javascript
+const memoizedValue = useMemo(() => {
+  // 复杂计算
+  return computedValue;
+}, [dependency1, dependency2]);
+```
+
+- 第一个参数：计算函数，返回要缓存的值
+- 第二个参数：依赖数组
+- 返回值：记忆化的值
+
+### 1.2 简单示例
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function MemoExample() {
+  const [count, setCount] = useState(0);
+  const [otherState, setOtherState] = useState(0);
+
+  // 不使用useMemo - 每次渲染都计算
+  const expensiveValue1 = () => {
+    console.log('执行expensiveValue1计算...');
+    let result = 0;
+    for (let i = 0; i < 1000000; i++) {
+      result += i;
+    }
+    return result;
+  };
+
+  // 使用useMemo - 只有count变化时才重新计算
+  const expensiveValue2 = useMemo(() => {
+    console.log('执行expensiveValue2计算...');
+    let result = 0;
+    for (let i = 0; i < 1000000; i++) {
+      result += i;
+    }
+    return result;
+  }, [count]);  // 只有count变化时重新计算
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Other State: {otherState}</p>
+
+      <button onClick={() => setCount(count + 1)}>
+        增加Count (重新计算expensiveValue2)
+      </button>
+      <button onClick={() => setOtherState(otherState + 1)}>
+        增加Other State (不重新计算expensiveValue2)
+      </button>
+
+      <div>
+        <p>Value1 (不使用useMemo): {expensiveValue1()}</p>
+        <p>Value2 (使用useMemo): {expensiveValue2}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. 深入理解useMemo
+
+### 2.1 计算缓存机制
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function CalculationCache() {
+  const [number, setNumber] = useState(5);
+  const [multiplier, setMultiplier] = useState(2);
+
+  // 计算阶乘 - 昂贵操作
+  const factorial = useMemo(() => {
+    console.log('计算阶乘...');
+    if (number < 0) return 0;
+    if (number === 0 || number === 1) return 1;
+
+    let result = 1;
+    for (let i = 2; i <= number; i++) {
+      result *= i;
+    }
+    return result;
+  }, [number]);  // 只有number变化时重新计算
+
+  // 计算结果 - 廉价操作
+  const product = number * multiplier;
+
+  return (
+    <div>
+      <p>数字: {number}</p>
+      <p>倍数: {multiplier}</p>
+      <p>阶乘({number}!): {factorial}</p>
+      <p>乘积: {product}</p>
+
+      <button onClick={() => setNumber(number + 1)}>
+        增加数字 (重新计算阶乘)
+      </button>
+      <button onClick={() => setMultiplier(multiplier + 1)}>
+        增加倍数 (不重新计算阶乘)
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 依赖数组
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function DependencyExamples() {
+  const [a, setA] = useState(0);
+  const [b, setB] = useState(0);
+  const [c, setC] = useState(0);
+
+  // 1. 空依赖数组 - 只计算一次
+  const once = useMemo(() => {
+    console.log('只计算一次');
+    return a + b;  // 使用了a和b，但不在依赖中，不会更新
+  }, []);  // 永不重新计算
+
+  // 2. 单一依赖 - 该依赖变化时重新计算
+  const whenAChanges = useMemo(() => {
+    console.log('当a变化时计算');
+    return a * 10;
+  }, [a]);  // 只有a变化时重新计算
+
+  // 3. 多重依赖 - 任意一个变化都重新计算
+  const whenAorBChanges = useMemo(() => {
+    console.log('当a或b变化时计算');
+    return a + b;
+  }, [a, b]);  // a或b变化时重新计算
+
+  // 4. 计算所有值
+  const allValues = useMemo(() => {
+    console.log('计算所有值');
+    return {
+      once,
+      whenAChanges,
+      whenAorBChanges,
+      c
+    };
+  }, [once, whenAChanges, whenAorBChanges, c]);
+
+  return (
+    <div>
+      <p>a: {a}</p>
+      <p>b: {b}</p>
+      <p>c: {c}</p>
+      <button onClick={() => setA(a + 1)}>A++</button>
+      <button onClick={() => setB(b + 1)}>B++</button>
+      <button onClick={() => setC(c + 1)}>C++</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 使用场景
+
+### 3.1 复杂计算
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function ComplexCalculation() {
+  const [list, setList] = useState([1, 2, 3, 4, 5]);
+  const [filter, setFilter] = useState('');
+
+  // 过滤列表
+  const filteredList = useMemo(() => {
+    console.log('执行过滤计算...');
+    return list.filter(item => item.toString().includes(filter));
+  }, [list, filter]);
+
+  // 计算总和
+  const total = useMemo(() => {
+    console.log('执行总和计算...');
+    return filteredList.reduce((sum, item) => sum + item, 0);
+  }, [filteredList]);
+
+  // 找最大值
+  const max = useMemo(() => {
+    console.log('执行最大值计算...');
+    return filteredList.length > 0
+      ? Math.max(...filteredList)
+      : 0;
+  }, [filteredList]);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="筛选..."
+      />
+
+      <ul>
+        {filteredList.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+
+      <p>总和: {total}</p>
+      <p>最大值: {max}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 对象创建
+
+<Compare>
+
+```jsx
+// ❌ 不使用useMemo - 每次渲染都创建新对象
+function WithoutMemo() {
+  const [firstName, setFirstName] = useState('John');
+  const [lastName, setLastName] = useState('Doe');
+
+  // 每次渲染都创建新对象
+  const user = {
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`
+  };
+
+  return <UserCard user={user} />;
+}
+
+// ✅ 使用useMemo - 只有依赖变化时才创建新对象
+function WithMemo() {
+  const [firstName, setFirstName] = useState('John');
+  const [lastName, setLastName] = useState('Doe');
+
+  const user = useMemo(() => ({
+    firstName,
+    lastName,
+    fullName: `${firstName} ${lastName}`
+  }), [firstName, lastName]);  // 只有名字变化时重新创建
+
+  return <UserCard user={user} />;
+}
+```
+
+</Compare>
+
+### 3.3 列表排序和过滤
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function ProductList() {
+  const [products, setProducts] = useState([
+    { id: 1, name: 'Laptop', price: 999, category: 'Electronics' },
+    { id: 2, name: 'Shirt', price: 29, category: 'Clothing' },
+    { id: 3, name: 'Phone', price: 699, category: 'Electronics' },
+    { id: 4, name: 'Pants', price: 59, category: 'Clothing' }
+  ]);
+
+  const [sortBy, setSortBy] = useState('name');
+  const [filterCategory, setFilterCategory] = useState('all');
+
+  // 过滤产品
+  const filteredProducts = useMemo(() => {
+    return filterCategory === 'all'
+      ? products
+      : products.filter(p => p.category === filterCategory);
+  }, [products, filterCategory]);
+
+  // 排序产品
+  const sortedProducts = useMemo(() => {
+    const sorted = [...filteredProducts];
+    if (sortBy === 'name') {
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sortBy === 'price') {
+      sorted.sort((a, b) => a.price - b.price);
+    }
+    return sorted;
+  }, [filteredProducts, sortBy]);
+
+  // 计算总价
+  const totalPrice = useMemo(() => {
+    return sortedProducts.reduce((sum, product) => sum + product.price, 0);
+  }, [sortedProducts]);
+
+  return (
+    <div>
+      <div>
+        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+          <option value="all">全部分类</option>
+          <option value="Electronics">电子产品</option>
+          <option value="Clothing">服装</option>
+        </select>
+
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          <option value="name">按名称排序</option>
+          <option value="price">按价格排序</option>
+        </select>
+      </div>
+
+      <ul>
+        {sortedProducts.map(product => (
+          <li key={product.id}>
+            {product.name} - ${product.price}
+          </li>
+        ))}
+      </ul>
+
+      <p>总价: ${totalPrice}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 与useCallback的区别
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 区别总结</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>useMemo</strong>缓存计算结果的值<br/>
+    <strong>useCallback</strong>缓存函数本身的引用<br/>
+    本质上：<code>useCallback(fn, deps) = useMemo(() => fn, deps)</code>
+  </p>
+</Box>
+
+### 4.1 对比示例
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo, useCallback } from 'react';
+
+function MemoVsCallback() {
+  const [count, setCount] = useState(0);
+
+  // useMemo缓存计算结果
+  const doubledCount = useMemo(() => {
+    console.log('计算2倍值...');
+    return count * 2;
+  }, [count]);
+
+  // useCallback缓存函数
+  const handleClick = useCallback(() => {
+    console.log('点击了', count);
+  }, [count]);
+
+  // 等价于（但useCallback更语义化）
+  const handleClick2 = useMemo(() => {
+    return () => {
+      console.log('点击了', count);
+    };
+  }, [count]);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>2倍值: {doubledCount}</p>
+      <button onClick={() => setCount(count + 1)}>
+        增加
+      </button>
+      <button onClick={handleClick}>
+        点击
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 实际应用场景
+
+<Compare>
+
+```jsx
+// 场景1：计算派生值 - 使用useMemo
+function DerivedValue() {
+  const [firstName, setFirstName] = useState('John');
+  const [lastName, setLastName] = useState('Doe');
+
+  const fullName = useMemo(() => `${firstName} ${lastName}`, [firstName, lastName]);
+  const nameLength = useMemo(() => fullName.length, [fullName]);
+
+  return <div>{fullName} ({nameLength}个字符)</div>;
+}
+
+// 场景2：传递给子组件的函数 - 使用useCallback
+function CallbackToChild() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = useCallback(() => {
+    console.log('Count:', count);
+  }, [count]);
+
+  return <Child onClick={handleClick} />;
+}
+
+// 场景3：复杂对象 - 使用useMemo
+function ComplexObject() {
+  const [user, setUser] = useState({ name: 'Alice', age: 25 });
+
+  const userInfo = useMemo(() => ({
+    ...user,
+    isAdult: user.age >= 18,
+    displayName: user.name.toUpperCase()
+  }), [user]);
+
+  return <div>{userInfo.displayName}</div>;
+}
+```
+
+</Compare>
+
+---
+
+## 5. 高级用法
+
+### 5.1 缓存对象属性
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function CachedObjectProps() {
+  const [user, setUser] = useState({
+    profile: {
+      personal: {
+        name: 'Alice',
+        age: 25
+      },
+      settings: {
+        theme: 'dark',
+        language: 'zh'
+      }
+    }
+  });
+
+  // 缓存深层属性
+  const name = useMemo(() => user.profile.personal.name, [user]);
+  const age = useMemo(() => user.profile.personal.age, [user]);
+  const theme = useMemo(() => user.profile.settings.theme, [user]);
+
+  // 缓存计算属性
+  const isAdult = useMemo(() => age >= 18, [age]);
+  const profileSummary = useMemo(() => `${name}, ${age}岁`, [name, age]);
+
+  return (
+    <div>
+      <p>姓名: {name}</p>
+      <p>年龄: {age}</p>
+      <p>主题: {theme}</p>
+      <p>是否成年: {isAdult ? '是' : '否'}</p>
+      <p>简介: {profileSummary}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 条件计算
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function ConditionalCalculation() {
+  const [data, setData] = useState([1, 2, 3, 4, 5]);
+  const [operation, setOperation] = useState('sum');  // 'sum' | 'avg' | 'max' | 'min'
+
+  // 条件计算
+  const result = useMemo(() => {
+    console.log(`执行${operation}计算...`);
+    if (data.length === 0) return 0;
+
+    switch (operation) {
+      case 'sum':
+        return data.reduce((a, b) => a + b, 0);
+      case 'avg':
+        return data.reduce((a, b) => a + b, 0) / data.length;
+      case 'max':
+        return Math.max(...data);
+      case 'min':
+        return Math.min(...data);
+      default:
+        return 0;
+    }
+  }, [data, operation]);
+
+  return (
+    <div>
+      <p>数据: {data.join(', ')}</p>
+      <select value={operation} onChange={(e) => setOperation(e.target.value)}>
+        <option value="sum">求和</option>
+        <option value="avg">平均值</option>
+        <option value="max">最大值</option>
+        <option value="min">最小值</option>
+      </select>
+      <p>结果: {result}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 缓存异步数据
+
+<CodeBlock>
+
+```jsx
+import { useState, useEffect, useMemo } from 'react';
+
+function CachedAsyncData() {
+  const [data, setData] = useState([]);
+  const [filter, setFilter] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+
+  // 模拟API调用
+  useEffect(() => {
+    const fetchData = async () => {
+      const response = await fetch('/api/items');
+      const result = await response.json();
+      setData(result);
+    };
+    fetchData();
+  }, []);
+
+  // 缓存处理后的数据
+  const processedData = useMemo(() => {
+    console.log('处理数据...');
+
+    // 过滤
+    let filtered = data;
+    if (filter) {
+      filtered = data.filter(item =>
+        item.name.toLowerCase().includes(filter.toLowerCase())
+      );
+    }
+
+    // 排序
+    const sorted = [...filtered].sort((a, b) => {
+      if (sortBy === 'name') {
+        return a.name.localeCompare(b.name);
+      } else if (sortBy === 'id') {
+        return a.id - b.id;
+      }
+      return 0;
+    });
+
+    return sorted;
+  }, [data, filter, sortBy]);
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+        placeholder="搜索..."
+      />
+      <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+        <option value="name">按名称排序</option>
+        <option value="id">按ID排序</option>
+      </select>
+      <ul>
+        {processedData.map(item => (
+          <li key={item.id}>{item.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 常见错误与陷阱
+
+### 6.1 忘记依赖数组
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 缺少依赖数组
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  const doubled = useMemo(() => {
+    return count * 2;  // 没有依赖数组！
+  });  // 依赖数组缺失
+
+  return <p>{doubled}</p>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const doubled = useMemo(() => {
+    return count * 2;
+  }, [count]);  // 添加依赖数组
+
+  return <p>{doubled}</p>;
+}
+```
+
+</ErrorBox>
+
+### 6.2 依赖数组过多
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 不必要的依赖
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  const doubled = useMemo(() => {
+    return count * 2;
+  }, [count, setCount]);  // setCount是稳定引用，不需要！
+
+  return <p>{doubled}</p>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const doubled = useMemo(() => {
+    return count * 2;
+  }, [count]);  // 只依赖count
+
+  return <p>{doubled}</p>;
+}
+```
+
+</ErrorBox>
+
+### 6.3 过度使用useMemo
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 过度优化
+function OverOptimized() {
+  const [count, setCount] = useState(0);
+
+  const simpleDoubled = useMemo(() => {
+    return count * 2;  // 简单计算不需要useMemo
+  }, [count]);
+
+  return <p>{simpleDoubled}</p>;
+}
+
+// ✅ 简单场景 - 不使用useMemo
+function SimpleCase() {
+  const [count, setCount] = useState(0);
+
+  const doubled = count * 2;  // 直接计算即可
+
+  return <p>{doubled}</p>;
+}
+```
+
+</ErrorBox>
+
+### 6.4 在useMemo中执行副作用
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 在useMemo中执行副作用
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  const doubled = useMemo(() => {
+    console.log('执行副作用');  // 副作用！
+    localStorage.setItem('count', count);  // 副作用！
+    return count * 2;
+  }, [count]);
+
+  return <p>{doubled}</p>;
+}
+
+// ✅ 正确 - 在useEffect中处理副作用
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const doubled = useMemo(() => {
+    return count * 2;  // 只做计算
+  }, [count]);
+
+  useEffect(() => {
+    console.log('count变化了:', count);
+    localStorage.setItem('count', count);
+  }, [count]);  // 在effect中处理副作用
+
+  return <p>{doubled}</p>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 7. 性能考量
+
+### 7.1 何时使用useMemo
+
+<Rules>
+
+1. **昂贵的计算** - 如排序、过滤、大量数据处理
+2. **避免重复渲染** - 当计算结果传递给子组件时
+3. **复杂对象创建** - 当对象作为依赖或props时
+4. **列表优化** - 对列表进行复杂处理时
+
+</Rules>
+
+### 7.2 性能影响
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function PerformanceTest() {
+  const [list, setList] = useState(Array.from({ length: 10000 }, (_, i) => i));
+
+  // 情况1：简单计算 - 不需要useMemo
+  const simpleSum = list.reduce((sum, num) => sum + num, 0);
+
+  // 情况2：昂贵计算 - 使用useMemo
+  const expensiveSum = useMemo(() => {
+    console.log('执行昂贵计算...');
+    return list.reduce((sum, num) => sum + num, 0);
+  }, [list]);
+
+  // 情况3：简单计算但传递给孩子组件 - 可能需要
+  const numberInfo = useMemo(() => ({
+    count: list.length,
+    sum: simpleSum
+  }), [list.length, simpleSum]);
+
+  return (
+    <div>
+      <p>列表长度: {list.length}</p>
+      <p>简单计算: {simpleSum}</p>
+      <p>昂贵计算: {expensiveSum}</p>
+      <p>信息: {JSON.stringify(numberInfo)}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.3 useMemo的代价
+
+<Box style={{ padding: '20px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>⚠️ 性能权衡</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    useMemo本身也有性能开销（记忆化、检查依赖等）。对于<strong>简单计算</strong>，直接计算可能比useMemo更快。只有在计算昂贵或需要缓存时才使用。
+  </p>
+</Box>
+
+---
+
+## 8. 实际应用场景
+
+### 8.1 虚拟化列表
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function VirtualizedList({ items, itemHeight = 50, containerHeight = 400 }) {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  // 计算可见项目
+  const visibleItems = useMemo(() => {
+    const startIndex = Math.floor(scrollTop / itemHeight);
+    const endIndex = Math.min(
+      startIndex + Math.ceil(containerHeight / itemHeight) + 1,
+      items.length
+    );
+
+    return {
+      startIndex,
+      endIndex,
+      visibleItems: items.slice(startIndex, endIndex)
+    };
+  }, [items, scrollTop, itemHeight, containerHeight]);
+
+  // 计算总高度
+  const totalHeight = useMemo(() => {
+    return items.length * itemHeight;
+  }, [items.length, itemHeight]);
+
+  // 计算偏移量
+  const offsetY = useMemo(() => {
+    return visibleItems.startIndex * itemHeight;
+  }, [visibleItems.startIndex, itemHeight]);
+
+  const handleScroll = (e) => {
+    setScrollTop(e.target.scrollTop);
+  };
+
+  return (
+    <div
+      style={{ height: containerHeight, overflow: 'auto' }}
+      onScroll={handleScroll}
+    >
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div
+          style={{
+            transform: `translateY(${offsetY}px)`,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0
+          }}
+        >
+          {visibleItems.visibleItems.map((item, index) => (
+            <div
+              key={visibleItems.startIndex + index}
+              style={{ height: itemHeight }}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.2 依赖项分析
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function DependencyAnalyzer() {
+  const [users, setUsers] = useState([
+    { id: 1, name: 'Alice', role: 'admin', active: true },
+    { id: 2, name: 'Bob', role: 'user', active: false },
+    { id: 3, name: 'Charlie', role: 'admin', active: true }
+  ]);
+
+  // 统计数据
+  const stats = useMemo(() => {
+    const total = users.length;
+    const active = users.filter(u => u.active).length;
+    const admins = users.filter(u => u.role === 'admin').length;
+    const activeAdmins = users.filter(u => u.active && u.role === 'admin').length;
+
+    return {
+      total,
+      active,
+      inactive: total - active,
+      admins,
+      regularUsers: total - admins,
+      activeAdmins,
+      activeRegularUsers: active - activeAdmins
+    };
+  }, [users]);
+
+  // 格式化统计信息
+  const formattedStats = useMemo(() => {
+    return `总计: ${stats.total}, 活跃: ${stats.active}, 管理员: ${stats.admins}`;
+  }, [stats]);
+
+  return (
+    <div>
+      <ul>
+        {users.map(user => (
+          <li key={user.id}>
+            {user.name} - {user.role} - {user.active ? '活跃' : '非活跃'}
+          </li>
+        ))}
+      </ul>
+
+      <div>
+        <h3>统计信息</h3>
+        <p>{formattedStats}</p>
+        <p>活跃用户: {stats.activeRegularUsers}</p>
+        <p>活跃管理员: {stats.activeAdmins}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.3 计算图表数据
+
+<CodeBlock>
+
+```jsx
+import { useState, useMemo } from 'react';
+
+function ChartDataGenerator() {
+  const [dataPoints, setDataPoints] = useState(50);
+  const [multiplier, setMultiplier] = useState(1);
+
+  // 生成数据
+  const rawData = useMemo(() => {
+    return Array.from({ length: dataPoints }, (_, i) => ({
+      x: i,
+      y: Math.sin(i * 0.1) * 100 * multiplier
+    }));
+  }, [dataPoints, multiplier]);
+
+  // 计算统计信息
+  const stats = useMemo(() => {
+    const values = rawData.map(d => d.y);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+
+    return { min, max, avg };
+  }, [rawData]);
+
+  // 缩放数据
+  const scaledData = useMemo(() => {
+    const range = stats.max - stats.min;
+    if (range === 0) return rawData;
+
+    return rawData.map(point => ({
+      x: point.x,
+      y: ((point.y - stats.min) / range) * 100
+    }));
+  }, [rawData, stats]);
+
+  return (
+    <div>
+      <div>
+        <input
+          type="range"
+          min="10"
+          max="200"
+          value={dataPoints}
+          onChange={(e) => setDataPoints(Number(e.target.value))}
+        />
+        数据点: {dataPoints}
+      </div>
+      <div>
+        <input
+          type="range"
+          min="0.1"
+          max="3"
+          step="0.1"
+          value={multiplier}
+          onChange={(e) => setMultiplier(Number(e.target.value))}
+        />
+        乘数: {multiplier}
+      </div>
+
+      <div>
+        <h3>统计</h3>
+        <p>最小值: {stats.min.toFixed(2)}</p>
+        <p>最大值: {stats.max.toFixed(2)}</p>
+        <p>平均值: {stats.avg.toFixed(2)}</p>
+      </div>
+
+      <svg width="400" height="200">
+        {scaledData.map((point, index) => (
+          <circle
+            key={index}
+            cx={point.x * 4}
+            cy={200 - point.y}
+            r="2"
+            fill="blue"
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 实践练习
+
+### 练习1：列表搜索和排序
+
+创建一个可搜索、可排序的产品列表。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 产品列表（包含名称、价格、分类、库存）
+- 搜索框（搜索产品名称）
+- 排序（按价格、名称、库存）
+- 分类筛选
+- 统计信息（总产品数、平均价格、最高价格等）
+
+**要求**：
+- 使用useMemo缓存过滤结果
+- 使用useMemo缓存排序结果
+- 使用useMemo计算统计信息
+- 性能优化，避免重复计算
+
+**提示**：
+- 分离过滤和排序逻辑
+- 统计信息依赖过滤后的数据
+- 使用useMemo优化每个计算
+
+</Expandable>
+
+### 练习2：数据可视化
+
+创建一个简单的数据可视化组件，支持缩放和过滤。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 随机数据生成
+- 图表数据处理（求和、平均值、分组）
+- 缩放控制（放大、缩小、重置）
+- 区间筛选（显示指定范围数据）
+- 导出功能
+
+**要求**：
+- 使用useMemo缓存数据处理结果
+- 使用useMemo缓存图表绘制数据
+- 避免在渲染中执行昂贵计算
+- 优化大量数据的处理
+
+**提示**：
+- 区分原始数据和处理数据
+- 图表渲染使用缓存的数据
+- 缩放和筛选作为依赖
+
+</Expandable>
+
+### 练习3：复杂表单计算
+
+创建一个订单表单，实时计算总价、折扣、税费等。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 商品列表（单价、数量、折扣）
+- 优惠券输入
+- 税率设置
+- 实时计算（小计、折扣、税费、总计）
+- 满减活动（满X减Y）
+- 包邮门槛
+
+**要求**：
+- 使用useMemo计算每个字段
+- 避免依赖循环
+- 分离计算逻辑
+- 优化计算性能
+
+**提示**：
+- 小计 = 单价 × 数量
+- 折扣后 = 小计 × (1 - 折扣率)
+- 税费 = 折扣后 × 税率
+- 总计 = 折扣后 + 税费 - 优惠
+
+</Expandable>
+
+### 练习4：树形结构操作
+
+创建一个树形组件，支持展开/折叠、搜索、统计。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 树形数据结构
+- 展开/折叠节点
+- 搜索节点（高亮匹配）
+- 统计信息（总节点数、叶子节点数、深度等）
+- 路径追踪（显示当前选中节点路径）
+
+**要求**：
+- 使用useMemo缓存树结构
+- 使用useMemo缓存搜索结果
+- 使用useMemo计算统计信息
+- 优化大量节点的渲染
+
+**提示**：
+- 树结构扁平化处理
+- 搜索使用filter和map
+- 统计依赖节点数量
+- 路径计算优化
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ useMemo缓存计算结果，避免重复计算
+- ✅ 只有依赖项变化时才重新计算
+- ✅ 适用于昂贵的计算操作
+- ✅ 依赖数组必须正确列出所有依赖
+- ✅ 避免在useMemo中执行副作用
+- ✅ 不要过度使用useMemo，简单计算直接计算即可
+- ✅ 与useCallback、React.memo配合使用效果更好
+- ✅ 性能优化需权衡useMemo的开销和收益
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **只在需要时使用** - 昂贵计算、避免重复渲染、复杂对象
+2. **正确列出依赖** - 所有用到的变量都要在依赖数组中
+3. **保持计算纯函数** - 不执行副作用，只做计算
+4. **分离计算逻辑** - 复杂的计算逻辑可以提取到函数中
+5. **性能测试** - 实际测试useMemo带来的性能提升
+6. **可读性优先** - 不要为了性能牺牲代码可读性
+
+</BestPractices>
+
+### 性能优化策略
+
+**何时使用**：
+- 数据量大的列表排序和过滤
+- 复杂的数学计算
+- 昂贵的API数据处理
+- 需要缓存的对象创建
+
+**何时不用**：
+- 简单的算术运算
+- 字符串拼接
+- 布尔值计算
+- 性能开销大于收益时
+
+### 下一步学习
+
+现在你已经掌握了useMemo，接下来我们将学习：
+
+1. **[自定义Hooks](custom-hooks)** - 创建可复用的状态逻辑
+2. **[性能优化](../performance/optimization)** - 综合性能优化策略
+3. **[实际项目应用](../projects)** - 综合运用所有Hooks
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [useMemo API参考](https://react.dev/reference/react/useMemo) - React官方文档
+- [性能优化](https://react.dev/learn/render-and-commit) - 渲染和性能
+- [useMemo指南](https://react.dev/reference/react/useMemo) - 何时使用useMemo
+
+### 推荐阅读
+
+- [React性能优化](https://kentcdodds.com/blog/application-state-management-with-react) - 状态管理和性能
+- [useMemo反模式](https://kentcdodds.com/blog/usememo-and-usecallback) - 避免误用
+- [性能优化实战](https://react.dev/learn/rendering-lists) - 列表渲染优化
+
+---
+
+[← 上一章：useCallback](useCallback) | [下一章：自定义Hooks →](custom-hooks)

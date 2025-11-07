@@ -1,0 +1,1058 @@
+# useState - 状态管理基础
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+`useState`是React Hooks系统中最基础也是最重要的Hook，它为函数组件提供了状态管理能力。在本章中，我们将深入学习useState的用法、最佳实践和常见陷阱。
+
+## 本章学习目标
+
+- 理解useState的基本语法和作用
+- 掌握状态更新的各种方式
+- 学会使用函数式状态更新
+- 理解状态更新的异步特性
+- 掌握多个状态的管理方法
+- 避免常见的useState使用错误
+
+---
+
+## 1. 什么是useState？
+
+useState是React提供的Hook，它允许你在函数组件中添加状态。在引入Hooks之前，只有类组件才能拥有状态，而useState让函数组件也拥有了"记忆"能力。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>状态（State）</strong>是组件内部的私有数据，当状态改变时，组件会重新渲染以反映这些变化。
+  </p>
+</Box>
+
+### 1.1 基本语法
+
+```javascript
+const [state, setState] = useState(initialValue);
+```
+
+- `state`: 当前状态值
+- `setState`: 更新状态的函数
+- `initialValue`: 状态的初始值
+
+### 1.2 简单示例
+
+<CodeBlock>
+
+```jsx
+import { useState } from 'react';
+
+function Counter() {
+  // 创建一个名为count的状态，初始值为0
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>当前计数: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        点击+1
+      </button>
+      <button onClick={() => setCount(count - 1)}>
+        点击-1
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. 基础用法
+
+### 2.1 不同类型的初始值
+
+useState可以接受各种类型的初始值：
+
+<CodeBlock>
+
+```jsx
+import { useState } from 'react';
+
+function StateExamples() {
+  // 数字
+  const [count, setCount] = useState(0);
+
+  // 字符串
+  const [name, setName] = useState('Alice');
+
+  // 布尔值
+  const [isVisible, setIsVisible] = useState(true);
+
+  // 对象
+  const [user, setUser] = useState({ name: 'Bob', age: 25 });
+
+  // 数组
+  const [items, setItems] = useState(['Item 1', 'Item 2']);
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <p>姓名: {name}</p>
+      <p>可见: {isVisible ? '是' : '否'}</p>
+      <p>用户: {user.name}, {user.age}岁</p>
+      <ul>
+        {items.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 事件处理
+
+<CodeBlock>
+
+```jsx
+import { useState } from 'react';
+
+function InputExample() {
+  const [inputValue, setInputValue] = useState('');
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        placeholder="输入一些文字..."
+      />
+      <p>你输入了: {inputValue}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 切换状态
+
+<CodeBlock>
+
+```jsx
+import { useState } from 'react';
+
+function ToggleExample() {
+  const [isOn, setIsOn] = useState(false);
+
+  return (
+    <button
+      onClick={() => setIsOn(!isOn)}
+      style={{
+        backgroundColor: isOn ? '#4caf50' : '#ccc',
+        color: 'white',
+        padding: '10px 20px',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer'
+      }}
+    >
+      {isOn ? '开' : '关'}
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 状态更新
+
+### 3.1 直接更新
+
+最简单的状态更新方式，直接传入新值：
+
+<CodeBlock>
+
+```jsx
+function DirectUpdate() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(count + 1);
+  };
+
+  const decrement = () => {
+    setCount(count - 1);
+  };
+
+  const reset = () => {
+    setCount(0);
+  };
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <button onClick={increment}>+1</button>
+      <button onClick={decrement}>-1</button>
+      <button onClick={reset}>重置</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 函数式更新
+
+当新状态依赖于前一个状态时，应该使用函数式更新：
+
+<CodeBlock>
+
+```jsx
+function FunctionalUpdate() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(prevCount => prevCount + 1);
+  };
+
+  const decrement = () => {
+    setCount(prevCount => prevCount - 1);
+  };
+
+  const addFive = () => {
+    // 函数式更新确保每次都基于最新状态
+    setCount(prevCount => prevCount + 5);
+  };
+
+  return (
+    <div>
+      <p>计数: {count}</p>
+      <button onClick={increment}>+1</button>
+      <button onClick={decrement}>-1</button>
+      <button onClick={addFive}>+5</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+<Box style={{ padding: '20px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    当状态更新<strong>依赖于前一个状态值</strong>时，<strong>必须</strong>使用函数式更新以避免闭包陷阱。
+  </p>
+</Box>
+
+### 3.3 复杂对象更新
+
+更新对象状态时，需要创建新对象而不是直接修改原对象：
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改对象
+function BadExample() {
+  const [user, setUser] = useState({ name: 'Alice', age: 25 });
+
+  const updateAge = () => {
+    user.age = 26;  // 直接修改！
+    setUser(user);  // React不会检测到变化
+  };
+
+  return <button onClick={updateAge}>更新年龄</button>;
+}
+
+// ✅ 正确 - 创建新对象
+function GoodExample() {
+  const [user, setUser] = useState({ name: 'Alice', age: 25 });
+
+  const updateAge = () => {
+    setUser({ ...user, age: 26 });  // 使用展开运算符
+  };
+
+  return <button onClick={updateAge}>更新年龄</button>;
+}
+```
+
+</ErrorBox>
+
+### 3.4 数组状态更新
+
+<Compare>
+
+```jsx
+// ❌ 添加数组项 - 错误方式
+function BadArrayExample() {
+  const [items, setItems] = useState(['A', 'B']);
+
+  const addItem = () => {
+    items.push('C');  // 直接修改数组！
+    setItems(items);  // React不会检测到变化
+  };
+
+  return <button onClick={addItem}>添加</button>;
+}
+
+// ✅ 添加数组项 - 正确方式
+function GoodArrayExample() {
+  const [items, setItems] = useState(['A', 'B']);
+
+  const addItem = () => {
+    setItems([...items, 'C']);  // 创建新数组
+  };
+
+  const removeItem = (index) => {
+    setItems(items.filter((_, i) => i !== index));
+  };
+
+  const updateItem = (index, newValue) => {
+    setItems(items.map((item, i) => i === index ? newValue : item));
+  };
+
+  return (
+    <div>
+      <button onClick={addItem}>添加</button>
+      <ul>
+        {items.map((item, index) => (
+          <li key={index}>
+            {item}
+            <button onClick={() => updateItem(index, item + '!')}>
+              更新
+            </button>
+            <button onClick={() => removeItem(index)}>
+              删除
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</Compare>
+
+---
+
+## 4. 多个状态管理
+
+### 4.1 分别定义状态
+
+对于不同类型的状态，建议分别定义：
+
+<CodeBlock>
+
+```jsx
+function SeparateStates() {
+  const [name, setName] = useState('');
+  const [age, setAge] = useState(0);
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log({ name, age, email });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        placeholder="姓名"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        type="number"
+        placeholder="年龄"
+        value={age}
+        onChange={(e) => setAge(Number(e.target.value))}
+      />
+      <input
+        type="email"
+        placeholder="邮箱"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 使用对象管理相关状态
+
+当状态之间有逻辑关联时，可以使用单一对象：
+
+<CodeBlock>
+
+```jsx
+function ObjectState() {
+  const [user, setUser] = useState({
+    name: '',
+    age: 0,
+    email: ''
+  });
+
+  const updateField = (field, value) => {
+    setUser(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(user);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        placeholder="姓名"
+        value={user.name}
+        onChange={(e) => updateField('name', e.target.value)}
+      />
+      <input
+        type="number"
+        placeholder="年龄"
+        value={user.age}
+        onChange={(e) => updateField('age', Number(e.target.value))}
+      />
+      <input
+        type="email"
+        placeholder="邮箱"
+        value={user.email}
+        onChange={(e) => updateField('email', e.target.value)}
+      />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 状态初始化
+
+### 5.1 惰性初始化
+
+对于复杂的初始状态计算，使用惰性初始化避免每次渲染都计算：
+
+<CodeBlock>
+
+```jsx
+function LazyInitialization() {
+  // ❌ 每次渲染都执行
+  // const [state, setState] = useState(expensiveComputation());
+
+  // ✅ 只在初次渲染时执行
+  const [state, setState] = useState(() => {
+    return expensiveComputation();
+  });
+
+  const expensiveComputation = () => {
+    console.log('执行复杂计算...');
+    // 模拟复杂计算
+    return 100;
+  };
+
+  return (
+    <div>
+      <p>状态值: {state}</p>
+      <button onClick={() => setState(state + 1)}>更新</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 从localStorage初始化
+
+<CodeBlock>
+
+```jsx
+function LocalStorageState() {
+  const [theme, setTheme] = useState(() => {
+    // 从localStorage读取初始值
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme || 'light';
+  });
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const newTheme = prev === 'light' ? 'dark' : 'light';
+      // 保存到localStorage
+      localStorage.setItem('theme', newTheme);
+      return newTheme;
+    });
+  };
+
+  return (
+    <button onClick={toggleTheme}>
+      当前主题: {theme}，点击切换
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 实际应用场景
+
+### 6.1 计数器应用
+
+<CodeBlock>
+
+```jsx
+function AdvancedCounter() {
+  const [count, setCount] = useState(0);
+  const [step, setStep] = useState(1);
+
+  const increment = () => setCount(prev => prev + step);
+  const decrement = () => setCount(prev => prev - step);
+  const reset = () => setCount(0);
+
+  return (
+    <div>
+      <h2>计数器</h2>
+      <p>当前计数: {count}</p>
+      <div>
+        <label>
+          步长:
+          <input
+            type="number"
+            value={step}
+            onChange={(e) => setStep(Number(e.target.value))}
+            style={{ width: '60px', marginLeft: '10px' }}
+          />
+        </label>
+      </div>
+      <button onClick={increment}>+{step}</button>
+      <button onClick={decrement}>-{step}</button>
+      <button onClick={reset}>重置</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 待办事项列表
+
+<CodeBlock>
+
+```jsx
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+
+  const addTodo = () => {
+    if (inputValue.trim()) {
+      setTodos(prev => [
+        ...prev,
+        {
+          id: Date.now(),
+          text: inputValue,
+          completed: false
+        }
+      ]);
+      setInputValue('');
+    }
+  };
+
+  const toggleTodo = (id) => {
+    setTodos(prev =>
+      prev.map(todo =>
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
+      )
+    );
+  };
+
+  const deleteTodo = (id) => {
+    setTodos(prev => prev.filter(todo => todo.id !== id));
+  };
+
+  return (
+    <div>
+      <h2>待办事项</h2>
+      <div>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="添加新任务..."
+        />
+        <button onClick={addTodo}>添加</button>
+      </div>
+      <ul>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              cursor: 'pointer'
+            }}
+            onClick={() => toggleTodo(todo.id)}
+          >
+            {todo.text}
+            <button onClick={(e) => {
+              e.stopPropagation();
+              deleteTodo(todo.id);
+            }}>
+              删除
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 表单处理
+
+<CodeBlock>
+
+```jsx
+function ContactForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    // 模拟API调用
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    console.log('提交的数据:', formData);
+    setIsSubmitting(false);
+    setFormData({ name: '', email: '', message: '' });
+    alert('提交成功！');
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          姓名:
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          邮箱:
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            required
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          留言:
+          <textarea
+            name="message"
+            value={formData.message}
+            onChange={handleChange}
+            rows="4"
+            required
+          />
+        </label>
+      </div>
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? '提交中...' : '提交'}
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 常见错误与陷阱
+
+### 7.1 忘记使用setter函数
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改状态
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    count++;  // 错误！不能直接修改状态
+    setCount(count);  // 这不会更新UI
+  };
+
+  return <button onClick={increment}>+1</button>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(count + 1);
+  };
+
+  return <button onClick={increment}>+1</button>;
+}
+```
+
+</ErrorBox>
+
+### 7.2 闭包陷阱
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 状态更新延迟
+function DelayedUpdate() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(count + 1);
+    setCount(count + 1);  // 这不会增加到2！
+  };
+
+  return <button onClick={increment}>+2</button>;
+}
+
+// ✅ 正确 - 使用函数式更新
+function CorrectUpdate() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(prev => prev + 1);
+    setCount(prev => prev + 1);  // 这会增加到2
+  };
+
+  return <button onClick={increment}>+2</button>;
+}
+```
+
+</ErrorBox>
+
+### 7.3 在条件语句中调用useState
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - Hook在条件语句中
+function BadExample(condition) {
+  if (condition) {
+    const [state, setState] = useState(0);  // 错误！
+  }
+
+  return <div>...</div>;
+}
+
+// ✅ 正确 - Hook在顶层
+function GoodExample(condition) {
+  const [state, setState] = useState(0);  // 始终调用
+
+  if (condition) {
+    // 可以在条件中使用状态
+    console.log(state);
+  }
+
+  return <div>...</div>;
+}
+```
+
+</ErrorBox>
+
+### 7.4 数组和对象的状态更新
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 修改原数组/对象
+function BadArrayUpdate() {
+  const [arr, setArr] = useState([1, 2, 3]);
+
+  const addItem = () => {
+    arr.push(4);  // 修改原数组
+    setArr(arr);  // React不会重新渲染
+  };
+
+  return <button onClick={addItem}>添加</button>;
+}
+
+// ✅ 正确 - 创建新数组
+function GoodArrayUpdate() {
+  const [arr, setArr] = useState([1, 2, 3]);
+
+  const addItem = () => {
+    setArr([...arr, 4]);  // 创建新数组
+  };
+
+  return <button onClick={addItem}>添加</button>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 8. 性能优化
+
+### 8.1 减少不必要的状态
+
+<Compare>
+
+```jsx
+// ❌ 不必要 - 可以从其他状态计算得出
+function UnnecessaryState() {
+  const [firstName, setFirstName] = useState('John');
+  const [lastName, setLastName] = useState('Doe');
+  const [fullName, setFullName] = useState('John Doe');  // 不必要
+
+  // 需要手动同步更新
+  const updateName = (newFirst, newLast) => {
+    setFirstName(newFirst);
+    setLastName(newLast);
+    setFullName(`${newFirst} ${newLast}`);
+  };
+
+  return <div>{fullName}</div>;
+}
+
+// ✅ 更好 - 计算属性
+function DerivedState() {
+  const [firstName, setFirstName] = useState('John');
+  const [lastName, setLastName] = useState('Doe');
+
+  // 派生状态 - 不需要useState
+  const fullName = `${firstName} ${lastName}`;
+
+  const updateName = (newFirst, newLast) => {
+    setFirstName(newFirst);
+    setLastName(newLast);
+  };
+
+  return <div>{fullName}</div>;
+}
+```
+
+</Compare>
+
+### 8.2 批量更新
+
+<CodeBlock>
+
+```jsx
+function BatchedUpdates() {
+  const [count, setCount] = useState(0);
+  const [flag, setFlag] = useState(false);
+
+  const handleClick = () => {
+    // React 18中，这些更新会被批量处理
+    setCount(c => c + 1);  // 计划更新: 1
+    setFlag(f => !f);      // 计划更新: true
+    // React会只重新渲染一次
+  };
+
+  return (
+    <div>
+      <h1 style={{ color: flag ? 'blue' : 'black' }}>{count}</h1>
+      <button onClick={handleClick}>
+        点击
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 实践练习
+
+### 练习1：温度转换器
+
+创建一个温度转换器，支持摄氏度、华氏度和开尔文之间的转换。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 三个输入框：摄氏度、华氏度、开尔文
+- 输入任何一个值，其他两个自动更新
+- 使用统一的温度状态对象
+- 格式化显示小数点后两位
+
+**提示**：
+- 使用对象状态管理所有温度
+- 温度转换公式：
+  - C → F: F = C × 9/5 + 32
+  - C → K: K = C + 273.15
+  - F → C: C = (F - 32) × 5/9
+
+</Expandable>
+
+### 练习2：颜色选择器
+
+创建一个颜色选择器，显示RGB、HEX和HSL值。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 颜色选择器（input type="color"）
+- 显示RGB值（R: 0-255, G: 0-255, B: 0-255）
+- 显示HEX值（#RRGGBB）
+- 显示HSL值（色相、饱和度、亮度）
+- 可以通过RGB滑块调整颜色
+
+**提示**：
+- 需要RGB到HEX、HSL的转换函数
+- 使用useState管理RGB值
+- 根据RGB计算其他格式
+
+</Expandable>
+
+### 练习3：购物车
+
+创建一个简单的购物车应用。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 商品列表（名称、价格）
+- 添加到购物车
+- 购物车商品数量调整
+- 删除商品
+- 总价计算
+- 清空购物车
+
+**数据结构**：
+```javascript
+// 商品
+{ id, name, price }
+
+// 购物车项
+{ productId, quantity }
+```
+
+**提示**：
+- 使用数组状态管理购物车
+- 使用useState的函数式更新避免闭包问题
+- 计算总价的派生状态
+
+</Expandable>
+
+### 练习4：多步骤表单
+
+创建一个多步骤的注册表单。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 步骤1：个人信息（姓名、邮箱）
+- 步骤2：账户设置（用户名、密码）
+- 步骤3：确认信息
+- 上一步/下一步按钮
+- 进度条显示
+- 表单验证
+
+**提示**：
+- 使用步骤状态（0, 1, 2）
+- 每个步骤的表单数据分开管理
+- 最后一步显示所有信息供确认
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ useState为函数组件提供状态管理能力
+- ✅ 使用`[state, setState] = useState(initialValue)`语法
+- ✅ 状态更新触发组件重新渲染
+- ✅ 当新状态依赖前一个状态时，使用函数式更新
+- ✅ 使用展开运算符更新对象和数组状态
+- ✅ 复杂初始状态可以使用惰性初始化
+- ✅ 避免直接修改状态，而是创建新值
+- ✅ 多个相关状态可以使用对象管理
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **优先使用函数式更新** - 当状态更新依赖前一个值时
+2. **保持状态扁平化** - 避免深层嵌套的对象
+3. **合理拆分状态** - 相关状态放一起，不相关状态分开
+4. **使用派生状态** - 从其他状态计算得出的值不需要用useState
+5. **惰性初始化** - 复杂初始计算只在初次渲染时执行
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了useState，接下来我们将学习：
+
+1. **[useEffect](useEffect)** - 理解副作用和生命周期
+2. **[useContext](useContext)** - 学习跨组件状态共享
+3. **[useReducer](advanced/useReducer)** - 掌握复杂状态管理
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [useState API参考](https://react.dev/reference/react/useState) - React官方文档
+- [Hook规则](https://react.dev/reference/react) - Hook使用规则
+- [State更新详解](https://react.dev/learn/state-as-a-snapshot) - 状态快照机制
+
+### 推荐阅读
+
+- [React Hooks完全指南](https://legacy.reactjs.org/docs/hooks-intro.html) - Hooks设计思想
+- [函数式更新详解](https://react.dev/reference/react/useState#updating-state-based-on-the-previous-state) - 状态更新机制
+
+---
+
+[← 上一章：基础入门总结](foundations/forms) | [下一章：useEffect →](useEffect)
