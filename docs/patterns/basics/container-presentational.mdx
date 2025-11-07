@@ -1,0 +1,1910 @@
+# 容器-展示模式 (Container-Presenter) - 关注点分离
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+容器-展示模式（Container-Presenter Pattern）是React中一个经典的设计模式，它将组件的逻辑（数据获取、状态管理）与UI展示分离。在Hooks出现之前，这个模式被广泛用于管理复杂应用的架构。虽然现在Hooks提供了更好的替代方案，但理解这一模式对于构建大型应用仍然非常重要。在本章中，我们将深入探讨容器-展示模式的概念、实现方式、优势和最佳实践。
+
+## 本章学习目标
+
+- 理解容器-展示模式的核心概念
+- 掌握如何分离数据逻辑和UI逻辑
+- 学会实现可复用的展示组件
+- 理解容器组件的职责
+- 掌握状态提升和属性传递
+- 对比容器-展示模式与Hooks的差异
+- 理解何时使用这种模式
+- 学会避免常见陷阱
+- 掌握现代React架构中的替代方案
+
+---
+
+## 1. 什么是容器-展示模式？
+
+容器-展示模式是一种将组件拆分为两部分的设计模式：
+- **容器组件（Container）**：负责数据获取、状态管理、副作用处理
+- **展示组件（Presenter）**：负责UI渲染、接收props、呈现数据
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>关注点分离</strong>：容器组件处理"如何工作"，展示组件处理"看起来如何"。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 容器组件 - 负责数据获取和状态管理
+class UserListContainer extends React.Component {
+  state = {
+    users: [],
+    loading: false,
+    error: null
+  };
+
+  componentDidMount() {
+    this.loadUsers();
+  }
+
+  loadUsers = async () => {
+    this.setState({ loading: true });
+    try {
+      const users = await fetchUsers();
+      this.setState({ users, loading: false });
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
+  };
+
+  render() {
+    return (
+      <UserListPresenter
+        users={this.state.users}
+        loading={this.state.loading}
+        error={this.state.error}
+        onRefresh={this.loadUsers}
+      />
+    );
+  }
+}
+
+// 展示组件 - 负责UI渲染
+function UserListPresenter({ users, loading, error, onRefresh }) {
+  if (loading) return <div>Loading users...</div>;
+  if (error) return <div>Error loading users</div>;
+
+  return (
+    <div>
+      <button onClick={onRefresh}>Refresh</button>
+      <ul>
+        {users.map(user => (
+          <li key={user.id}>{user.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// 使用
+<UserListContainer />
+```
+
+</CodeBlock>
+
+### 1.1 核心理念
+
+<Grid>
+
+<div>
+  <h4>容器组件职责</h4>
+  <ul>
+    <li>📦 数据获取（API调用）</li>
+    <li>📦 状态管理</li>
+    <li>📦 副作用处理（订阅、计时器）</li>
+    <li>📦 事件处理</li>
+    <li>📦 业务逻辑</li>
+    <li>📦 与其他系统交互</li>
+  </ul>
+</div>
+
+<div>
+  <h4>展示组件职责</h4>
+  <ul>
+    <li>🎨 UI渲染</li>
+    <li>🎨 样式处理</li>
+    <li>🎨 接收props</li>
+    <li>🎨 布局管理</li>
+    <li>🎨 用户交互（简单事件）</li>
+    <li>🎨 可访问性</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 模式优势
+
+<CodeBlock>
+
+```jsx
+// ✅ 优势
+1. 关注点分离 - 逻辑与UI解耦
+2. 可复用性 - 展示组件可复用
+3. 可测试性 - 独立测试逻辑和UI
+4. 可维护性 - 修改逻辑不影响UI
+5. 团队协作 - 前后端分工明确
+6. 性能优化 - 可精确控制渲染
+7. 易于理解 - 组件职责清晰
+
+// 适用场景
+- 复杂数据获取
+- 多个组件共享状态
+- 需要控制渲染时机
+- 大型项目架构
+```
+
+</CodeBlock>
+
+---
+
+## 2. 基础实现
+
+### 2.1 类组件容器 + 函数组件展示
+
+<CodeBlock>
+
+```jsx
+// 容器组件 - 类组件
+class TodoListContainer extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      todos: [],
+      filter: 'all'
+    };
+  }
+
+  componentDidMount() {
+    this.loadTodos();
+  }
+
+  loadTodos = async () => {
+    try {
+      const todos = await fetchTodos();
+      this.setState({ todos });
+    } catch (error) {
+      console.error('Failed to load todos', error);
+    }
+  };
+
+  addTodo = async (text) => {
+    const newTodo = await createTodo(text);
+    this.setState(prev => ({
+      todos: [...prev.todos, newTodo]
+    }));
+  };
+
+  toggleTodo = async (id) => {
+    const updatedTodo = await updateTodo(id);
+    this.setState(prev => ({
+      todos: prev.todos.map(todo =>
+        todo.id === id ? updatedTodo : todo
+      )
+    }));
+  };
+
+  deleteTodo = async (id) => {
+    await deleteTodo(id);
+    this.setState(prev => ({
+      todos: prev.todos.filter(todo => todo.id !== id)
+    }));
+  };
+
+  setFilter = (filter) => {
+    this.setState({ filter });
+  };
+
+  render() {
+    const { todos, filter } = this.state;
+
+    const filteredTodos = todos.filter(todo => {
+      if (filter === 'active') return !todo.completed;
+      if (filter === 'completed') return todo.completed;
+      return true;
+    });
+
+    return (
+      <TodoListPresenter
+        todos={filteredTodos}
+        filter={filter}
+        onAdd={this.addTodo}
+        onToggle={this.toggleTodo}
+        onDelete={this.deleteTodo}
+        onFilterChange={this.setFilter}
+      />
+    );
+  }
+}
+
+// 展示组件 - 函数组件
+function TodoListPresenter({
+  todos,
+  filter,
+  onAdd,
+  onToggle,
+  onDelete,
+  onFilterChange
+}) {
+  const [newTodo, setNewTodo] = React.useState('');
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (newTodo.trim()) {
+      onAdd(newTodo.trim());
+      setNewTodo('');
+    }
+  };
+
+  return (
+    <div className="todo-list">
+      <h1>Todo List</h1>
+
+      <form onSubmit={handleAdd}>
+        <input
+          value={newTodo}
+          onChange={(e) => setNewTodo(e.target.value)}
+          placeholder="Add a new todo..."
+        />
+        <button type="submit">Add</button>
+      </form>
+
+      <div className="filter-buttons">
+        <button
+          onClick={() => onFilterChange('all')}
+          className={filter === 'all' ? 'active' : ''}
+        >
+          All
+        </button>
+        <button
+          onClick={() => onFilterChange('active')}
+          className={filter === 'active' ? 'active' : ''}
+        >
+          Active
+        </button>
+        <button
+          onClick={() => onFilterChange('completed')}
+          className={filter === 'completed' ? 'active' : ''}
+        >
+          Completed
+        </button>
+      </div>
+
+      <ul className="todos">
+        {todos.map(todo => (
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            onToggle={onToggle}
+            onDelete={onDelete}
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TodoItem({ todo, onToggle, onDelete }) {
+  return (
+    <li className={todo.completed ? 'completed' : ''}>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={() => onToggle(todo.id)}
+      />
+      <span>{todo.text}</span>
+      <button onClick={() => onDelete(todo.id)}>Delete</button>
+    </li>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 函数组件容器 + Hooks
+
+<CodeBlock>
+
+```jsx
+// 容器组件 - 使用Hooks
+function UserProfileContainer({ userId }) {
+  const [user, setUser] = React.useState(null);
+  const [posts, setPosts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    loadUserData();
+  }, [userId]);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      const [userData, postsData] = await Promise.all([
+        fetchUser(userId),
+        fetchUserPosts(userId)
+      ]);
+      setUser(userData);
+      setPosts(postsData);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProfile = async (updates) => {
+    try {
+      const updatedUser = await updateUser(userId, updates);
+      setUser(updatedUser);
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  const deletePost = async (postId) => {
+    try {
+      await deleteUserPost(userId, postId);
+      setPosts(prev => prev.filter(post => post.id !== postId));
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  return (
+    <UserProfilePresenter
+      user={user}
+      posts={posts}
+      loading={loading}
+      error={error}
+      onUpdate={updateProfile}
+      onDeletePost={deletePost}
+      onRefresh={loadUserData}
+    />
+  );
+}
+
+// 展示组件 - 纯函数
+function UserProfilePresenter({
+  user,
+  posts,
+  loading,
+  error,
+  onUpdate,
+  onDeletePost,
+  onRefresh
+}) {
+  if (loading) return <div className="loading">Loading profile...</div>;
+  if (error) return <div className="error">{error.message}</div>;
+  if (!user) return <div>No user found</div>;
+
+  return (
+    <div className="user-profile">
+      <div className="profile-header">
+        <img src={user.avatar} alt={user.name} />
+        <h1>{user.name}</h1>
+        <p>{user.email}</p>
+        <button onClick={onRefresh}>Refresh</button>
+      </div>
+
+      <div className="profile-posts">
+        <h2>Posts ({posts.length})</h2>
+        {posts.length === 0 ? (
+          <p>No posts yet</p>
+        ) : (
+          <ul>
+            {posts.map(post => (
+              <li key={post.id}>
+                <h3>{post.title}</h3>
+                <p>{post.content}</p>
+                <button onClick={() => onDeletePost(post.id)}>
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 复用容器模式
+
+<CodeBlock>
+
+```jsx
+// 高阶容器组件
+function withData(WrappedComponent, fetcher) {
+  return function DataContainer(props) {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState(null);
+
+    React.useEffect(() => {
+      const loadData = async () => {
+        try {
+          setLoading(true);
+          const result = await fetcher(props);
+          setData(result);
+        } catch (err) {
+          setError(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadData();
+    }, [props.id]); // 依赖props
+
+    return (
+      <WrappedComponent
+        {...props}
+        data={data}
+        loading={loading}
+        error={error}
+        refetch={() => {
+          // 重新获取数据
+        }}
+      />
+    );
+  };
+}
+
+// 使用高阶容器
+const UserListContainer = withData(
+  UserListPresenter,
+  (props) => fetchUsers(props.filter)
+);
+
+// 或者使用Render Props
+function DataContainer({ fetcher, render, deps = [] }) {
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    fetcher().then(setData).catch(setError).finally(() => setLoading(false));
+  }, deps);
+
+  return render({ data, loading, error });
+}
+
+// 使用
+<DataContainer
+  fetcher={() => fetchUsers()}
+  deps={[filter]}
+>
+  {({ data, loading, error }) => (
+    <UserListPresenter users={data} loading={loading} error={error} />
+  )}
+</DataContainer>
+```
+
+</CodeBlock>
+
+---
+
+## 3. 进阶模式
+
+### 3.1 状态提升
+
+<CodeBlock>
+
+```jsx
+// 在容器中管理共享状态
+class FormContainer extends React.Component {
+  state = {
+    values: {
+      name: '',
+      email: '',
+      password: ''
+    },
+    errors: {},
+    touched: {}
+  };
+
+  handleChange = (field, value) => {
+    this.setState(prev => ({
+      values: { ...prev.values, [field]: value }
+    }));
+
+    // 实时验证
+    const error = this.validateField(field, value);
+    this.setState(prev => ({
+      errors: { ...prev.errors, [field]: error }
+    }));
+  };
+
+  handleBlur = (field) => {
+    this.setState(prev => ({
+      touched: { ...prev.touched, [field]: true }
+    }));
+  };
+
+  handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // 提交前验证所有字段
+    const newErrors = {};
+    Object.keys(this.state.values).forEach(field => {
+      const error = this.validateField(field, this.state.values[field]);
+      if (error) newErrors[field] = error;
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      this.setState({ errors: newErrors });
+      return;
+    }
+
+    // 提交数据
+    try {
+      await submitForm(this.state.values);
+      this.props.onSuccess();
+    } catch (error) {
+      this.setState({ errors: { submit: error.message } });
+    }
+  };
+
+  validateField = (field, value) => {
+    switch (field) {
+      case 'name':
+        return !value ? 'Name is required' : '';
+      case 'email':
+        return !/\S+@\S+\.\S+/.test(value) ? 'Invalid email' : '';
+      case 'password':
+        return value.length < 6 ? 'Password too short' : '';
+      default:
+        return '';
+    }
+  };
+
+  render() {
+    return (
+      <FormPresenter
+        values={this.state.values}
+        errors={this.state.errors}
+        touched={this.state.touched}
+        onChange={this.handleChange}
+        onBlur={this.handleBlur}
+        onSubmit={this.handleSubmit}
+      />
+    );
+  }
+}
+
+function FormPresenter({
+  values,
+  errors,
+  touched,
+  onChange,
+  onBlur,
+  onSubmit
+}) {
+  return (
+    <form onSubmit={onSubmit}>
+      <div>
+        <label>Name</label>
+        <input
+          value={values.name}
+          onChange={(e) => onChange('name', e.target.value)}
+          onBlur={() => onBlur('name')}
+        />
+        {touched.name && errors.name && <span>{errors.name}</span>}
+      </div>
+
+      <div>
+        <label>Email</label>
+        <input
+          value={values.email}
+          onChange={(e) => onChange('email', e.target.value)}
+          onBlur={() => onBlur('email')}
+        />
+        {touched.email && errors.email && <span>{errors.email}</span>}
+      </div>
+
+      <div>
+        <label>Password</label>
+        <input
+          type="password"
+          value={values.password}
+          onChange={(e) => onChange('password', e.target.value)}
+          onBlur={() => onBlur('password')}
+        />
+        {touched.password && errors.password && <span>{errors.password}</span>}
+      </div>
+
+      {errors.submit && <div className="error">{errors.submit}</div>}
+
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 多个子容器
+
+<CodeBlock>
+
+```jsx
+// 仪表板容器 - 管理多个子区域
+class DashboardContainer extends React.Component {
+  state = {
+    stats: null,
+    recentActivity: [],
+    notifications: [],
+    loading: true
+  };
+
+  componentDidMount() {
+    this.loadDashboardData();
+  }
+
+  loadDashboardData = async () => {
+    try {
+      this.setState({ loading: true });
+      const [stats, activity, notifications] = await Promise.all([
+        fetchStats(),
+        fetchRecentActivity(),
+        fetchNotifications()
+      ]);
+      this.setState({ stats, recentActivity, notifications, loading: false });
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
+  };
+
+  markNotificationAsRead = async (id) => {
+    await markNotificationRead(id);
+    this.setState(prev => ({
+      notifications: prev.notifications.map(notif =>
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    }));
+  };
+
+  render() {
+    const { stats, recentActivity, notifications, loading, error } = this.state;
+
+    if (loading) return <div>Loading dashboard...</div>;
+    if (error) return <div>Error loading dashboard</div>;
+
+    return (
+      <DashboardPresenter>
+        <StatsPanel stats={stats} />
+        <ActivityFeed activities={recentActivity} />
+        <NotificationCenter
+          notifications={notifications}
+          onMarkAsRead={this.markNotificationAsRead}
+        />
+      </DashboardPresenter>
+    );
+  }
+}
+
+function DashboardPresenter({ children }) {
+  return (
+    <div className="dashboard">
+      <header className="dashboard-header">
+        <h1>Dashboard</h1>
+      </header>
+      <div className="dashboard-grid">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// 子容器组件
+function StatsPanel({ stats }) {
+  return (
+    <div className="dashboard-card">
+      <h2>Statistics</h2>
+      <div className="stats-grid">
+        <StatItem label="Users" value={stats.userCount} />
+        <StatItem label="Orders" value={stats.orderCount} />
+        <StatItem label="Revenue" value={stats.revenue} />
+      </div>
+    </div>
+  );
+}
+
+function ActivityFeed({ activities }) {
+  return (
+    <div className="dashboard-card">
+      <h2>Recent Activity</h2>
+      <ul className="activity-list">
+        {activities.map(activity => (
+          <li key={activity.id}>
+            <span>{activity.user}</span> {activity.action}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function NotificationCenter({ notifications, onMarkAsRead }) {
+  return (
+    <div className="dashboard-card">
+      <h2>Notifications</h2>
+      <ul className="notification-list">
+        {notifications.map(notification => (
+          <li key={notification.id} className={notification.read ? 'read' : 'unread'}>
+            <span>{notification.message}</span>
+            {!notification.read && (
+              <button onClick={() => onMarkAsRead(notification.id)}>
+                Mark as read
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 状态机模式
+
+<CodeBlock>
+
+```jsx
+// 购物车容器 - 使用状态机
+class ShoppingCartContainer extends React.Component {
+  state = {
+    status: 'loading', // loading, ready, error
+    items: [],
+    error: null
+  };
+
+  transition = (newStatus, data = null) => {
+    this.setState(prev => {
+      const newState = { ...prev, status: newStatus };
+      if (data) newState[data.key] = data.value;
+      return newState;
+    });
+  };
+
+  loadCart = async () => {
+    this.transition('loading');
+    try {
+      const items = await fetchCartItems();
+      this.transition('ready', { key: 'items', value: items });
+    } catch (error) {
+      this.transition('error', { key: 'error', value: error });
+    }
+  };
+
+  addItem = async (item) => {
+    this.transition('loading');
+    try {
+      const newItem = await addToCart(item);
+      this.setState(prev => ({
+        status: 'ready',
+        items: [...prev.items, newItem]
+      }));
+    } catch (error) {
+      this.transition('error', { key: 'error', value: error });
+    }
+  };
+
+  removeItem = async (itemId) => {
+    this.transition('loading');
+    try {
+      await removeFromCart(itemId);
+      this.setState(prev => ({
+        status: 'ready',
+        items: prev.items.filter(item => item.id !== itemId)
+      }));
+    } catch (error) {
+      this.transition('error', { key: 'error', value: error });
+    }
+  };
+
+  updateQuantity = async (itemId, quantity) => {
+    this.transition('loading');
+    try {
+      const updatedItem = await updateCartItem(itemId, quantity);
+      this.setState(prev => ({
+        status: 'ready',
+        items: prev.items.map(item =>
+          item.id === itemId ? updatedItem : item
+        )
+      }));
+    } catch (error) {
+      this.transition('error', { key: 'error', value: error });
+    }
+  };
+
+  checkout = async () => {
+    this.transition('loading');
+    try {
+      await checkout();
+      this.transition('ready', { key: 'items', value: [] });
+    } catch (error) {
+      this.transition('error', { key: 'error', value: error });
+    }
+  };
+
+  componentDidMount() {
+    this.loadCart();
+  }
+
+  render() {
+    const { status, items, error } = this.state;
+
+    return (
+      <ShoppingCartPresenter
+        status={status}
+        items={items}
+        error={error}
+        onAddItem={this.addItem}
+        onRemoveItem={this.removeItem}
+        onUpdateQuantity={this.updateQuantity}
+        onCheckout={this.checkout}
+        onRetry={this.loadCart}
+      />
+    );
+  }
+}
+
+function ShoppingCartPresenter({
+  status,
+  items,
+  error,
+  onAddItem,
+  onRemoveItem,
+  onUpdateQuantity,
+  onCheckout,
+  onRetry
+}) {
+  if (status === 'loading') {
+    return <div className="loading">Loading cart...</div>;
+  }
+
+  if (status === 'error') {
+    return (
+      <div className="error">
+        <p>Error: {error.message}</p>
+        <button onClick={onRetry}>Retry</button>
+      </div>
+    );
+  }
+
+  if (status === 'ready') {
+    return (
+      <div className="shopping-cart">
+        <h1>Shopping Cart ({items.length} items)</h1>
+        {items.length === 0 ? (
+          <p>Cart is empty</p>
+        ) : (
+          <>
+            <ul className="cart-items">
+              {items.map(item => (
+                <CartItem
+                  key={item.id}
+                  item={item}
+                  onRemove={onRemoveItem}
+                  onUpdateQuantity={onUpdateQuantity}
+                />
+              ))}
+            </ul>
+            <button onClick={onCheckout}>Checkout</button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function CartItem({ item, onRemove, onUpdateQuantity }) {
+  return (
+    <li className="cart-item">
+      <img src={item.image} alt={item.name} />
+      <div className="item-details">
+        <h3>{item.name}</h3>
+        <p>${item.price}</p>
+      </div>
+      <div className="item-actions">
+        <input
+          type="number"
+          min="1"
+          value={item.quantity}
+          onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value))}
+        />
+        <button onClick={() => onRemove(item.id)}>Remove</button>
+      </div>
+    </li>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 与现代React对比
+
+### 4.1 Hooks vs 容器-展示模式
+
+<Compare>
+
+```jsx
+// 传统容器-展示模式
+class UserListContainer extends React.Component {
+  state = { users: [], loading: true };
+
+  componentDidMount() {
+    fetchUsers().then(users => {
+      this.setState({ users, loading: false });
+    });
+  }
+
+  render() {
+    return (
+      <UserListPresenter
+        users={this.state.users}
+        loading={this.state.loading}
+      />
+    );
+  }
+}
+
+function UserListPresenter({ users, loading }) {
+  // 只负责渲染
+}
+
+// 现代Hooks方式
+function UserList() {
+  const [users, setUsers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetchUsers().then(setUsers).finally(() => setLoading(false));
+  }, []);
+
+  // 逻辑和UI在同一组件中
+  if (loading) return <div>Loading...</div>;
+  return (
+    <ul>
+      {users.map(user => <li key={user.id}>{user.name}</li>)}
+    </ul>
+  );
+}
+
+// 对比总结
+1. 代码量: Hooks < 容器-展示
+2. 复杂度: Hooks < 容器-展示
+3. 学习曲线: Hooks更容易
+4. 复用性: Hooks更好
+5. 性能: 相似
+6. 可读性: Hooks更好
+7. 迁移成本: 无需迁移，新项目用Hooks
+```
+
+</Compare>
+
+### 4.2 选择指南
+
+<CodeBlock>
+
+```jsx
+// 继续使用容器-展示模式的情况
+1. 现有大型项目已采用此模式
+2. 团队熟悉此模式
+3. 复杂的状态转换逻辑
+4. 需要精确控制渲染时机
+5. 多人协作项目
+6. 需要详细的架构文档
+
+// 使用Hooks的情况 (推荐)
+1. 新项目
+2. 简单的状态管理
+3. 逻辑复用需求
+4. 现代React开发
+5. 更好的开发体验
+6. TypeScript支持
+```
+
+</CodeBlock>
+
+### 4.3 混合模式
+
+<CodeBlock>
+
+```jsx
+// 可以结合使用
+function UserProfileContainer({ userId }) {
+  // 使用自定义Hook
+  const { user, posts, loading, error, updateUser } = useUserProfile(userId);
+
+  return (
+    <UserProfilePresenter
+      user={user}
+      posts={posts}
+      loading={loading}
+      error={error}
+      onUpdate={updateUser}
+    />
+  );
+}
+
+// 使用自定义Hook
+function useUserProfile(userId) {
+  const [user, setUser] = React.useState(null);
+  const [posts, setPosts] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    loadUserProfile();
+  }, [userId]);
+
+  const loadUserProfile = async () => {
+    try {
+      setLoading(true);
+      const [userData, postsData] = await Promise.all([
+        fetchUser(userId),
+        fetchUserPosts(userId)
+      ]);
+      setUser(userData);
+      setPosts(postsData);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateUser = async (updates) => {
+    const updatedUser = await updateUser(userId, updates);
+    setUser(updatedUser);
+  };
+
+  return { user, posts, loading, error, updateUser, loadUserProfile };
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 最佳实践
+
+### 5.1 清晰的命名
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的命名
+// 容器组件
+UserListContainer
+ProfileContainer
+DashboardContainer
+ShoppingCartContainer
+DataLoaderContainer
+
+// 展示组件
+UserList
+Profile
+Dashboard
+ShoppingCart
+UserCard
+
+// 避免混淆
+// ❌ 差的命名
+UserList
+UserListComponent  // 冗余
+ContainerUserList  // 顺序混乱
+```
+
+</CodeBlock>
+
+### 5.2 Props传递优化
+
+<CodeBlock>
+
+```jsx
+// ✅ 使用解构和展开运算符
+function UserListContainer(props) {
+  const { userId, onUserSelect, ...otherProps } = props;
+  const [users, setUsers] = React.useState([]);
+
+  // 逻辑...
+
+  return (
+    <UserList
+      users={users}
+      onUserSelect={onUserSelect}
+      {...otherProps}  // 传递其他props
+    />
+  );
+}
+
+// ✅ 只传递必要的props
+<PresenterComponent
+  data={data}           // 必要数据
+  loading={loading}     // 状态
+  error={error}         // 错误
+  onAction={handler}    // 事件处理
+  // 不传递: onClick, onChange等内部props
+/>
+```
+
+</CodeBlock>
+
+### 5.3 错误处理
+
+<CodeBox>
+
+```jsx
+// ✅ 提供一致的错误处理
+function DataContainer({ fetcher, onError }) {
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const result = await fetcher();
+      setData(result);
+    } catch (err) {
+      setError(err);
+      onError?.(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <DataPresenter
+      data={data}
+      loading={loading}
+      error={error}
+      onRetry={loadData}
+    />
+  );
+}
+```
+
+</CodeBox>
+
+### 5.4 性能优化
+
+<CodeBlock>
+
+```jsx
+// ✅ 使用React.memo优化展示组件
+const UserListPresenter = React.memo(function UserListPresenter({
+  users,
+  loading,
+  error,
+  onRefresh
+}) {
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+});
+
+// ✅ 使用useCallback优化事件处理
+function UserListContainer({ userId }) {
+  const [users, setUsers] = React.useState([]);
+
+  const handleUserClick = React.useCallback((user) => {
+    console.log('User clicked:', user);
+  }, []);
+
+  return (
+    <UserListPresenter
+      users={users}
+      onUserClick={handleUserClick}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 实际应用案例
+
+### 6.1 完整搜索组件
+
+<CodeBlock>
+
+```jsx
+// 容器组件
+class SearchContainer extends React.Component {
+  state = {
+    query: '',
+    results: [],
+    loading: false,
+    error: null,
+    suggestions: []
+  };
+
+  debouncedSearch = React.useMemo(
+    () => debounce(this.performSearch, 300),
+    []
+  );
+
+  handleQueryChange = (query) => {
+    this.setState({ query });
+    if (query.length > 2) {
+      this.debouncedSearch(query);
+    }
+  };
+
+  performSearch = async (query) => {
+    this.setState({ loading: true, error: null });
+    try {
+      const [results, suggestions] = await Promise.all([
+        searchAPI(query),
+        getSuggestions(query)
+      ]);
+      this.setState({ results, suggestions, loading: false });
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
+  };
+
+  clearSearch = () => {
+    this.setState({
+      query: '',
+      results: [],
+      suggestions: []
+    });
+  };
+
+  render() {
+    return (
+      <SearchPresenter
+        query={this.state.query}
+        results={this.state.results}
+        suggestions={this.state.suggestions}
+        loading={this.state.loading}
+        error={this.state.error}
+        onQueryChange={this.handleQueryChange}
+        onClear={this.clearSearch}
+        onResultSelect={this.handleResultSelect}
+      />
+    );
+  }
+}
+
+// 展示组件
+function SearchPresenter({
+  query,
+  results,
+  suggestions,
+  loading,
+  error,
+  onQueryChange,
+  onClear,
+  onResultSelect
+}) {
+  return (
+    <div className="search-container">
+      <div className="search-box">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          placeholder="Search..."
+        />
+        {query && (
+          <button onClick={onClear}>Clear</button>
+        )}
+        {loading && <div className="spinner" />}
+      </div>
+
+      {error && (
+        <div className="error-message">
+          Error: {error.message}
+        </div>
+      )}
+
+      {suggestions.length > 0 && (
+        <div className="suggestions">
+          {suggestions.map(suggestion => (
+            <div
+              key={suggestion}
+              className="suggestion-item"
+              onClick={() => onQueryChange(suggestion)}
+            >
+              {suggestion}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {results.length > 0 && (
+        <div className="search-results">
+          <h3>Results ({results.length})</h3>
+          {results.map(result => (
+            <div
+              key={result.id}
+              className="result-item"
+              onClick={() => onResultSelect(result)}
+            >
+              <h4>{result.title}</h4>
+              <p>{result.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 辅助函数
+function debounce(func, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+}
+```
+
+</CodeBlock>
+
+### 6.2 无限滚动列表
+
+<CodeBlock>
+
+```jsx
+// 容器组件
+class InfiniteListContainer extends React.Component {
+  state = {
+    items: [],
+    loading: false,
+    hasMore: true,
+    error: null,
+    page: 0
+  };
+
+  observer = React.useRef(null);
+
+  loadMore = async () => {
+    const { page, loading, hasMore } = this.state;
+
+    if (loading || !hasMore) return;
+
+    this.setState({ loading: true, error: null });
+
+    try {
+      const newItems = await fetchItems(page, this.props.pageSize);
+      this.setState(prev => ({
+        items: [...prev.items, ...newItems],
+        page: prev.page + 1,
+        loading: false,
+        hasMore: newItems.length === this.props.pageSize
+      }));
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
+  };
+
+  componentDidMount() {
+    this.loadMore();
+
+    // 创建Intersection Observer
+    this.observer.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          this.loadMore();
+        }
+      },
+      { threshold: 1.0 }
+    );
+
+    // 观察底部元素
+    if (this.bottomElement) {
+      this.observer.current.observe(this.bottomElement);
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.observer.current) {
+      this.observer.current.disconnect();
+    }
+  }
+
+  render() {
+    const { items, loading, error, hasMore } = this.state;
+
+    return (
+      <InfiniteListPresenter
+        items={items}
+        loading={loading}
+        error={error}
+        hasMore={hasMore}
+        onRetry={this.loadMore}
+        bottomElementRef={(el) => (this.bottomElement = el)}
+      />
+    );
+  }
+}
+
+// 展示组件
+function InfiniteListPresenter({
+  items,
+  loading,
+  error,
+  hasMore,
+  onRetry,
+  bottomElementRef
+}) {
+  return (
+    <div className="infinite-list">
+      {error && (
+        <div className="error-message">
+          <p>Error loading items</p>
+          <button onClick={onRetry}>Retry</button>
+        </div>
+      )}
+
+      <ul className="list-items">
+        {items.map(item => (
+          <li key={item.id} className="list-item">
+            {item.title}
+          </li>
+        ))}
+      </ul>
+
+      {loading && (
+        <div className="loading-indicator">
+          <div className="spinner" />
+          <p>Loading more...</p>
+        </div>
+      )}
+
+      {!hasMore && items.length > 0 && (
+        <div className="end-message">
+          <p>You've reached the end!</p>
+        </div>
+      )}
+
+      <div ref={bottomElementRef} className="scroll-sentinel" />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实践练习
+
+### 练习1：实现文件上传组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 文件选择和拖拽上传
+- 上传进度显示
+- 错误处理
+- 支持多文件上传
+
+**实现要求**：
+```jsx
+<FileUploadContainer
+  multiple
+  accept="image/*"
+  maxSize={5 * 1024 * 1024} // 5MB
+  onUpload={handleUpload}
+>
+  <FileUploadPresenter
+    onDrop={handleDrop}
+    onSelect={handleSelect}
+    progress={uploadProgress}
+  />
+</FileUploadContainer>
+```
+
+**提示**：
+- 使用FormData处理文件
+- XMLHttpRequest跟踪进度
+- 文件验证（类型、大小）
+- 拖拽事件处理
+
+</Expandable>
+
+### 练习2：实现聊天组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 实时消息接收
+- 消息发送
+- 自动滚动到底部
+- 输入状态指示
+
+**实现要求**：
+```jsx
+<ChatContainer
+  userId={currentUser.id}
+  onMessage={handleIncomingMessage}
+>
+  <ChatPresenter
+    messages={messages}
+    onSendMessage={sendMessage}
+    typing={otherUserTyping}
+  />
+</ChatContainer>
+```
+
+**提示**：
+- WebSocket连接
+- 消息滚动
+- 时间戳显示
+- 发送状态
+
+</Expandable>
+
+### 练习3：实现日历组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 月视图显示
+- 日期选择
+- 事件管理（添加、编辑、删除）
+- 导航（上一月/下一月）
+
+**实现要求**：
+```jsx
+<CalendarContainer
+  events={events}
+  onEventAdd={handleAddEvent}
+  onEventUpdate={handleUpdateEvent}
+  onEventDelete={handleDeleteEvent}
+>
+  <CalendarPresenter
+    currentDate={currentDate}
+    selectedDate={selectedDate}
+    onDateSelect={setSelectedDate}
+    onNavigate={navigate}
+  />
+</CalendarContainer>
+```
+
+**提示**：
+- 日期计算
+- 事件日历算法
+- 网格布局
+- 模态框编辑
+
+</Expandable>
+
+### 练习4：实现图像编辑器
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 图像裁剪
+- 滤镜应用
+- 旋转和缩放
+- 撤销/重做
+
+**实现要求**：
+```jsx
+<ImageEditorContainer
+  image={currentImage}
+  onSave={handleSave}
+>
+  <ImageEditorPresenter
+    imageData={imageData}
+    transform={transformState}
+    filters={filterState}
+    onTransformChange={setTransform}
+    onFilterChange={setFilter}
+    onReset={resetChanges}
+  />
+</ImageEditorContainer>
+```
+
+**提示**：
+- Canvas操作
+- 图像变换矩阵
+- 滤镜算法
+- 历史记录管理
+
+</Expandable>
+
+---
+
+## 8. 常见陷阱
+
+### 陷阱1：混合职责
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 容器组件处理UI
+class BadContainer extends React.Component {
+  state = { data: [] };
+
+  render() {
+    return (
+      <div style={{ padding: '20px' }}>  {/* 容器处理样式 */}
+        <h1 style={{ color: 'blue' }}>Title</h1>  {/* 容器处理样式 */}
+        <ul>  {/* 容器渲染列表 */}
+          {this.state.data.map(item => (
+            <li>{item}</li>  {/* 容器处理列表项 */}
+          ))}
+        </ul>
+      </div>
+    );
+  }
+}
+
+// ✅ 正确 - 分离职责
+class GoodContainer extends React.Component {
+  state = { data: [] };
+
+  render() {
+    return (
+      <GoodPresenter
+        data={this.state.data}
+        onRefresh={this.refresh}
+      />
+    );
+  }
+}
+
+function GoodPresenter({ data, onRefresh }) {
+  return (
+    <div className="container">  {/* 展示组件处理样式 */}
+      <h1 className="title">Title</h1>  {/* 使用CSS类 */}
+      <ul>
+        {data.map(item => (
+          <li key={item.id}>{item.name}</li>  {/* 展示组件渲染列表 */}
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：过度传递props
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 传递过多props
+<Container
+  data={data}
+  loading={loading}
+  error={error}
+  onRefresh={onRefresh}
+  onItemClick={onItemClick}
+  onItemEdit={onItemEdit}
+  onItemDelete={onItemDelete}
+  onItemShare={onItemShare}
+  onFilterChange={onFilterChange}
+  onSortChange={onSortChange}
+  onSearch={onSearch}
+  theme={theme}
+  locale={locale}
+  user={user}
+/>
+
+// ✅ 正确 - 使用Context或分组
+// 方案1: 使用Context
+<Container>
+  <Presenter />
+</Container>
+
+// 方案2: 分组传递
+<Container
+  data={data}
+  loading={loading}
+  onRefresh={onRefresh}
+>
+  <Presenter
+    onItemClick={onItemClick}
+    onItemEdit={onItemEdit}
+    onItemDelete={onItemDelete}
+  />
+</Container>
+```
+
+</ErrorBox>
+
+### 陷阱3：状态耦合
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 展示组件依赖容器状态
+function Presenter({ data, loading, filter }) {
+  // 展示组件自己过滤数据
+  const filteredData = data.filter(item => item.status === filter);
+  // ...
+}
+
+// ✅ 正确 - 容器处理逻辑
+function Container() {
+  const [data, setData] = useState([]);
+  const [filter, setFilter] = useState('all');
+
+  const filteredData = data.filter(item => {
+    if (filter === 'all') return true;
+    return item.status === filter;
+  });
+
+  return (
+    <Presenter
+      data={filteredData}  // 容器过滤后传递
+      filter={filter}
+      onFilterChange={setFilter}
+    />
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：忽略错误边界
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有错误处理
+function Container() {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    // 可能抛出错误但没有处理
+    fetchData().then(setData);
+  }, []);
+
+  return <Presenter data={data} />;
+}
+
+// ✅ 正确 - 错误处理
+function Container() {
+  const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchData()
+      .then(setData)
+      .catch(setError);
+  }, []);
+
+  if (error) {
+    return <ErrorMessage error={error} onRetry={() => window.location.reload()} />;
+  }
+
+  return <Presenter data={data} />;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 9. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 容器-展示模式分离逻辑和UI
+- ✅ 容器组件负责数据获取、状态管理、副作用
+- ✅ 展示组件负责UI渲染、样式、简单交互
+- ✅ 使用明确的命名约定（Container/Presenter）
+- ✅ 只传递必要的props给展示组件
+- ✅ 提供统一的错误处理
+- ✅ 使用React.memo优化展示组件
+- ✅ 避免容器组件处理UI逻辑
+- ✅ 现代项目中优先使用Hooks
+- ✅ 可以与自定义Hook结合使用
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **职责清晰** - 容器不做UI，展示不处理数据
+2. **命名规范** - 使用Container/Presenter后缀
+3. **Props精简** - 只传递必要的数据和方法
+4. **错误处理** - 容器统一处理错误
+5. **性能优化** - 使用React.memo和useCallback
+6. **可测试性** - 独立测试容器逻辑和展示UI
+7. **文档完整** - 记录组件职责和API
+8. **逐步迁移** - 现有项目可逐步采用Hooks
+
+</BestPractices>
+
+### 适用场景
+
+<BestPractices>
+
+**继续使用**：
+- 复杂状态转换
+- 精确渲染控制
+- 现有大型项目
+- 团队熟悉此模式
+
+**优先使用Hooks**：
+- 新项目
+- 简单状态管理
+- 逻辑复用需求
+- 现代React开发
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了容器-展示模式，接下来可以学习：
+
+1. **[Context模式](../advanced/context-patterns)** - 深入Context API
+2. **[错误边界](../advanced/error-boundaries)** - 掌握React错误处理
+3. **[Hooks模式](../advanced/hooks-patterns)** - 现代逻辑复用
+4. **[性能优化](?title=性能优化模块)** - 提升应用性能
+
+---
+
+## 10. 延伸阅读
+
+### 官方资源
+
+- [组件设计](https://react.dev/learn/thinking-in-react) - 组件设计思维
+- [状态提升](https://react.dev/learn/thinking-in-react) - 状态管理
+- [受控与非受控](https://react.dev/reference/react) - 表单处理
+
+### 推荐阅读
+
+- [Container Components](https://medium.com/@learnreact/container-components) - 容器组件详解
+- [Presentational and Container Components](https://medium.com/@dan_abramov/smart-and-dumb-components) - 模式介绍
+- [React Hooks替代方案](https://react.dev/reference/react) - Hooks文档
+
+### 相关话题
+
+- [HOC vs Render Props](higher-order-components) - 模式对比
+- [组合模式](compound-components) - 组件组合
+- [状态管理](../state-management/) - 状态管理进阶
+
+---
+
+[← 上一章：复合组件](compound-components) | [下一章：Context模式 →](../advanced/context-patterns)

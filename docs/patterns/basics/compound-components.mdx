@@ -1,0 +1,1527 @@
+# 复合组件 (Compound Components) - 灵活组合模式
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+复合组件（Compound Components）是React中一种强大而优雅的模式，它允许你将组件的创建逻辑拆分到多个子组件中，同时保持对组件组合的完全控制。这种模式提供了出色的灵活性，让用户可以根据需要自由组合组件的各个部分。在本章中，我们将深入探讨复合组件的概念、实现方式、最佳实践和使用场景。
+
+## 本章学习目标
+
+- 理解复合组件模式的核心概念
+- 掌握Context API在复合组件中的应用
+- 学会实现可复用的复合组件
+- 理解children prop的高级用法
+- 掌握组件间通信的最佳实践
+- 学会构建灵活的组件API
+- 理解复合组件与组合模式的区别
+- 掌握复合组件的TypeScript支持
+
+---
+
+## 1. 什么是复合组件？
+
+复合组件是一组相互协作的组件，它们一起工作来实现一个完整的用户界面。与单一组件不同，复合组件将复杂的UI拆分为多个独立的子组件，但这些子组件必须一起使用才能正常工作。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>复合组件</strong>是由多个组件组合而成的组件族，它们共享状态和逻辑，但可以独立地渲染不同的部分。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础示例：Select组件
+<Select>
+  <Select.Button>Choose an option</Select.Button>
+  <Select.Options>
+    <Select.Option value="option1">Option 1</Select.Option>
+    <Select.Option value="option2">Option 2</Select.Option>
+  </Select.Options>
+</Select>
+
+// 实际渲染结构
+<div className="select">
+  <button className="select-button">Choose an option</button>
+  <ul className="select-options">
+    <li className="select-option">Option 1</li>
+    <li className="select-option">Option 2</li>
+  </ul>
+</div>
+```
+
+</CodeBlock>
+
+### 1.1 复合组件的特点
+
+<Grid>
+
+<div>
+  <h4>优势</h4>
+  <ul>
+    <li>✅ 高度灵活和可组合</li>
+    <li>✅ 清晰的组件层次</li>
+    <li>✅ 共享状态和逻辑</li>
+    <li>✅ 优秀的TypeScript支持</li>
+    <li>✅ 易于扩展和维护</li>
+    <li>✅ 自然的API设计</li>
+  </ul>
+</div>
+
+<div>
+  <h4>使用场景</h4>
+  <ul>
+    <li>📌 Select/Dropdown组件</li>
+    <li>📌 Tabs组件</li>
+    <li>📌 Modal/Dialog组件</li>
+    <li>📌 Accordion组件</li>
+    <li>📌 Form组件组</li>
+    <li>📌 Menu/Navigation组件</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 常见案例
+
+<CodeBlock>
+
+```jsx
+// Tabs组件示例
+<Tabs>
+  <Tabs.List>
+    <Tabs.Tab id="tab1">Tab 1</Tabs.Tab>
+    <Tabs.Tab id="tab2">Tab 2</Tabs.Tab>
+  </Tabs.List>
+  <Tabs.Panels>
+    <Tabs.Panel id="tab1">Content 1</Tabs.Panel>
+    <Tabs.Panel id="tab2">Content 2</Tabs.Panel>
+  </Tabs.Panels>
+</Tabs>
+
+// Menu组件示例
+<Menu>
+  <Menu.Button>Menu</Menu.Button>
+  <Menu.Items>
+    <Menu.Item onSelect={handleEdit}>Edit</Menu.Item>
+    <Menu.Item onSelect={handleDelete}>Delete</Menu.Item>
+    <Menu.Divider />
+    <Menu.Item onSelect={handleExport}>Export</Menu.Item>
+  </Menu.Items>
+</Menu>
+```
+
+</CodeBlock>
+
+---
+
+## 2. 实现复合组件基础
+
+### 2.1 使用React.Children和React.cloneElement
+
+<CodeBlock>
+
+```jsx
+// 简单的Select组件
+class Select extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { isOpen: false, selectedValue: null };
+  }
+
+  toggle = () => {
+    this.setState(prev => ({ isOpen: !prev.isOpen }));
+  };
+
+  selectOption = (value) => {
+    this.setState({ selectedValue: value, isOpen: false });
+  };
+
+  render() {
+    const { children } = this.props;
+    const { isOpen, selectedValue } = this.state;
+
+    return (
+      <div className="select">
+        {React.Children.map(children, child => {
+          return React.cloneElement(child, {
+            isOpen,
+            selectedValue,
+            onToggle: this.toggle,
+            onSelect: this.selectOption
+          });
+        })}
+      </div>
+    );
+  }
+}
+
+// Button子组件
+const SelectButton = ({ children, selectedValue, onToggle, isOpen }) => {
+  return (
+    <button className="select-button" onClick={onToggle}>
+      {selectedValue || children}
+      <span className="arrow">{isOpen ? '▲' : '▼'}</span>
+    </button>
+  );
+};
+
+// Options容器
+const SelectOptions = ({ children, isOpen, onSelect }) => {
+  if (!isOpen) return null;
+
+  return (
+    <ul className="select-options">
+      {React.Children.map(children, child => {
+        return React.cloneElement(child, { onSelect });
+      })}
+    </ul>
+  );
+};
+
+// Option项
+const SelectOption = ({ value, children, onSelect }) => {
+  return (
+    <li
+      className="select-option"
+      onClick={() => onSelect(value)}
+    >
+      {children}
+    </li>
+  );
+};
+
+// 组合使用
+<Select>
+  <SelectButton>Choose an option</SelectButton>
+  <SelectOptions>
+    <SelectOption value="option1">Option 1</SelectOption>
+    <SelectOption value="option2">Option 2</SelectOption>
+  </SelectOptions>
+</Select>
+```
+
+</CodeBlock>
+
+### 2.2 使用Context API（推荐）
+
+<CodeBlock>
+
+```jsx
+// 使用Context共享状态
+const SelectContext = React.createContext();
+
+function Select({ children, defaultValue, onChange }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [selectedValue, setSelectedValue] = React.useState(defaultValue);
+
+  const toggle = () => setIsOpen(prev => !prev);
+  const close = () => setIsOpen(false);
+  const selectOption = (value) => {
+    setSelectedValue(value);
+    onChange?.(value);
+    close();
+  };
+
+  return (
+    <SelectContext.Provider
+      value={{
+        isOpen,
+        selectedValue,
+        onToggle: toggle,
+        onSelect: selectOption
+      }}
+    >
+      <div className="select">{children}</div>
+    </SelectContext.Provider>
+  );
+}
+
+// Button子组件
+const SelectButton = ({ children }) => {
+  const { isOpen, selectedValue, onToggle } = React.useContext(SelectContext);
+
+  return (
+    <button className="select-button" onClick={onToggle}>
+      {selectedValue || children}
+      <span className="arrow">{isOpen ? '▲' : '▼'}</span>
+    </button>
+  );
+};
+
+// 使用
+<Select defaultValue="option1" onChange={(value) => console.log(value)}>
+  <SelectButton>Choose an option</SelectButton>
+  <SelectOptions>
+    <SelectOption value="option1">Option 1</SelectOption>
+    <SelectOption value="option2">Option 2</SelectOption>
+  </SelectOptions>
+</Select>
+```
+
+</CodeBlock>
+
+### 2.3 添加Display Names（调试友好）
+
+<CodeBlock>
+
+```jsx
+// 添加displayName便于调试
+const SelectContext = React.createContext();
+
+function Select({ children, defaultValue, onChange }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [selectedValue, setSelectedValue] = React.useState(defaultValue);
+
+  const toggle = () => setIsOpen(prev => !prev);
+  const selectOption = (value) => {
+    setSelectedValue(value);
+    onChange?.(value);
+    setIsOpen(false);
+  };
+
+  return (
+    <SelectContext.Provider value={{ isOpen, selectedValue, onToggle: toggle, onSelect: selectOption }}>
+      <div className="select">{children}</div>
+    </SelectContext.Provider>
+  );
+}
+
+Select.Button = SelectButton;
+Select.Options = SelectOptions;
+Select.Option = SelectOption;
+
+SelectButton.displayName = 'Select.Button';
+SelectOptions.displayName = 'Select.Options';
+SelectOption.displayName = 'Select.Option';
+
+// 在React DevTools中显示为Select.Button
+```
+
+</CodeBlock>
+
+---
+
+## 3. 高级复合组件模式
+
+### 3.1 灵活子组件类型
+
+<CodeBlock>
+
+```jsx
+// 支持多种子组件组合方式
+function Menu({ children }) {
+  const { isOpen, onClose } = React.useContext(MenuContext);
+
+  // 点击外部关闭
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event) => {
+      if (event.target.closest('.menu')) return;
+      onClose();
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="menu">
+      {children}
+    </div>
+  );
+}
+
+Menu.Button = MenuButton;
+Menu.Items = MenuItems;
+Menu.Item = MenuItem;
+Menu.Divider = MenuDivider;
+Menu.Label = MenuLabel;
+
+// 灵活的API设计
+<Menu>
+  <Menu.Item onSelect={handleNew}>New File</Menu.Item>
+  <Menu.Item onSelect={handleOpen}>Open File</Menu.Item>
+  <Menu.Divider />
+  <Menu.Label>Recent</Menu.Label>
+  <Menu.Item onSelect={handleRecent1}>file1.txt</Menu.Item>
+  <Menu.Item onSelect={handleRecent2}>file2.txt</Menu.Item>
+</Menu>
+```
+
+</CodeBlock>
+
+### 3.2 子组件状态管理
+
+<CodeBlock>
+
+```jsx
+// Accordion组件 - 管理展开/折叠状态
+const AccordionContext = React.createContext();
+
+function Accordion({ type = 'single', children }) {
+  const [openItems, setOpenItems] = React.useState(new Set());
+
+  const toggleItem = (value) => {
+    if (type === 'single') {
+      setOpenItems(prev => {
+        const newSet = new Set();
+        if (!prev.has(value)) {
+          newSet.add(value);
+        }
+        return newSet;
+      });
+    } else {
+      setOpenItems(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(value)) {
+          newSet.delete(value);
+        } else {
+          newSet.add(value);
+        }
+        return newSet;
+      });
+    }
+  };
+
+  const isOpen = (value) => openItems.has(value);
+
+  return (
+    <AccordionContext.Provider value={{ isOpen, toggleItem, type }}>
+      <div className="accordion">{children}</div>
+    </AccordionContext.Provider>
+  );
+}
+
+Accordion.Item = function AccordionItem({ value, children }) {
+  const { isOpen } = React.useContext(AccordionContext);
+  return (
+    <div className="accordion-item" data-open={isOpen(value)}>
+      {children}
+    </div>
+  );
+};
+
+Accordion.Header = function AccordionHeader({ children, value }) {
+  const { isOpen, toggleItem } = React.useContext(AccordionContext);
+  return (
+    <button
+      className="accordion-header"
+      onClick={() => toggleItem(value)}
+      aria-expanded={isOpen(value)}
+    >
+      {children}
+      <span className="arrow">{isOpen(value) ? '−' : '+'}</span>
+    </button>
+  );
+};
+
+Accordion.Panel = function AccordionPanel({ value, children }) {
+  const { isOpen } = React.useContext(AccordionContext);
+
+  if (!isOpen(value)) return null;
+
+  return (
+    <div className="accordion-panel">
+      {children}
+    </div>
+  );
+};
+
+// 使用
+<Accordion type="multiple">
+  <Accordion.Item value="item1">
+    <Accordion.Header value="item1">Section 1</Accordion.Header>
+    <Accordion.Panel value="item1">Content 1</Accordion.Panel>
+  </Accordion.Item>
+  <Accordion.Item value="item2">
+    <Accordion.Header value="item2">Section 2</Accordion.Header>
+    <Accordion.Panel value="item2">Content 2</Accordion.Panel>
+  </Accordion.Item>
+</Accordion>
+```
+
+</CodeBlock>
+
+### 3.3 动态子组件渲染
+
+<CodeBlock>
+
+```jsx
+// 步骤条组件 - 动态渲染
+const StepperContext = React.createContext();
+
+function Stepper({ currentStep = 0, onStepChange, children }) {
+  const [activeStep, setActiveStep] = React.useState(currentStep);
+
+  useEffect(() => {
+    onStepChange?.(activeStep);
+  }, [activeStep, onStepChange]);
+
+  const next = () => {
+    setActiveStep(prev => prev + 1);
+  };
+
+  const prev = () => {
+    setActiveStep(prev => prev - 1);
+  };
+
+  const goTo = (step) => {
+    setActiveStep(step);
+  };
+
+  return (
+    <StepperContext.Provider value={{ activeStep, next, prev, goTo }}>
+      <div className="stepper">
+        {React.Children.map(children, (child, index) => {
+          return React.cloneElement(child, {
+            isActive: index === activeStep,
+            isCompleted: index < activeStep,
+            isClickable: index <= activeStep
+          });
+        })}
+      </div>
+    </StepperContext.Provider>
+  );
+}
+
+Stepper.Step = function Step({ children, isActive, isCompleted, isClickable }) {
+  return (
+    <div
+      className={`step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isClickable ? 'clickable' : ''}`}
+    >
+      {children}
+    </div>
+  );
+};
+
+// 使用
+<Stepper currentStep={1}>
+  <Stepper.Step>Step 1</Stepper.Step>
+  <Stepper.Step>Step 2</Stepper.Step>
+  <Stepper.Step>Step 3</Stepper.Step>
+</Stepper>
+```
+
+</CodeBlock>
+
+### 3.4 嵌套复合组件
+
+<CodeBlock>
+
+```jsx
+// Tree组件 - 支持嵌套
+const TreeContext = React.createContext();
+
+function Tree({ children, defaultExpanded = [] }) {
+  const [expandedItems, setExpandedItems] = React.useState(new Set(defaultExpanded));
+
+  const toggleItem = (itemId) => {
+    setExpandedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const isExpanded = (itemId) => expandedItems.has(itemId);
+
+  return (
+    <TreeContext.Provider value={{ isExpanded, toggleItem }}>
+      <ul className="tree">{children}</ul>
+    </TreeContext.Provider>
+  );
+}
+
+Tree.Item = function TreeItem({ id, children }) {
+  return <li className="tree-item">{children}</li>;
+};
+
+Tree.Node = function TreeNode({ id, label, children }) {
+  const { isExpanded, toggleItem } = React.useContext(TreeContext);
+  const hasChildren = React.Children.count(children) > 0;
+
+  return (
+    <li className="tree-node">
+      <div className="tree-node-header">
+        {hasChildren && (
+          <button
+            className="tree-toggle"
+            onClick={() => toggleItem(id)}
+          >
+            {isExpanded(id) ? '−' : '+'}
+          </button>
+        )}
+        <span className="tree-label">{label}</span>
+      </div>
+      {hasChildren && isExpanded(id) && (
+        <ul className="tree-children">
+          {children}
+        </ul>
+      )}
+    </li>
+  );
+};
+
+// 使用
+<Tree defaultExpanded={['root']}>
+  <Tree.Item>
+    <Tree.Node id="root" label="Root">
+      <Tree.Item>
+        <Tree.Node id="child1" label="Child 1" />
+      </Tree.Item>
+      <Tree.Item>
+        <Tree.Node id="child2" label="Child 2">
+          <Tree.Item>
+            <Tree.Node id="grandchild" label="Grandchild" />
+          </Tree.Item>
+        </Tree.Node>
+      </Tree.Item>
+    </Tree.Node>
+  </Tree.Item>
+</Tree>
+```
+
+</CodeBlock>
+
+---
+
+## 4. TypeScript支持
+
+### 4.1 类型定义
+
+<CodeBlock>
+
+```tsx
+// TypeScript类型定义
+interface SelectContextType {
+  isOpen: boolean;
+  selectedValue: string | null;
+  onToggle: () => void;
+  onSelect: (value: string) => void;
+}
+
+const SelectContext = React.createContext<SelectContextType | undefined>(undefined);
+
+function Select({
+  children,
+  defaultValue,
+  onChange
+}: {
+  children: React.ReactNode;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}) {
+  // ...实现
+  return (
+    <SelectContext.Provider value={contextValue}>
+      <div className="select">{children}</div>
+    </SelectContext.Provider>
+  );
+}
+
+interface SelectButtonProps {
+  children: React.ReactNode;
+}
+
+const SelectButton: React.FC<SelectButtonProps> = ({ children }) => {
+  const context = React.useContext(SelectContext);
+  if (!context) {
+    throw new Error('SelectButton must be used within a Select component');
+  }
+
+  return <button onClick={context.onToggle}>{children}</button>;
+};
+
+interface SelectOptionProps {
+  value: string;
+  children: React.ReactNode;
+}
+
+const SelectOption: React.FC<SelectOptionProps> = ({ value, children }) => {
+  const context = React.useContext(SelectContext);
+  if (!context) {
+    throw new Error('SelectOption must be used within a Select component');
+  }
+
+  return (
+    <li onClick={() => context.onSelect(value)}>
+      {children}
+    </li>
+  );
+};
+
+// 组合类型
+export interface SelectProps {
+  children: React.ReactNode;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}
+
+export type SelectComponent = React.FC<SelectProps> & {
+  Button: React.FC<SelectButtonProps>;
+  Options: React.FC<SelectOptionsProps>;
+  Option: React.FC<SelectOptionProps>;
+};
+
+// 使用
+const Select: SelectComponent = ({ children, defaultValue, onChange }) => {
+  // 实现
+  return <div>{children}</div>;
+};
+
+Select.Button = SelectButton;
+Select.Options = SelectOptions;
+Select.Option = SelectOption;
+```
+
+</CodeBlock>
+
+### 4.2 泛型支持
+
+<CodeBlock>
+
+```tsx
+// 泛型Select组件
+interface GenericSelectProps<T> {
+  children: React.ReactNode;
+  defaultValue?: T;
+  onChange?: (value: T) => void;
+  renderValue?: (value: T) => React.ReactNode;
+}
+
+const GenericSelectContext = React.createContext<any>(undefined);
+
+function GenericSelect<T>({
+  children,
+  defaultValue,
+  onChange,
+  renderValue
+}: GenericSelectProps<T>) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [selectedValue, setSelectedValue] = React.useState<T | undefined>(defaultValue);
+
+  const toggle = () => setIsOpen(prev => !prev);
+  const selectOption = (value: T) => {
+    setSelectedValue(value);
+    onChange?.(value);
+    setIsOpen(false);
+  };
+
+  return (
+    <GenericSelectContext.Provider value={{ isOpen, selectedValue, onToggle: toggle, onSelect: selectOption, renderValue }}>
+      <div className="select">{children}</div>
+    </GenericSelectContext.Provider>
+  );
+}
+
+interface SelectButtonProps {
+  children: React.ReactNode;
+}
+
+const GenericSelectButton: React.FC<SelectButtonProps> = ({ children }) => {
+  const { isOpen, selectedValue, onToggle, renderValue } = React.useContext(GenericSelectContext);
+
+  const displayValue = selectedValue !== undefined && renderValue
+    ? renderValue(selectedValue)
+    : children;
+
+  return (
+    <button onClick={onToggle}>
+      {displayValue}
+    </button>
+  );
+};
+
+// 使用
+<GenericSelect<User>
+  defaultValue={users[0]}
+  onChange={(user) => console.log(user)}
+  renderValue={(user) => user.name}
+>
+  <GenericSelectButton>Select User</GenericSelectButton>
+  <GenericSelectOptions>
+    {users.map(user => (
+      <GenericSelectOption key={user.id} value={user}>
+        {user.name} - {user.email}
+      </GenericSelectOption>
+    ))}
+  </GenericSelectOptions>
+</GenericSelect>
+```
+
+</CodeBlock>
+
+---
+
+## 5. 实际应用案例
+
+### 5.1 完整的Modal组件
+
+<CodeBlock>
+
+```jsx
+// Modal复合组件
+const ModalContext = React.createContext();
+
+function Modal({ isOpen, onClose, children }) {
+  // ESC键关闭
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEsc = (event) => {
+      if (event.key === 'Escape') {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  return (
+    <ModalContext.Provider value={{ onClose }}>
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          {children}
+        </div>
+      </div>
+    </ModalContext.Provider>
+  );
+}
+
+Modal.Header = function ModalHeader({ children }) {
+  const { onClose } = React.useContext(ModalContext);
+  return (
+    <div className="modal-header">
+      <h2 className="modal-title">{children}</h2>
+      <button className="modal-close" onClick={onClose}>×</button>
+    </div>
+  );
+};
+
+Modal.Body = function ModalBody({ children }) {
+  return <div className="modal-body">{children}</div>;
+};
+
+Modal.Footer = function ModalFooter({ children }) {
+  return <div className="modal-footer">{children}</div>;
+};
+
+// 使用
+<Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+  <Modal.Header>Edit Profile</Modal.Header>
+  <Modal.Body>
+    <form>
+      <input type="text" placeholder="Name" />
+      <input type="email" placeholder="Email" />
+    </form>
+  </Modal.Body>
+  <Modal.Footer>
+    <button onClick={() => setIsModalOpen(false)}>Cancel</button>
+    <button onClick={handleSave}>Save</button>
+  </Modal.Footer>
+</Modal>
+```
+
+</CodeBlock>
+
+### 5.2 Tabs组件（完整实现）
+
+<CodeBlock>
+
+```jsx
+// Tabs组件
+const TabsContext = React.createContext();
+
+function Tabs({ defaultTab, children, onChange }) {
+  const [activeTab, setActiveTab] = React.useState(defaultTab);
+
+  useEffect(() => {
+    onChange?.(activeTab);
+  }, [activeTab, onChange]);
+
+  return (
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div className="tabs">{children}</div>
+    </TabsContext.Provider>
+  );
+}
+
+Tabs.List = function TabList({ children }) {
+  return <div className="tab-list">{children}</div>;
+};
+
+Tabs.Tab = function Tab({ id, children }) {
+  const { activeTab, setActiveTab } = React.useContext(TabsContext);
+  const isActive = activeTab === id;
+
+  return (
+    <button
+      className={`tab ${isActive ? 'active' : ''}`}
+      onClick={() => setActiveTab(id)}
+      role="tab"
+      aria-selected={isActive}
+      aria-controls={`panel-${id}`}
+      id={`tab-${id}`}
+    >
+      {children}
+    </button>
+  );
+};
+
+Tabs.Panels = function TabPanels({ children }) {
+  return <div className="tab-panels">{children}</div>;
+};
+
+Tabs.Panel = function TabPanel({ id, children }) {
+  const { activeTab } = React.useContext(TabsContext);
+  const isActive = activeTab === id;
+
+  return (
+    <div
+      className={`tab-panel ${isActive ? 'active' : ''}`}
+      role="tabpanel"
+      id={`panel-${id}`}
+      aria-labelledby={`tab-${id}`}
+      hidden={!isActive}
+    >
+      {children}
+    </div>
+  );
+};
+
+// 使用
+<Tabs defaultTab="tab1" onChange={(tab) => console.log('Active tab:', tab)}>
+  <Tabs.List>
+    <Tabs.Tab id="tab1">Profile</Tabs.Tab>
+    <Tabs.Tab id="tab2">Settings</Tabs.Tab>
+    <Tabs.Tab id="tab3">Notifications</Tabs.Tab>
+  </Tabs.List>
+  <Tabs.Panels>
+    <Tabs.Panel id="tab1">
+      <div>Profile content</div>
+    </Tabs.Panel>
+    <Tabs.Panel id="tab2">
+      <div>Settings content</div>
+    </Tabs.Panel>
+    <Tabs.Panel id="tab3">
+      <div>Notifications content</div>
+    </Tabs.Panel>
+  </Tabs.Panels>
+</Tabs>
+```
+
+</CodeBlock>
+
+### 5.3 Form Field组件
+
+<CodeBlock>
+
+```jsx
+// Form Field组件
+const FormFieldContext = React.createContext();
+
+function FormField({ name, label, error, children }) {
+  const fieldId = React.useId();
+  const errorId = `${fieldId}-error`;
+
+  return (
+    <FormFieldContext.Provider value={{ fieldId, errorId, name, label, error }}>
+      <div className="form-field">
+        {children}
+      </div>
+    </FormFieldContext.Provider>
+  );
+}
+
+FormField.Label = function FieldLabel({ children }) {
+  const { fieldId, label } = React.useContext(FormFieldContext);
+  return (
+    <label htmlFor={fieldId} className="form-label">
+      {children || label}
+    </label>
+  );
+};
+
+FormField.Input = function FieldInput({ type = 'text', ...props }) {
+  const { fieldId, error, errorId } = React.useContext(FormFieldContext);
+
+  return (
+    <input
+      id={fieldId}
+      type={type}
+      className={`form-input ${error ? 'error' : ''}`}
+      aria-invalid={!!error}
+      aria-describedby={error ? errorId : undefined}
+      {...props}
+    />
+  );
+};
+
+FormField.Error = function FieldError() {
+  const { error, errorId } = React.useContext(FormFieldContext);
+  if (!error) return null;
+
+  return (
+    <div id={errorId} className="form-error" role="alert">
+      {error}
+    </div>
+  );
+};
+
+FormField.Help = function FieldHelp({ children }) {
+  return <div className="form-help">{children}</div>;
+};
+
+// 使用
+<Form>
+  <FormField
+    name="email"
+    label="Email Address"
+    error={errors.email}
+  >
+    <FormField.Input type="email" placeholder="your@email.com" />
+    <FormField.Help>We'll never share your email</Form.Help>
+    <FormField.Error />
+  </FormField>
+
+  <FormField
+    name="password"
+    label="Password"
+    error={errors.password}
+  >
+    <FormField.Input type="password" />
+    <FormField.Error />
+  </FormField>
+</Form>
+```
+
+</CodeBlock>
+
+---
+
+## 6. 最佳实践
+
+### 6.1 组件结构设计
+
+<CodeBlock>
+
+```jsx
+// ✅ 清晰的文件组织
+// Select/
+//   ├── index.tsx          // 主组件和导出
+//   ├── Select.tsx         // Select组件
+//   ├── SelectButton.tsx   // Button子组件
+//   ├── SelectOptions.tsx  // Options子组件
+//   ├── SelectOption.tsx   // Option子组件
+//   ├── SelectContext.tsx  // Context
+//   └── types.ts           // 类型定义
+
+// index.tsx
+export { default as Select } from './Select';
+export { SelectButton } from './SelectButton';
+export { SelectOptions } from './SelectOptions';
+export { SelectOption } from './SelectOption';
+export type { SelectProps, SelectOptionProps } from './types';
+```
+
+</CodeBlock>
+
+### 6.2 错误处理
+
+<CodeBlock>
+
+```jsx
+// ✅ 提供有用的错误信息
+function useSelectContext() {
+  const context = React.useContext(SelectContext);
+  if (!context) {
+    throw new Error(
+      'This component must be used within a <Select> component. ' +
+      'Make sure all <SelectButton>, <SelectOptions>, and <SelectOption> ' +
+      'components are wrapped in a <Select> component.'
+    );
+  }
+  return context;
+}
+
+// 使用
+const SelectButton = () => {
+  const context = useSelectContext(); // 抛错而不是返回undefined
+  // ...
+};
+```
+
+</CodeBlock>
+
+### 6.3 向下传递Props
+
+<CodeBlock>
+
+```jsx
+// ✅ 允许用户自定义子组件
+function Select({ children, className, ...props }) {
+  return (
+    <div className={className} {...props}>
+      {children}
+    </div>
+  );
+}
+
+Select.Option = function SelectOption({ value, children, className, ...props }) {
+  // 用户可以传递额外的className和props
+  return (
+    <li className={`option ${className || ''}`} {...props}>
+      {children}
+    </li>
+  );
+};
+
+// 使用
+<Select>
+  <Select.Option
+    value="option1"
+    className="custom-option"
+    onMouseEnter={() => console.log('hovered')}
+  >
+    Custom Option
+  </Select.Option>
+</Select>
+```
+
+</CodeBlock>
+
+### 6.4 可访问性支持
+
+<CodeBlock>
+
+```jsx
+// ✅ 添加适当的ARIA属性
+function Select({ children }) {
+  const { isOpen, onToggle } = React.useContext(SelectContext);
+
+  return (
+    <div className="select">
+      {React.Children.map(children, child =>
+        React.cloneElement(child, { isOpen, onToggle })
+      )}
+    </div>
+  );
+}
+
+const SelectButton = ({ children, isOpen, onToggle }) => {
+  return (
+    <button
+      onClick={onToggle}
+      aria-haspopup="listbox"
+      aria-expanded={isOpen}
+      aria-label="Select an option"
+    >
+      {children}
+      <span aria-hidden="true">{isOpen ? '▲' : '▼'}</span>
+    </button>
+  );
+};
+
+const SelectOptions = ({ children, isOpen, onSelect }) => {
+  if (!isOpen) return null;
+
+  return (
+    <ul
+      role="listbox"
+      className="options-list"
+    >
+      {React.Children.map(children, child =>
+        React.cloneElement(child, { onSelect })
+      )}
+    </ul>
+  );
+};
+
+const SelectOption = ({ value, children, onSelect }) => {
+  return (
+    <li
+      role="option"
+      onClick={() => onSelect(value)}
+      tabIndex={-1}
+    >
+      {children}
+    </li>
+  );
+};
+```
+
+</CodeBlock>
+
+---
+
+## 7. 与其他模式对比
+
+### 7.1 Render Props vs 复合组件
+
+<Compare>
+
+```jsx
+// Render Props方式
+<Select
+  render={({ isOpen, onToggle, selectedValue, onSelect }) => (
+    <>
+      <button onClick={onToggle}>{selectedValue || 'Select'}</button>
+      {isOpen && (
+        <ul>
+          <li onClick={() => onSelect('option1')}>Option 1</li>
+          <li onClick={() => onSelect('option2')}>Option 2</li>
+        </ul>
+      )}
+    </>
+  )}
+/>
+
+// 复合组件方式
+<Select>
+  <Select.Button>Select</Select.Button>
+  <Select.Options>
+    <Select.Option value="option1">Option 1</Select.Option>
+    <Select.Option value="option2">Option 2</Select.Option>
+  </Select.Options>
+</Select>
+
+// 对比
+1. 语法: 复合组件更直观
+2. 可读性: 复合组件更好
+3. 灵活性: Render Props更灵活
+4. TypeScript: 复合组件类型支持更好
+5. 学习曲线: 复合组件更容易理解
+```
+
+</Compare>
+
+### 7.2 HOC vs 复合组件
+
+<Compare>
+
+```jsx
+// HOC方式
+const EnhancedSelect = withState(Select, 'isOpen', 'setIsOpen', false);
+
+// 复合组件方式
+<Select>
+  <Select.Button />
+  <Select.Options />
+</Select>
+
+// 对比
+1. 组件层级: 复合组件无额外层级
+2. Props传递: 复合组件自动传递
+3. 调试: 复合组件更易调试
+4. 复用性: HOC可复用，复合组件需设计
+```
+
+</Compare>
+
+---
+
+## 8. 实践练习
+
+### 练习1：实现Tooltip组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 鼠标悬停显示提示
+- 支持四个方向：top, right, bottom, left
+- 可配置延迟时间
+- 响应式定位
+
+**API设计**：
+```jsx
+<Tooltip content="This is a tooltip" position="top" delay={500}>
+  <button>Hover me</button>
+</Tooltip>
+```
+
+**提示**：
+- 使用useState管理显示状态
+- 计算提示框位置
+- 监听鼠标事件
+- 使用portal渲染到body
+
+</Expandable>
+
+### 练习2：实现Popover组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 点击按钮切换显示
+- 点击外部关闭
+- 支持嵌套内容
+- 可配置锚点位置
+
+**API设计**：
+```jsx
+<Popover>
+  <Popover.Button>Toggle</Popover.Button>
+  <Popover.Panel>
+    <h3>Panel Title</h3>
+    <p>Some content</p>
+  </Popover.Panel>
+</Popover>
+```
+
+**提示**：
+- 使用useRef获取元素位置
+- 计算panel显示位置
+- 监听document点击事件
+- 使用CSS transform定位
+
+</Expandable>
+
+### 练习3：实现Breadcrumb组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 显示导航路径
+- 支持可点击和不可点击项
+- 自动生成分隔符
+- 响应式折叠
+
+**API设计**：
+```jsx
+<Breadcrumb separator="/">
+  <Breadcrumb.Item href="/">Home</Breadcrumb.Item>
+  <Breadcrumb.Item href="/products">Products</Breadcrumb.Item>
+  <Breadcrumb.Item>Current Page</Breadcrumb.Item>
+</Breadcrumb>
+```
+
+**提示**：
+- 使用React.Children遍历
+- 添加分隔符（除最后一项）
+- 可点击项使用Link组件
+- 移动端显示"..."
+
+</Expandable>
+
+### 练习4：实现Progress组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 线性进度条
+- 圆形进度条
+- 可配置大小和颜色
+- 显示百分比
+
+**API设计**：
+```jsx
+<Progress value={75} max={100} type="linear" showLabel>
+  <Progress.Bar />
+  <Progress.Label>75%</Progress.Label>
+</Progress>
+
+<Progress value={60} max={100} type="circular" size="large">
+  <Progress.Circle />
+  <Progress.Label>60%</Progress.Label>
+</Progress>
+```
+
+**提示**：
+- 计算百分比
+- 圆形使用SVG stroke-dasharray
+- 添加动画效果
+- 使用CSS变量支持主题
+
+</Expandable>
+
+---
+
+## 9. 常见陷阱
+
+### 陷阱1：子组件独立渲染
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 子组件在外部使用
+<Select>
+  <SelectButton>Select</SelectButton>
+</Select>
+<SelectOptions>
+  <SelectOption value="1">Option 1</SelectOption>
+</SelectOptions>
+
+// 解决方案：强制子组件在内部使用
+function SelectOptions({ children, ...props }) {
+  const context = useSelectContext();
+  if (!context) {
+    throw new Error('SelectOptions must be used within Select');
+  }
+  // ...
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：Context值变化导致重渲染
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 每次渲染都创建新对象
+function Select({ children }) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <SelectContext.Provider value={{ isOpen, setIsOpen }}>
+      {children}
+    </SelectContext.Provider>
+  );
+}
+
+// ✅ 正确 - 使用useMemo缓存
+function Select({ children }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const contextValue = useMemo(() => ({ isOpen, setIsOpen }), [isOpen]);
+
+  return (
+    <SelectContext.Provider value={contextValue}>
+      {children}
+    </SelectContext.Provider>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：缺少类型定义
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有类型检查
+<Select>
+  <SelectButton />          // 缺少children
+  <Select.Option value="1" /> // 没有children
+  <CustomComponent />        // 不是Select的子组件
+</Select>
+
+// ✅ 正确 - 使用TypeScript
+interface SelectProps {
+  children: React.ReactNode;
+}
+
+const Select: React.FC<SelectProps> = ({ children }) => {
+  // ...
+};
+
+Select.Button = function SelectButton({ children }: { children: React.ReactNode }) {
+  // ...
+};
+```
+
+</ErrorBox>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 复合组件是相互协作的组件组，共同实现完整UI
+- ✅ 使用Context API在子组件间共享状态
+- ✅ 子组件通过React.cloneElement接收props
+- ✅ 组合使用React.Children.map处理子组件
+- ✅ 添加displayName便于调试
+- ✅ 提供有用的错误信息（Context未找到）
+- ✅ 使用TypeScript增强类型安全
+- ✅ 支持泛型实现可复用组件
+- ✅ 添加ARIA属性提高可访问性
+- ✅ 使用useMemo避免不必要重渲染
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **清晰API设计** - 让组件的组合方式直观明了
+2. **错误处理** - 提供有用的错误信息
+3. **类型安全** - 使用TypeScript定义完整类型
+4. **可访问性** - 添加适当的ARIA属性
+5. **性能优化** - 使用useMemo缓存Context值
+6. **测试覆盖** - 测试组件的各种组合方式
+7. **文档完整** - 提供使用示例和API文档
+8. **向下传递** - 允许用户传递自定义props
+
+</BestPractices>
+
+### 常见复合组件类型
+
+**导航类**：
+- Tabs, Breadcrumb, Menu, Pagination
+
+**展示类**：
+- Modal, Tooltip, Popover, Accordion
+
+**表单类**：
+- FormField, InputGroup, CheckboxGroup
+
+**进度类**：
+- Progress, Stepper, Slider
+
+**选择类**：
+- Select, Dropdown, RadioGroup, Switch
+
+### 下一步学习
+
+现在你已经掌握了复合组件，接下来可以学习：
+
+1. **[容器-展示模式](container-presentational)** - 掌握状态管理最佳实践
+2. **[Props Getters模式](../advanced/props-getters)** - 学习高级props处理
+3. **[Controlled vs Uncontrolled](../advanced/controlled-uncontrolled)** - 理解状态控制
+4. **[组合模式](../advanced/composition-vs-inheritance)** - 深入组件组合
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [Composition](https://react.dev/learn/thinking-in-react) - 组合思维
+- [Context API](https://react.dev/reference/react) - Context使用
+- [React.cloneElement](https://react.dev/reference/react.cloneElement) - 元素克隆
+
+### 推荐阅读
+
+- [Headless UI](https://headlessui.com/) - 无样式复合组件库
+- [Radix UI](https://www.radix-ui.com/) - 高级复合组件
+- [Reakit](https://reakit.io/) - 可组合React组件
+
+### 相关话题
+
+- [Compound Components](https://kentcdodds.com/blog/compound-components-with-react) - 复合组件详解
+- [Build Your Own Compound Components](https://www.youtube.com/watch?v=zylP68e_rVo) - 视频教程
+- [TypeScript React](https://react.dev/reference/react/TypeScript) - TypeScript支持
+
+---
+
+[← 上一章：渲染属性模式](render-props) | [下一章：容器-展示模式 →](container-presentational)

@@ -62,12 +62,18 @@ const sidebars = {
         }
       ]
     },
-    // {
-    //   type: 'category',
-    //   label: '🧩 组件模式',
-    //   collapsed: true,
-    //   items: []
-    // },
+    {
+      type: 'category',
+      label: '🧩 组件模式',
+      collapsed: true,
+      items: [
+        'patterns/basics/functional-components',
+        'patterns/basics/higher-order-components',
+        'patterns/basics/render-props',
+        'patterns/basics/compound-components',
+        'patterns/basics/container-presentational'
+      ]
+    },
     // {
     //   type: 'category',
     //   label: '🌊 状态管理',
@@ -111,6 +117,17 @@ const sidebars = {
         'hooks/advanced/useCallback',
         'hooks/advanced/useMemo',
         'hooks/advanced/custom-hooks',
+      ]
+    },
+    {
+      type: 'category',
+      label: '组件模式',
+      items: [
+        'patterns/basics/functional-components',
+        'patterns/basics/higher-order-components',
+        'patterns/basics/render-props',
+        'patterns/basics/compound-components',
+        'patterns/basics/container-presentational'
       ]
     }
   ]

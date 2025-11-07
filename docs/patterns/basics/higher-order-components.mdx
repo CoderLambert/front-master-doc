@@ -1,0 +1,1296 @@
+# 高阶组件 (HOC) - 逻辑复用模式
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+高阶组件（Higher-Order Component，简称HOC）是React中用于复用组件逻辑的高级模式。虽然Hooks已经成为了复用逻辑的首选方式，但HOC在某些场景下仍然有它的价值。在本章中，我们将深入探讨HOC的概念、实现方式、使用场景和最佳实践。
+
+## 本章学习目标
+
+- 理解高阶组件的概念和原理
+- 掌握HOC的实现方式和语法
+- 学会编写可复用的HOC
+- 理解HOC与Hooks的对比和选择
+- 掌握HOC的常见使用场景
+- 学会避免HOC的常见陷阱
+- 理解HOC的命名约定和最佳实践
+
+---
+
+## 1. 什么是高阶组件？
+
+高阶组件是一个函数，它接受一个组件并返回一个新的组件。HOC是React中用于共享逻辑的模式，它将组件逻辑提取到可复用的函数中。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>高阶组件</strong>是一个函数，接收一个组件作为参数，返回一个增强的新组件。类似于JavaScript中的<strong>高阶函数</strong>。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 高阶组件的本质
+const EnhancedComponent = higherOrderComponent(WrappedComponent);
+
+// 实际例子
+const UserListWithLoading = withLoading(UserList);
+const UserListWithAuth = withAuth(UserList);
+```
+
+</CodeBlock>
+
+### 1.1 HOC vs 高阶函数
+
+<CodeBlock>
+
+```jsx
+// JavaScript高阶函数示例
+const numbers = [1, 2, 3, 4, 5];
+
+// map是高阶函数
+const doubled = numbers.map(n => n * 2);
+
+// React高阶组件示例
+const enhancedComponent = withLoading(WrappedComponent);
+```
+
+</CodeBlock>
+
+### 1.2 为什么使用HOC？
+
+<Grid>
+
+<div>
+  <h4>适用场景</h4>
+  <ul>
+    <li>🔄 逻辑复用（未使用Hooks之前）</li>
+    <li>🔒 权限控制</li>
+    <li>🔌 数据订阅</li>
+    <li>📊 状态管理</li>
+    <li>🎨 样式增强</li>
+    <li>📝 Props转换</li>
+  </ul>
+</div>
+
+<div>
+  <h4>历史背景</h4>
+  <ul>
+    <li>📅 React 0.14+ 引入</li>
+    <li>📅 用于复用类组件逻辑</li>
+    <li>📅 Redux、React Router使用HOC</li>
+    <li>📅 React 16.8+ Hooks出现</li>
+    <li>📅 现在推荐使用Hooks</li>
+    <li>📅 仍用于库开发</li>
+  </ul>
+</div>
+
+</Grid>
+
+---
+
+## 2. HOC实现基础
+
+### 2.1 最简单的HOC
+
+<CodeBlock>
+
+```jsx
+// 最基础的HOC - 添加额外prop
+function withExtraProp(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    // 添加额外prop
+    const enhancedProps = {
+      ...props,
+      extraProp: 'This is added by HOC'
+    };
+
+    // 传递给包装组件
+    return <WrappedComponent {...enhancedProps} />;
+  };
+}
+
+// 使用
+function OriginalComponent({ name, extraProp }) {
+  return <div>Hello {name}! {extraProp}</div>;
+}
+
+// 创建增强组件
+const EnhancedComponent = withExtraProp(OriginalComponent);
+
+// 使用增强组件
+<EnhancedComponent name="Alice" />
+// 渲染: <div>Hello Alice! This is added by HOC</div>
+```
+
+</CodeBlock>
+
+### 2.2 箭头函数版本
+
+<CodeBlock>
+
+```jsx
+// 使用箭头函数
+const withExtraProp = (WrappedComponent) => (props) => {
+  return <WrappedComponent {...props} extraProp="Added" />;
+};
+
+// 传递额外参数
+const withExtraProp = (WrappedComponent, extraValue) => (props) => {
+  return <WrappedComponent {...props} extraProp={extraValue} />;
+};
+
+// 使用
+const EnhancedComponent = withExtraProp(OriginalComponent, 'Custom Value');
+```
+
+</CodeBlock>
+
+### 2.3 处理WrappedComponent的名称
+
+<CodeBlock>
+
+```jsx
+import React from 'react';
+
+// 显示名称，便于调试
+function withName(WrappedComponent) {
+  const EnhancedComponent = (props) => <WrappedComponent {...props} />;
+
+  EnhancedComponent.displayName = `withName(${getDisplayName(WrappedComponent)})`;
+
+  return EnhancedComponent;
+}
+
+function getDisplayName(WrappedComponent) {
+  return WrappedComponent.displayName || WrappedComponent.name || 'Component';
+}
+
+// 使用
+function UserCard({ name }) {
+  return <div>{name}</div>;
+}
+
+const EnhancedUserCard = withName(UserCard);
+console.log(EnhancedUserCard.displayName); // "withName(UserCard)"
+```
+
+</CodeBlock>
+
+---
+
+## 3. 常见HOC模式
+
+### 3.1 条件渲染HOC
+
+<CodeBlock>
+
+```jsx
+// 根据条件显示组件
+function withCondition(WrappedComponent, condition) {
+  return function EnhancedComponent(props) {
+    if (!condition(props)) {
+      return null; // 或返回默认组件
+    }
+    return <WrappedComponent {...props} />;
+  };
+}
+
+// 使用示例：权限控制
+function withAuth(WrappedComponent) {
+  return function AuthenticatedComponent(props) {
+    const { isAuthenticated, user } = props;
+
+    if (!isAuthenticated) {
+      return <Redirect to="/login" />;
+    }
+
+    if (user && !user.hasPermission) {
+      return <div>Access Denied</div>;
+    }
+
+    return <WrappedComponent {...props} />;
+  };
+}
+
+// 应用到组件
+const ProtectedDashboard = withAuth(Dashboard);
+const AdminPanel = withAuth(AdminComponent, ({ user }) => user?.role === 'admin');
+```
+
+</CodeBlock>
+
+### 3.2 数据获取HOC
+
+<CodeBlock>
+
+```jsx
+// 数据获取HOC
+function withData(WrappedComponent, dataSource) {
+  return function EnhancedComponent(props) {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          setLoading(true);
+          const result = await dataSource(props);
+          setData(result);
+        } catch (err) {
+          setError(err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchData();
+    }, [props.id]); // 依赖prop变化
+
+    return (
+      <WrappedComponent
+        {...props}
+        data={data}
+        loading={loading}
+        error={error}
+      />
+    );
+  };
+}
+
+// 使用
+const fetchUser = async ({ userId }) => {
+  const response = await fetch(`/api/users/${userId}`);
+  return response.json();
+};
+
+const UserProfile = ({ user, loading, error }) => {
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return <div>{user.name}</div>;
+};
+
+const UserProfileWithData = withData(UserProfile, fetchUser);
+```
+
+</CodeBlock>
+
+### 3.3 样式增强HOC
+
+<CodeBlock>
+
+```jsx
+// 样式增强HOC
+function withStyles(WrappedComponent, styles) {
+  return function StyledComponent(props) {
+    const [isActive, setIsActive] = useState(false);
+    const className = isActive ? `${styles.active} ${styles.base}` : styles.base;
+
+    return (
+      <div className={className}>
+        <WrappedComponent
+          {...props}
+          isActive={isActive}
+          setIsActive={setIsActive}
+        />
+      </div>
+    );
+  };
+}
+
+// 使用示例
+const cardStyles = {
+  base: 'card',
+  active: 'card-active'
+};
+
+const EnhancedCard = withStyles(Card, cardStyles);
+
+// 或者传递CSS类名
+function withClassName(WrappedComponent, className) {
+  return function EnhancedComponent(props) {
+    return (
+      <div className={className}>
+        <WrappedComponent {...props} />
+      </div>
+    );
+  };
+}
+
+const CenteredComponent = withClassName(MyComponent, 'mx-auto max-w-md');
+```
+
+</CodeBlock>
+
+### 3.4 状态管理HOC
+
+<CodeBlock>
+
+```jsx
+// 状态提升HOC
+function withState(WrappedComponent, initialState, stateName = 'state', setStateName = 'setState') {
+  return function EnhancedComponent(props) {
+    const [state, setState] = useState(initialState);
+
+    const enhancedProps = {
+      ...props,
+      [stateName]: state,
+      [setStateName]: setState
+    };
+
+    return <WrappedComponent {...enhancedProps} />;
+  };
+}
+
+// 使用
+const EnhancedCounter = withState(Counter, 0, 'count', 'setCount');
+
+function Counter({ count, setCount }) {
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+
+// 更灵活的版本
+function withFormState(WrappedComponent, initialValues) {
+  return function EnhancedFormComponent(props) {
+    const [values, setValues] = useState(initialValues);
+    const [touched, setTouched] = useState({});
+    const [errors, setErrors] = useState({});
+
+    const handleChange = (name, value) => {
+      setValues(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleBlur = (name) => {
+      setTouched(prev => ({ ...prev, [name]: true }));
+    };
+
+    return (
+      <WrappedComponent
+        {...props}
+        values={values}
+        touched={touched}
+        errors={errors}
+        handleChange={handleChange}
+        handleBlur={handleBlur}
+      />
+    );
+  };
+}
+```
+
+</CodeBlock>
+
+### 3.5 事件处理HOC
+
+<CodeBlock>
+
+```jsx
+// 事件处理HOC
+function withClickAnalytics(WrappedComponent, analytics) {
+  return function EnhancedComponent(props) {
+    const handleClick = useCallback((event) => {
+      // 调用原始处理函数
+      if (props.onClick) {
+        props.onClick(event);
+      }
+
+      // 发送分析数据
+      analytics.track('component_clicked', {
+        component: WrappedComponent.name,
+        timestamp: Date.now()
+      });
+    }, [props.onClick, analytics]);
+
+    return <WrappedComponent {...props} onClick={handleClick} />;
+  };
+}
+
+// 使用
+const trackClick = {
+  track: (event, data) => console.log(event, data)
+};
+
+const TrackedButton = withClickAnalytics(Button, trackClick);
+
+// 键盘快捷键HOC
+function withKeyboardShortcuts(WrappedComponent, shortcuts) {
+  return function EnhancedComponent(props) {
+    useEffect(() => {
+      const handleKeyPress = (event) => {
+        const key = event.key.toLowerCase();
+        if (shortcuts[key]) {
+          event.preventDefault();
+          shortcuts[key](props);
+        }
+      };
+
+      document.addEventListener('keydown', handleKeyPress);
+      return () => document.removeEventListener('keydown', handleKeyPress);
+    }, [shortcuts, props]);
+
+    return <WrappedComponent {...props} />;
+  };
+}
+
+const shortcuts = {
+  's': () => console.log('Save action'),
+  'd': () => console.log('Delete action')
+};
+
+const ShortcutEnabledComponent = withKeyboardShortcuts(MyComponent, shortcuts);
+```
+
+</CodeBlock>
+
+---
+
+## 4. 高级HOC模式
+
+### 4.1 链式HOC
+
+<CodeBlock>
+
+```jsx
+// 链式应用HOC
+const EnhancedComponent = withAuth(
+  withLoading(
+    withStyles(MyComponent, styles)
+  )
+);
+
+// 或者使用compose函数
+const compose = (...hocs) => (component) =>
+  hocs.reduce((wrapped, hoc) => hoc(wrapped), component);
+
+const enhance = compose(
+  withAuth,
+  withLoading,
+  withStyles(styles),
+  withKeyboardShortcuts(shortcuts)
+);
+
+const EnhancedComponent = enhance(MyComponent);
+```
+
+</CodeBlock>
+
+### 4.2 传递Refs
+
+<CodeBlock>
+
+```jsx
+// React.forwardRef传递refs
+import React, { forwardRef } from 'react';
+
+function withRef(WrappedComponent) {
+  // 必须使用forwardRef
+  const EnhancedComponent = forwardRef((props, ref) => {
+    return <WrappedComponent ref={ref} {...props} />;
+  });
+
+  EnhancedComponent.displayName = `withRef(${getDisplayName(WrappedComponent)})`;
+
+  return EnhancedComponent;
+}
+
+// 使用
+const EnhancedInput = withRef(Input);
+
+function MyComponent() {
+  const inputRef = useRef();
+
+  useEffect(() => {
+    // 可以访问到Input的实例方法
+    inputRef.current.focus();
+  }, []);
+
+  return <EnhancedInput ref={inputRef} />;
+}
+```
+
+</CodeBlock>
+
+### 4.3 继承Props代理模式
+
+<CodeBlock>
+
+```jsx
+// Props代理HOC - 操作props
+function withPropsProxy(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    // 1. 操作传入的props
+    const modifiedProps = {
+      ...props,
+      className: `enhanced ${props.className || ''}`,
+      onClick: (e) => {
+        // 增强点击事件
+        console.log('Enhanced click');
+        if (props.onClick) {
+          props.onClick(e);
+        }
+      }
+    };
+
+    // 2. 添加额外props
+    const addedProps = {
+      theme: 'dark',
+      locale: 'en-US'
+    };
+
+    // 3. 渲染包装组件
+    return <WrappedComponent {...modifiedProps} {...addedProps} />;
+  };
+}
+```
+
+</CodeBlock>
+
+### 4.4 继承反向代理模式
+
+<CodeBlock>
+
+```jsx
+// 反向代理HOC - 劫持生命周期
+function withLifecycleProxy(WrappedComponent) {
+  return class EnhancedComponent extends WrappedComponent {
+    componentDidMount() {
+      console.log('Enhanced component did mount');
+      super.componentDidMount();
+    }
+
+    componentWillUnmount() {
+      console.log('Enhanced component will unmount');
+      super.componentWillUnmount();
+    }
+
+    render() {
+      console.log('Enhanced component render');
+      return super.render();
+    }
+  };
+}
+
+// 注意：这种模式已不推荐，仅用于理解概念
+// Hooks提供了更好的替代方案
+```
+
+</CodeBlock>
+
+---
+
+## 5. HOC vs Hooks
+
+### 5.1 对比分析
+
+<Compare>
+
+```jsx
+// 使用HOC的代码
+function withUser(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    const { data, loading } = useUser();
+    return <WrappedComponent {...props} user={data} loading={loading} />;
+  };
+}
+
+const UserProfile = withUser(({ user, loading }) => {
+  if (loading) return <div>Loading...</div>;
+  return <div>{user.name}</div>;
+});
+
+// 使用Hooks的代码
+function useUser() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUser().then(setData);
+  }, []);
+
+  return { data, loading };
+}
+
+function UserProfile() {
+  const { data: user, loading } = useUser();
+
+  if (loading) return <div>Loading...</div>;
+  return <div>{user.name}</div>;
+}
+```
+
+</Compare>
+
+### 5.2 选择指南
+
+<CodeBlock>
+
+```jsx
+// 推荐使用Hooks的场景
+1. 状态逻辑复用 -> useState, useReducer
+2. 副作用逻辑 -> useEffect
+3. 上下文共享 -> useContext
+4. 性能优化 -> useMemo, useCallback
+5. 自定义Hook -> 创建useXxx函数
+
+// 推荐使用HOC的场景
+1. 库开发 (如Redux connect)
+2. 样式增强
+3. 类组件项目
+4. 跨组件树的功能注入
+```
+
+</CodeBlock>
+
+### 5.3 Hooks的优势
+
+<CodeBlock>
+
+```jsx
+// Hooks优势
+1. 更好的类型支持 (TypeScript)
+2. 避免嵌套地狱
+3. 不引入额外组件层级
+4. 更灵活的组合方式
+5. 更好的调试体验
+6. 性能更好 (无额外组件)
+
+// HOC局限
+1. 命名冲突
+2. 组件层级增加
+3. 难以理解props来源
+4. 可能导致重复渲染
+5. 难以调试
+```
+
+</CodeBlock>
+
+---
+
+## 6. 实际应用场景
+
+### 6.1 权限控制HOC
+
+<CodeBlock>
+
+```jsx
+// 完整的权限控制HOC
+function withAuthorization(requiredRole) {
+  return (WrappedComponent) => {
+    return function AuthorizedComponent(props) {
+      const { user, isLoading } = useAuth();
+
+      if (isLoading) {
+        return <div>Checking authorization...</div>;
+      }
+
+      if (!user) {
+        return <Navigate to="/login" replace />;
+      }
+
+      if (user.role !== requiredRole) {
+        return (
+          <div className="access-denied">
+            <h2>Access Denied</h2>
+            <p>You don't have permission to view this page.</p>
+            <p>Required role: {requiredRole}</p>
+            <p>Your role: {user.role}</p>
+          </div>
+        );
+      }
+
+      return <WrappedComponent {...props} />;
+    };
+  };
+}
+
+// 使用
+const AdminDashboard = withAuthorization('admin')(Dashboard);
+const SuperUserPanel = withAuthorization('superuser')(Panel);
+```
+
+</CodeBlock>
+
+### 6.2 数据缓存HOC
+
+<CodeBlock>
+
+```jsx
+// 智能缓存HOC
+function withCache(WrappedComponent, options = {}) {
+  const { ttl = 60000 } = options; // 默认60秒
+
+  return function CachedComponent(props) {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [lastFetch, setLastFetch] = useState(0);
+
+    const { cacheKey, fetcher, refetch = false } = props;
+
+    const fetchData = useCallback(async (force = false) => {
+      const now = Date.now();
+      const cachedData = getFromCache(cacheKey);
+
+      // 使用缓存
+      if (!force && cachedData && now - lastFetch < ttl) {
+        setData(cachedData);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        const result = await fetcher();
+        setData(result);
+        setLastFetch(now);
+        saveToCache(cacheKey, result);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    }, [cacheKey, fetcher, lastFetch, ttl]);
+
+    useEffect(() => {
+      fetchData(refetch);
+    }, [fetchData, refetch]);
+
+    return (
+      <WrappedComponent
+        {...props}
+        data={data}
+        loading={loading}
+        error={error}
+        refetch={() => fetchData(true)}
+      />
+    );
+  };
+}
+
+// 使用
+const UserListWithCache = withCache({
+  cacheKey: 'user-list',
+  fetcher: () => fetchUsers()
+})(UserList);
+```
+
+</CodeBlock>
+
+### 6.3 主题切换HOC
+
+<CodeBlock>
+
+```jsx
+// 主题HOC
+function withTheme(WrappedComponent) {
+  return function ThemedComponent(props) {
+    const [theme, setTheme] = useState(() => {
+      return localStorage.getItem('theme') || 'light';
+    });
+
+    const toggleTheme = useCallback(() => {
+      setTheme(prevTheme => {
+        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', newTheme);
+        return newTheme;
+      });
+    }, []);
+
+    useEffect(() => {
+      document.body.setAttribute('data-theme', theme);
+    }, [theme]);
+
+    const themeProps = {
+      theme,
+      toggleTheme,
+      isDark: theme === 'dark'
+    };
+
+    return <WrappedComponent {...props} {...themeProps} />;
+  };
+}
+
+// 使用
+const ThemedHeader = withTheme(Header);
+
+function Header({ theme, toggleTheme, isDark }) {
+  return (
+    <header className={`header ${isDark ? 'dark' : 'light'}`}>
+      <h1>My App</h1>
+      <button onClick={toggleTheme}>
+        {isDark ? '🌞' : '🌙'}
+      </button>
+    </header>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 最佳实践
+
+### 7.1 命名约定
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的命名
+const withAuth = (WrappedComponent) => { };  // withXxx
+const withLoading = (WrappedComponent) => { };
+const withUserData = (WrappedComponent) => { };
+
+// ❌ 避免的命名
+const auth = (WrappedComponent) => { };       // 缺少with前缀
+const makeAuth = (WrappedComponent) => { };   // makeXxx也可以，但推荐withXxx
+const AuthHOC = (WrappedComponent) => { };    // 使用驼峰而不是PascalCase
+
+// ✅ 命名DisplayName
+function withAuth(WrappedComponent) {
+  const EnhancedComponent = (props) => <WrappedComponent {...props} />;
+  EnhancedComponent.displayName = `withAuth(${WrappedComponent.displayName || WrappedComponent.name})`;
+  return EnhancedComponent;
+}
+```
+
+</CodeBlock>
+
+### 7.2 Props传递
+
+<CodeBlock>
+
+```jsx
+// ✅ 正确传递所有props
+function withExtraProp(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    return <WrappedComponent {...props} extraProp="value" />;
+  };
+}
+
+// ❌ 错误 - 不传递未使用的props
+function withExtraProp(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    const { name, ...otherProps } = props;
+    return <WrappedComponent name={name} {...otherProps} extraProp="value" />;
+  };
+}
+
+// 或者明确过滤
+function withOnlyUserProps(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    return <WrappedComponent user={props.user} />;
+  };
+}
+```
+
+</CodeBlock>
+
+### 7.3 避免命名冲突
+
+<CodeBlock>
+
+```jsx
+// ✅ 使用唯一命名空间
+function withUser(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    const userData = useUser();
+    return (
+      <WrappedComponent
+        {...props}
+        userData={userData}  // 不直接覆盖user
+      />
+    );
+  };
+}
+
+// ✅ 使用前缀
+function withUser(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    return (
+      <WrappedComponent
+        {...props}
+        withUserUserData={useUser()}  // 前缀
+      />
+    );
+  };
+}
+
+// ✅ 传递所有props让组件自己处理
+function withUser(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    const userData = useUser();
+    return <WrappedComponent {...props} userData={userData} />;
+  };
+}
+```
+
+</CodeBlock>
+
+### 7.4 调试和开发体验
+
+<CodeBlock>
+
+```jsx
+// 添加displayName
+function withAuth(WrappedComponent) {
+  const AuthComponent = (props) => {
+    // ...逻辑
+    return <WrappedComponent {...props} />;
+  };
+
+  AuthComponent.displayName = `withAuth(${getDisplayName(WrappedComponent)})`;
+  return AuthComponent;
+}
+
+// 添加propTypes
+import PropTypes from 'prop-types';
+
+function withAuth(WrappedComponent) {
+  const AuthComponent = (props) => {
+    // ...逻辑
+    return <WrappedComponent {...props} />;
+  };
+
+  AuthComponent.propTypes = {
+    isAuthenticated: PropTypes.bool,
+    user: PropTypes.object
+  };
+
+  AuthComponent.displayName = `withAuth(${getDisplayName(WrappedComponent)})`;
+  return AuthComponent;
+}
+
+// React DevTools支持
+import { setDisplayName } from 'recompose';
+
+const withAuth = compose(
+  setDisplayName('withAuth'),
+  wrapDisplayName,
+  withLogic
+);
+```
+
+</CodeBlock>
+
+---
+
+## 8. 常见陷阱
+
+### 陷阱1：丢失Ref
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - ref不会传递
+function withAuth(WrappedComponent) {
+  return function AuthComponent(props) {
+    const { isAuthenticated } = useAuth();
+    return <WrappedComponent {...props} />;
+  };
+}
+
+// 解决 - 使用forwardRef
+import { forwardRef } from 'react';
+
+function withAuth(WrappedComponent) {
+  const AuthComponent = forwardRef((props, ref) => {
+    const { isAuthenticated } = useAuth();
+    return <WrappedComponent ref={ref} {...props} />;
+  });
+
+  AuthComponent.displayName = `withAuth(${getDisplayName(WrappedComponent)})`;
+  return AuthComponent;
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：命名冲突
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 覆盖现有props
+function withExtraProps(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    // 会覆盖组件的data prop
+    return <WrappedComponent {...props} data={{ new: 'data' }} />;
+  };
+}
+
+// ✅ 正确 - 避免冲突
+function withExtraProps(WrappedComponent) {
+  return function EnhancedComponent(props) {
+    return <WrappedComponent {...props} extraData={{ new: 'data' }} />;
+  };
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：循环依赖
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 循环依赖
+function withAuth(WrappedComponent) {
+  const AuthComponent = () => <WrappedComponent />;
+  return AuthComponent;
+}
+
+function withPermission(WrappedComponent) {
+  const PermissionComponent = () => <WrappedComponent />;
+  return PermissionComponent;
+}
+
+// 如果两个组件相互包装会导致循环依赖
+```
+
+</ErrorBox>
+
+### 陷阱4：组件实例
+
+<ErrorBox>
+
+```jsx
+// ❌ 不要在HOC中实例化组件
+function withAuth(WrappedComponent) {
+  return function AuthComponent(props) {
+    return <WrappedComponent />; // ❌ 没有传递props
+  };
+}
+
+// ✅ 正确传递props
+function withAuth(WrappedComponent) {
+  return function AuthComponent(props) {
+    return <WrappedComponent {...props} />; // ✅ 传递所有props
+  };
+}
+```
+
+</ErrorBox>
+
+---
+
+## 9. 实践练习
+
+### 练习1：创建withLoading HOC
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 包装组件显示loading状态
+- 支持自定义loading组件
+- 可配置延迟时间（避免闪烁）
+- 传递loading状态给包装组件
+
+**实现要求**：
+```javascript
+const EnhancedComponent = withLoading({
+  delay: 500, // 500ms延迟
+  loader: <Spinner /> // 自定义loading组件
+})(MyComponent);
+```
+
+**提示**：
+- 使用useState管理loading状态
+- 使用useEffect触发loading
+- 使用setTimeout实现延迟
+
+</Expandable>
+
+### 练习2：创建withFormValidation HOC
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 表单验证HOC
+- 支持实时验证和提交时验证
+- 可配置验证规则
+- 传递验证状态和错误信息
+
+**实现要求**：
+```javascript
+const rules = {
+  email: { required: true, pattern: /^\S+@\S+$/ },
+  password: { required: true, minLength: 6 }
+};
+
+const ValidatedForm = withFormValidation({
+  rules
+})(FormComponent);
+```
+
+**数据结构**：
+- errors: 
+```js
+{ fieldName: errorMessage }
+```
+
+- touched:
+```js
+{ fieldName: boolean }
+```
+
+- validate:
+```js
+ (field, value) => string
+```
+**提示**：
+- 使用useState管理状态
+- 实现验证函数
+- 处理blur和change事件
+
+</Expandable>
+
+### 练习3：创建withInfiniteScroll HOC
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 无限滚动HOC
+- 滚动到底部自动加载更多
+- 可配置阈值（距离底部多少px时触发）
+- 支持加载状态和错误处理
+
+**实现要求**：
+```javascript
+const InfiniteList = withInfiniteScroll({
+  threshold: 200, // 距离底部200px时加载
+  loadMore: fetchNextPage // 加载更多函数
+})(ListComponent);
+```
+
+**提示**：
+- 使用useEffect监听滚动事件
+- 计算scrollTop和clientHeight
+- 使用Intersection Observer API (可选)
+
+</Expandable>
+
+### 练习4：创建withKeyboardShortcuts HOC
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 键盘快捷键HOC
+- 支持多个快捷键
+- 快捷键冲突处理
+- 可禁用特定快捷键
+
+**实现要求**：
+```javascript
+const shortcuts = {
+  'ctrl+s': { handler: onSave, description: 'Save' },
+  'ctrl+z': { handler: onUndo, description: 'Undo' },
+  '?': { handler: showHelp, description: 'Show help' }
+};
+
+const ShortcutComponent = withKeyboardShortcuts({ shortcuts })(MyComponent);
+```
+
+**提示**：
+- 使用useEffect添加事件监听
+- 处理keydown事件
+- 避免在输入框中触发
+- 添加全局快捷键提示
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 高阶组件是接收组件并返回新组件的函数
+- ✅ HOC用于复用组件逻辑（主要在Hooks之前）
+- ✅ 使用withXxx命名约定
+- ✅ 设置displayName便于调试
+- ✅ 使用forwardRef传递refs
+- ✅ 避免命名冲突
+- ✅ 推荐优先使用Hooks而不是HOC
+- ✅ HOC仍适用于库开发（如Redux）
+- ✅ 传递所有props给包装组件
+- ✅ 避免循环依赖
+
+</Checklist>
+
+### HOC vs Hooks选择指南
+
+<BestPractices>
+
+1. **新的逻辑复用** - 优先使用Hooks
+2. **类组件项目** - 可以使用HOC
+3. **库开发** - HOC仍有价值
+4. **样式增强** - 推荐使用HOC或CSS-in-JS
+5. **复杂逻辑** - 使用自定义Hook
+6. **需要保留Refs** - 使用forwardRef with HOC
+
+</BestPractices>
+
+### 常见HOC类型
+
+**状态类**：
+- `withState` - 添加state
+- `withFormState` - 表单状态
+- `withLocalStorage` - 本地存储
+
+**数据类**：
+- `withData` - 数据获取
+- `withCache` - 缓存
+- `withSubscription` - 订阅
+
+**行为类**：
+- `withAuth` - 权限控制
+- `withClickAnalytics` - 点击追踪
+- `withKeyboardShortcuts` - 键盘快捷键
+
+**渲染类**：
+- `withLoading` - 加载状态
+- `withErrorBoundary` - 错误边界
+- `withStyles` - 样式增强
+
+### 下一步学习
+
+现在你已经掌握了HOC，接下来可以学习：
+
+1. **[渲染属性模式](render-props)** - 理解另一种逻辑复用方式
+2. **[复合组件](compound-components)** - 学习组件组合技巧
+3. **[容器-展示模式](container-presentational)** - 掌握组件分离
+4. **[Hooks模式](../advanced/hooks-patterns)** - 现代逻辑复用方式
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [高阶组件](https://react.dev/reference/react) - React官方文档
+- [Forwarding Refs](https://react.dev/reference/react/forwardRef) - Ref转发
+- [Render Props](https://react.dev/reference/react) - 渲染属性模式
+
+### 推荐阅读
+
+- [HOC vs Render Props](https://kentcdodds.com/blog/aha-moments-when-learning-react) - 模式对比
+- [Recompose库](https://github.com/acdlite/recompose) - HOC工具库
+- [Why React Hooks are Better than HOCs](https://kentcdodds.com/blog/how-to-control-the-boilerplate-with-react-higher-order-components) - Hooks优势
+
+### 迁移指南
+
+- [从HOC到Hooks](https://kentcdodds.com/blog/application-state-management-with-react) - 迁移策略
+- [混合使用](https://react.dev/reference/react) - HOC和Hooks共存
+
+---
+
+[← 上一章：函数式组件](functional-components) | [下一章：渲染属性模式 →](render-props)

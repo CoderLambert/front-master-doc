@@ -1,0 +1,1225 @@
+# 函数式组件 - 基础与最佳实践
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+函数式组件是React中最基础、最常用的组件形式。随着React Hooks的引入，函数式组件已经成为现代React开发的主流方式。在本章中，我们将深入探讨函数式组件的各个方面，从基础语法到高级模式。
+
+## 本章学习目标
+
+- 掌握函数式组件的基本语法和结构
+- 理解函数式组件与类组件的区别
+- 学会函数式组件的最佳实践
+- 掌握函数式组件的常见模式和设计原则
+- 理解函数式组件的性能优化技巧
+- 学会组织和管理函数式组件
+
+---
+
+## 1. 什么是函数式组件？
+
+函数式组件是React中定义组件的一种方式，它是一个返回JSX的JavaScript函数。函数式组件接收props作为参数，并返回描述UI的React元素。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    函数式组件是<strong>纯函数</strong>：给定相同的props，总是返回相同的JSX。它不管理自己的状态（除非使用Hooks），只负责UI的渲染。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 最简单的函数式组件
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
+
+// 使用ES6箭头函数的函数式组件
+const Welcome = (props) => {
+  return <h1>Hello, {props.name}</h1>;
+};
+
+// 简化的箭头函数（单行返回）
+const Welcome = (props) => <h1>Hello, {props.name}</h1>;
+```
+
+</CodeBlock>
+
+### 1.1 函数式组件的历史
+
+函数式组件在React中经历了演变：
+
+- **React 0.14+**：引入函数式组件概念
+- **React 16.8+**：Hooks使函数式组件支持状态和生命周期
+- **React 18+**：函数式组件成为主流推荐方式
+
+### 1.2 为什么选择函数式组件？
+
+<Grid>
+
+<div>
+  <h4>优点</h4>
+  <ul>
+    <li>✅ 语法简洁，易于理解</li>
+    <li>✅ 性能较好（没有类开销）</li>
+    <li>✅ 更容易测试和复用</li>
+    <li>✅ 符合函数式编程思想</li>
+    <li>✅ Hooks提供完整能力</li>
+    <li>✅ 更好的Tree Shaking</li>
+  </ul>
+</div>
+
+<div>
+  <h4>使用场景</h4>
+  <ul>
+    <li>📌 大部分UI组件</li>
+    <li>📌 展示型组件</li>
+    <li>📌 轻量级组件</li>
+    <li>📌 容器组件</li>
+    <li>📌 高阶组件的子组件</li>
+    <li>📌 所有需要状态的组件</li>
+  </ul>
+</div>
+
+</Grid>
+
+---
+
+## 2. 函数式组件基础语法
+
+### 2.1 基本结构
+
+<CodeBlock>
+
+```jsx
+// 方式1：function关键字
+function Header(props) {
+  return (
+    <header className="header">
+      <h1>{props.title}</h1>
+      <nav>{props.children}</nav>
+    </header>
+  );
+}
+
+// 方式2：箭头函数
+const Header = (props) => {
+  return (
+    <header className="header">
+      <h1>{props.title}</h1>
+      <nav>{props.children}</nav>
+    </header>
+  );
+};
+
+// 方式3：解构赋值
+const Header = ({ title, children }) => {
+  return (
+    <header className="header">
+      <h1>{title}</h1>
+      <nav>{children}</nav>
+    </header>
+  );
+};
+```
+
+</CodeBlock>
+
+### 2.2 Props处理
+
+<CodeBlock>
+
+```jsx
+// 未解构 - 需要使用props.*
+function UserCard(props) {
+  return (
+    <div className="user-card">
+      <img src={props.avatar} alt={props.name} />
+      <h3>{props.name}</h3>
+      <p>{props.email}</p>
+    </div>
+  );
+}
+
+// 解构赋值 - 更简洁
+function UserCard({ avatar, name, email }) {
+  return (
+    <div className="user-card">
+      <img src={avatar} alt={name} />
+      <h3>{name}</h3>
+      <p>{email}</p>
+    </div>
+  );
+}
+
+// 默认值
+function UserCard({ avatar, name, email, role = 'User' }) {
+  return (
+    <div className="user-card">
+      <img src={avatar} alt={name} />
+      <h3>{name}</h3>
+      <p>{email}</p>
+      <span className="role">{role}</span>
+    </div>
+  );
+}
+
+// 剩余参数
+function UserCard({ name, email, ...otherProps }) {
+  return (
+    <div className="user-card" {...otherProps}>
+      <h3>{name}</h3>
+      <p>{email}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 条件渲染
+
+<CodeBlock>
+
+```jsx
+// 方式1：if语句
+function StatusIndicator({ status }) {
+  if (status === 'loading') {
+    return <div className="spinner">Loading...</div>;
+  }
+
+  if (status === 'error') {
+    return <div className="error">Something went wrong</div>;
+  }
+
+  return <div className="success">Success!</div>;
+}
+
+// 方式2：三元运算符
+function StatusBadge({ isActive }) {
+  return (
+    <span className={`badge ${isActive ? 'active' : 'inactive'}`}>
+      {isActive ? 'Active' : 'Inactive'}
+    </span>
+  );
+}
+
+// 方式3：逻辑与运算符
+function NotificationList({ notifications, showNotifications }) {
+  return (
+    <div>
+      {showNotifications && notifications.length > 0 && (
+        <ul>
+          {notifications.map(notification => (
+            <li key={notification.id}>{notification.message}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.4 列表渲染
+
+<CodeBlock>
+
+```jsx
+function TodoList({ todos }) {
+  return (
+    <ul className="todo-list">
+      {todos.map(todo => (
+        <li key={todo.id} className={todo.completed ? 'completed' : ''}>
+          <input
+            type="checkbox"
+            checked={todo.completed}
+            readOnly
+          />
+          <span>{todo.text}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function UserList({ users }) {
+  if (!users || users.length === 0) {
+    return <p>No users found</p>;
+  }
+
+  return (
+    <div className="user-list">
+      {users.map(user => (
+        <UserCard key={user.id} {...user} />
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 函数式组件 vs 类组件
+
+### 3.1 语法对比
+
+<Compare>
+
+```jsx
+// 函数式组件
+function Counter({ initialCount = 0 }) {
+  const [count, setCount] = useState(initialCount);
+
+  const increment = () => setCount(prev => prev + 1);
+  const decrement = () => setCount(prev => prev - 1);
+
+  return (
+    <div className="counter">
+      <button onClick={decrement}>-</button>
+      <span>{count}</span>
+      <button onClick={increment}>+</button>
+    </div>
+  );
+}
+
+// 类组件
+class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      count: props.initialCount || 0
+    };
+  }
+
+  increment = () => {
+    this.setState(prev => ({ count: prev.count + 1 }));
+  };
+
+  decrement = () => {
+    this.setState(prev => ({ count: prev.count - 1 }));
+  };
+
+  render() {
+    return (
+      <div className="counter">
+        <button onClick={this.decrement}>-</button>
+        <span>{this.state.count}</span>
+        <button onClick={this.increment}>+</button>
+      </div>
+    );
+  }
+}
+```
+
+</Compare>
+
+### 3.2 关键区别
+
+<CodeBlock>
+
+```jsx
+// 函数式组件特点
+1. 语法更简洁，没有this关键字
+2. 使用Hooks替代生命周期方法
+3. 天然支持Tree Shaking
+4. 更容易测试
+5. 更好的性能（无类实例开销）
+
+// 类组件特点
+1. 需要理解this绑定
+2. 使用生命周期方法
+3. 代码量更多
+4. 难以进行Tree Shaking
+5. 性能开销略大
+```
+
+</CodeBlock>
+
+### 3.3 迁移指南
+
+<CodeBlock>
+
+```jsx
+// 将类组件转换为函数式组件
+
+// 步骤1：将class改为function
+class UserProfile extends React.Component {
+  // ↓
+function UserProfile() { }
+
+// 步骤2：移除constructor
+class UserProfile extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { user: null, loading: true };
+  }
+  // ↓
+function UserProfile() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+}
+
+// 步骤3：移除this.state
+class UserProfile extends React.Component {
+  // ...
+  render() {
+    return <div>{this.state.user.name}</div>;
+  }
+  // ↓
+function UserProfile() {
+  const [user, setUser] = useState(null);
+  // ...
+  return <div>{user.name}</div>;
+}
+
+// 步骤4：将生命周期方法替换为Hooks
+class UserProfile extends React.Component {
+  componentDidMount() {
+    fetchUser(this.props.userId).then(user => {
+      this.setState({ user, loading: false });
+    });
+  }
+  // ↓
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUser(userId).then(user => {
+      setUser(user);
+      setLoading(false);
+    });
+  }, [userId]);
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 函数式组件设计原则
+
+### 4.1 单一职责原则
+
+<Compare>
+
+```jsx
+// ❌ 不好的例子 - 职责过多
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // 既获取用户数据又获取文章数据
+    fetchUser(userId).then(setUser);
+    fetchUserPosts(userId).then(setPosts);
+    setLoading(false);
+  }, [userId]);
+
+  // 既负责数据获取又负责渲染
+  return (
+    <div>
+      {loading ? <Spinner /> : (
+        <>
+          <UserInfo user={user} />
+          <UserPosts posts={posts} />
+        </>
+      )}
+    </div>
+  );
+}
+
+// ✅ 好的例子 - 单一职责
+function UserProfile({ userId }) {
+  return (
+    <div>
+      <UserDataProvider userId={userId}>
+        <UserInfo />
+        <UserPosts />
+      </UserDataProvider>
+    </div>
+  );
+}
+
+function UserDataProvider({ userId, children }) {
+  const [user, setUser] = useState(null);
+  const [posts, setPosts] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      fetchUser(userId).then(setUser),
+      fetchUserPosts(userId).then(setPosts)
+    ]);
+  }, [userId]);
+
+  return (
+    <UserDataContext.Provider value={{ user, posts }}>
+      {children}
+    </UserDataContext.Provider>
+  );
+}
+```
+
+</Compare>
+
+### 4.2 纯函数原则
+
+<CodeBlock>
+
+```jsx
+// ✅ 纯函数 - 给定相同props总是返回相同结果
+function Button({ label, onClick, disabled }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`btn ${disabled ? 'btn-disabled' : 'btn-primary'}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+// ✅ 纯函数 - 不修改输入
+function formatUserName(user) {
+  if (!user || !user.firstName || !user.lastName) {
+    return 'Unknown User';
+  }
+  // 创建新对象而不修改原对象
+  return `${user.firstName} ${user.lastName}`;
+}
+
+// ❌ 非纯函数 - 避免
+function formatUserName(user) {
+  if (user) {
+    user.formattedName = `${user.firstName} ${user.lastName}`; // 修改原对象！
+  }
+  return user;
+}
+```
+
+</CodeBlock>
+
+### 4.3 组合优于继承
+
+<CodeBlock>
+
+```jsx
+// ✅ 推荐：使用组合
+function Card({ children, title }) {
+  return (
+    <div className="card">
+      {title && <h3 className="card-title">{title}</h3>}
+      <div className="card-content">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function UserCard({ user }) {
+  return (
+    <Card title="User Information">
+      <p>Name: {user.name}</p>
+      <p>Email: {user.email}</p>
+    </Card>
+  );
+}
+
+// ✅ 推荐：使用props.children
+function Modal({ isOpen, onClose, children }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function LoginModal({ isOpen, onClose }) {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <h2>Login</h2>
+      <form>...</form>
+    </Modal>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 高级函数式组件模式
+
+### 5.1 状态提升模式
+
+<CodeBlock>
+
+```jsx
+// 将共享状态提升到父组件
+function TemperatureCalculator() {
+  const [temperature, setTemperature] = useState('');
+  const [scale, setScale] = useState('c');
+
+  const celsius = scale === 'f' ? tryConvert(temperature, toCelsius) : temperature;
+  const fahrenheit = scale === 'c' ? tryConvert(temperature, toFahrenheit) : temperature;
+
+  return (
+    <div>
+      <TemperatureInput
+        scale="c"
+        temperature={celsius}
+        onTemperatureChange={setTemperature}
+      />
+      <TemperatureInput
+        scale="f"
+        temperature={fahrenheit}
+        onTemperatureChange={setTemperature}
+      />
+    </div>
+  );
+}
+
+function TemperatureInput({ scale, temperature, onTemperatureChange }) {
+  const handleChange = (e) => {
+    onTemperatureChange(e.target.value);
+  };
+
+  return (
+    <fieldset>
+      <legend>Enter temperature in {scale === 'c' ? 'Celsius' : 'Fahrenheit'}:</legend>
+      <input
+        value={temperature}
+        onChange={handleChange}
+      />
+    </fieldset>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 Render Props模式
+
+<CodeBlock>
+
+```jsx
+// 使用render props共享逻辑
+function DataProvider({ render }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchData()
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, []);
+
+  return render({ data, loading, error });
+}
+
+// 使用
+function UserList() {
+  return (
+    <DataProvider
+      render={({ data, loading, error }) => {
+        if (loading) return <div>Loading...</div>;
+        if (error) return <div>Error: {error.message}</div>;
+        return (
+          <ul>
+            {data.map(user => <li key={user.id}>{user.name}</li>)}
+          </ul>
+        );
+      }}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 组合组件模式
+
+<CodeBlock>
+
+```jsx
+// 创建组件组合
+function Select({ children, value, onChange }) {
+  return (
+    <div className="select">
+      {Children.map(children, child =>
+        cloneElement(child, { value, onChange })
+      )}
+    </div>
+  );
+}
+
+function SelectOption({ value, children, value: currentValue, onChange }) {
+  const isSelected = value === currentValue;
+
+  return (
+    <div
+      className={`select-option ${isSelected ? 'selected' : ''}`}
+      onClick={() => onChange(value)}
+    >
+      {children}
+    </div>
+  );
+}
+
+// 使用
+function CountrySelector() {
+  const [country, setCountry] = useState('us');
+
+  return (
+    <Select value={country} onChange={setCountry}>
+      <SelectOption value="us">United States</SelectOption>
+      <SelectOption value="uk">United Kingdom</SelectOption>
+      <SelectOption value="cn">China</SelectOption>
+    </Select>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 性能优化
+
+### 6.1 React.memo优化
+
+<CodeBlock>
+
+```jsx
+// 基础使用
+const UserCard = React.memo(({ user }) => {
+  return (
+    <div className="user-card">
+      <h3>{user.name}</h3>
+      <p>{user.email}</p>
+    </div>
+  );
+});
+
+// 自定义比较函数
+const UserCard = React.memo(
+  ({ user, onEdit }) => {
+    return (
+      <div className="user-card">
+        <h3>{user.name}</h3>
+        <p>{user.email}</p>
+        <button onClick={() => onEdit(user.id)}>Edit</button>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    // 自定义比较逻辑
+    return (
+      prevProps.user.id === nextProps.user.id &&
+      prevProps.user.name === nextProps.user.name &&
+      prevProps.onEdit === nextProps.onEdit
+    );
+  }
+);
+
+// 错误示例 - 不要在memo函数中创建对象
+const UserList = ({ users }) => {
+  return (
+    <div>
+      {users.map(user => (
+        <UserCard
+          key={user.id}
+          user={user}
+          onEdit={() => console.log('Edit', user.id)} // 每次渲染都是新函数
+        />
+      ))}
+    </div>
+  );
+};
+
+// 正确示例 - 使用useCallback
+const UserList = ({ users }) => {
+  const handleEdit = useCallback((id) => {
+    console.log('Edit', id);
+  }, []);
+
+  return (
+    <div>
+      {users.map(user => (
+        <UserCard
+          key={user.id}
+          user={user}
+          onEdit={handleEdit}
+        />
+      ))}
+    </div>
+  );
+};
+```
+
+</CodeBlock>
+
+### 6.2 useCallback优化
+
+<CodeBlock>
+
+```jsx
+// 避免子组件不必要渲染
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+  const [value, setValue] = useState('');
+
+  // 缓存函数，避免每次渲染创建新函数
+  const handleClick = useCallback(() => {
+    console.log('Button clicked', count);
+  }, [count]);
+
+  const handleInputChange = useCallback((e) => {
+    setValue(e.target.value);
+  }, []);
+
+  return (
+    <div>
+      <button onClick={handleClick}>Click me</button>
+      <input value={value} onChange={handleInputChange} />
+    </div>
+  );
+}
+
+// 与React.memo结合使用
+const ExpensiveChild = React.memo(({ onAction }) => {
+  console.log('ExpensiveChild rendered');
+  return <button onClick={onAction}>Action</button>;
+});
+
+function Parent() {
+  const [count, setCount] = useState(0);
+
+  const handleAction = useCallback(() => {
+    console.log('Action performed', count);
+  }, [count]);
+
+  return (
+    <div>
+      <ExpensiveChild onAction={handleAction} />
+      <button onClick={() => setCount(c => c + 1)}>
+        Count: {count}
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 组件组织与命名
+
+### 7.1 文件组织
+
+<CodeBlock>
+
+```jsx
+// 推荐的文件组织方式
+
+// 1. 单一职责，每个文件一个组件
+// UserCard/index.jsx
+export default function UserCard({ user }) {
+  return <div>{user.name}</div>;
+}
+
+// 2. 相关的组件放在同一目录
+// components/
+//   ├── Button/
+//   │   ├── index.jsx
+//   │   ├── Button.jsx
+//   │   └── Button.test.jsx
+//   └── Modal/
+//       ├── index.jsx
+//       ├── Modal.jsx
+//       ├── ModalHeader.jsx
+//       ├── ModalBody.jsx
+//       └── ModalFooter.jsx
+
+// 3. 使用index.js作为入口
+// components/Button/index.js
+export { default } from './Button';
+export * from './Button';
+
+// 4. 导出多个相关组件
+// components/Button/Button.jsx
+export const PrimaryButton = ({ children, ...props }) => (
+  <button className="btn btn-primary" {...props}>
+    {children}
+  </button>
+);
+
+export const SecondaryButton = ({ children, ...props }) => (
+  <button className="btn btn-secondary" {...props}>
+    {children}
+  </button>
+);
+```
+
+</CodeBlock>
+
+### 7.2 命名约定
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的命名
+
+// 1. 组件名使用PascalCase
+function UserProfile() { }      // ✅
+function userProfile() { }      // ❌
+
+// 2. 文件名与组件名一致
+// UserProfile.jsx
+export default function UserProfile() { }
+
+// 3. 描述性的名字
+function TemperatureConverter() { }  // ✅ 清楚表达了用途
+function Temp() { }                  // ❌ 太简短
+
+// 4. 使用名词或形容词
+function Button() { }           // ✅ 名词
+function LoadingSpinner() { }   // ✅ 形容词+名词
+function IsLoggedIn() { }       // ✅ 描述状态
+
+// 5. 避免不自然的缩写
+function UserProfilePage() { }  // ✅
+function UserProf() { }         // ❌
+
+// 6. 布尔值props以is、has、can开头
+<Modal isOpen={true} hasCloseButton={true} canClose={true} />
+```
+
+</CodeBlock>
+
+---
+
+## 8. 实践练习
+
+### 练习1：用户卡片组件
+
+创建一个可复用的用户卡片组件，支持不同用户角色。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 接收用户信息：name, email, avatar, role
+- 根据角色显示不同颜色徽章
+- 支持可选的额外信息（bio, location, website）
+- 使用React.memo优化
+
+**设计要求**：
+- 头像使用默认值占位符
+- 角色徽章颜色：Admin(红色)、User(蓝色)、Guest(灰色)
+- 响应式布局
+- 悬停效果
+
+**提示**：
+- 使用解构赋值接收props
+- 使用默认参数设置默认值
+- 使用CSS模块或Styled Components
+
+</Expandable>
+
+### 练习2：评论系统
+
+创建一个嵌套评论组件系统。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 支持多级嵌套评论
+- 每条评论包含：作者、头像、时间、内容、回复按钮
+- 递归渲染子评论
+- 评论数量统计
+
+**设计要求**：
+- 使用组合模式
+- 最多显示3级嵌套
+- 超过3级的子评论显示"还有X条回复"
+- 点击"显示更多"展开
+
+**提示**：
+- 使用map递归渲染
+- 控制递归深度
+- 条件渲染
+
+</Expandable>
+
+### 练习3：表单生成器
+
+创建一个动态表单组件。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 支持多种输入类型：text, email, password, select, checkbox
+- 实时验证和错误提示
+- 表单字段配置化
+
+**数据结构**：
+```javascript
+const formConfig = [
+  { type: 'text', name: 'username', label: 'Username', required: true },
+  { type: 'email', name: 'email', label: 'Email', required: true },
+  { type: 'select', name: 'country', label: 'Country', options: [...] },
+  { type: 'checkbox', name: 'accept', label: 'Accept Terms', required: true }
+];
+```
+
+**提示**：
+- 使用switch或对象映射渲染不同输入类型
+- 动态创建表单字段
+- 状态提升模式管理表单数据
+
+</Expandable>
+
+### 练习4：虚拟列表
+
+创建一个高性能的虚拟滚动列表组件。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 只渲染可见区域的列表项
+- 支持10000+条数据
+- 平滑滚动体验
+- 可配置项高度
+
+**实现要点**：
+- 计算可见项范围
+- 动态计算容器高度
+- 使用translateY优化渲染
+- 使用useMemo缓存计算结果
+
+**提示**：
+- 监听滚动事件
+- 计算scrollTop
+- 使用Math.floor和Math.ceil确定范围
+
+</Expandable>
+
+---
+
+## 9. 常见错误
+
+### 错误1：忘记添加key属性
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+function UserList({ users }) {
+  return (
+    <ul>
+      {users.map(user => (
+        <li>{user.name}</li>  // 缺少key
+      ))}
+    </ul>
+  );
+}
+
+// ✅ 正确
+function UserList({ users }) {
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>  // 添加key
+      ))}
+    </ul>
+  );
+}
+```
+
+</ErrorBox>
+
+### 错误2：在组件内部定义函数
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 每次渲染都创建新函数
+function ParentComponent() {
+  return (
+    <ChildComponent
+      onClick={() => console.log('clicked')}  // 新函数！
+    />
+  );
+}
+
+// ✅ 正确 - 使用useCallback缓存
+function ParentComponent() {
+  const handleClick = useCallback(() => {
+    console.log('clicked');
+  }, []);
+
+  return (
+    <ChildComponent onClick={handleClick} />
+  );
+}
+```
+
+</ErrorBox>
+
+### 错误3：直接修改props
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 不要修改props
+function Button(props) {
+  props.disabled = true;  // 绝对不要这样做！
+  return <button {...props}>Click</button>;
+}
+
+// ✅ 正确 - 创建新对象
+function Button({ disabled, ...otherProps }) {
+  const isDisabled = disabled || isLoading;
+  return <button disabled={isDisabled} {...otherProps}>Click</button>;
+}
+```
+
+</ErrorBox>
+
+### 错误4：错误的默认值
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改props
+function UserCard(props) {
+  const user = props.user || {};  // 避免直接修改
+  return <div>{user.name}</div>;
+}
+
+// ✅ 正确 - 使用默认值
+function UserCard({ user = {} }) {
+  return <div>{user.name}</div>;
+}
+
+// 或者更安全
+function UserCard({ user }) {
+  if (!user) return null;
+  return <div>{user.name}</div>;
+}
+```
+
+</ErrorBox>
+
+### 错误5：忘记处理空状态
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有处理空状态
+function UserList({ users }) {
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+
+// ✅ 正确 - 处理空状态
+function UserList({ users }) {
+  if (!users || users.length === 0) {
+    return <p>No users found</p>;
+  }
+
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 函数式组件是返回JSX的JavaScript函数
+- ✅ 优先使用解构赋值处理props
+- ✅ 保持函数式组件的纯函数特性
+- ✅ 遵循单一职责原则
+- ✅ 使用React.memo优化性能
+- ✅ 使用useCallback缓存函数
+- ✅ 组件命名使用PascalCase
+- ✅ 总是为列表项添加key属性
+- ✅ 正确处理空状态和错误状态
+- ✅ 避免在组件内部创建对象或函数
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **保持简单** - 函数式组件应该专注于渲染UI
+2. **单一职责** - 每个组件只负责一个功能
+3. **纯函数** - 给定相同输入，总是返回相同输出
+4. **解构props** - 使用解构赋值让代码更清晰
+5. **合理拆分** - 将复杂组件拆分为多个小组件
+6. **命名清晰** - 使用描述性的组件名和props名
+7. **性能优化** - 合理使用React.memo和useCallback
+8. **测试覆盖** - 为组件编写单元测试
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了函数式组件的基础，接下来可以学习：
+
+1. **[高阶组件](higher-order-components)** - 学习如何创建可复用的组件逻辑
+2. **[渲染属性模式](render-props)** - 理解render props模式
+3. **[复合组件](compound-components)** - 掌握组件组合的高级技巧
+4. **[容器-展示模式](container-presentational)** - 学习状态管理最佳实践
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [函数式组件与状态](https://react.dev/reference/react) - React官方Hooks文档
+- [组件和Props](https://react.dev/learn/components-and-props) - 组件设计指南
+- [性能优化](https://react.dev/learn/render-and-commit) - React性能优化
+
+### 推荐阅读
+
+- [函数式编程思想](https://en.wikipedia.org/wiki/Functional_programming) - 函数式编程基础
+- [组合模式](https://en.wikipedia.org/wiki/Composite_pattern) - 设计模式
+- [React组件模式](https://kentcdodds.com/blog/application-state-management-with-react) - 组件状态管理
+
+---
+
+[← 上一章：自定义Hooks](../hooks/advanced/custom-hooks) | [下一章：高阶组件 →](higher-order-components)

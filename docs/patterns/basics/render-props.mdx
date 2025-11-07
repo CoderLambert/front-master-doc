@@ -1,0 +1,1395 @@
+# 渲染属性模式 (Render Props) - 灵活逻辑复用
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+渲染属性（Render Props）是React中一种强大的模式，它通过将函数作为prop传递给组件来实现逻辑复用。虽然Hooks已经成为了逻辑复用的首选方式，但理解Render Props对于深入理解React组件模式仍然非常重要。在本章中，我们将深入探讨Render Props的概念、实现方式、优势和使用场景。
+
+## 本章学习目标
+
+- 理解渲染属性模式的概念和原理
+- 掌握Render Props的语法和实现
+- 学会使用Render Props实现逻辑复用
+- 对比Render Props与HOC的优缺点
+- 理解Render Props与Hooks的关系
+- 掌握Render Props的常见使用场景
+- 学会避免Render Props的常见陷阱
+- 理解children作为函数的模式
+
+---
+
+## 1. 什么是渲染属性？
+
+渲染属性（Render Props）是一种模式，它使用一个值为函数的prop来让组件决定渲染什么。当组件需要复用逻辑但需要不同的UI时，Render Props允许我们以函数的形式传递渲染逻辑。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Render Props</strong>是一个prop，其值是一个函数，告诉组件<strong>如何渲染</strong>。组件将数据作为参数传递给这个函数。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础Render Props模式
+<DataProvider
+  render={(data) => <UserProfile data={data} />}
+/>
+
+// 等同于
+<DataProvider>
+  {(data) => <UserProfile data={data} />}
+</DataProvider>
+```
+
+</CodeBlock>
+
+### 1.1 核心思想
+
+<CodeBlock>
+
+```jsx
+// 组件提供数据和逻辑
+class DataProvider extends React.Component {
+  state = { data: null, loading: true };
+
+  render() {
+    // 将数据传递给render函数
+    return this.props.render(this.state);
+  }
+}
+
+// 使用组件 - 控制如何渲染
+<DataProvider
+  render={({ data, loading }) => {
+    if (loading) return <div>Loading...</div>;
+    return <div>{data.title}</div>;
+  }}
+/>
+```
+
+</CodeBlock>
+
+### 1.2 与HOC对比
+
+<Compare>
+
+```jsx
+// HOC方式
+const EnhancedComponent = withData(WrappedComponent);
+
+// Render Props方式
+<DataProvider
+  render={(data) => <WrappedComponent data={data} />}
+/>
+
+// 差异
+1. HOC: 包装组件，返回新组件
+2. Render Props: 传递渲染函数，直接使用
+3. HOC: 组件层级增加
+4. Render Props: 无额外层级
+```
+
+</Compare>
+
+---
+
+## 2. Render Props基础实现
+
+### 2.1 简单的Data Provider
+
+<CodeBlock>
+
+```jsx
+// 类组件实现
+class DataProvider extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      data: null,
+      loading: false,
+      error: null
+    };
+  }
+
+  render() {
+    const { render } = this.props;
+    const { data, loading, error } = this.state;
+
+    return render({ data, loading, error });
+  }
+}
+
+// 使用
+<DataProvider
+  render={({ data, loading, error }) => {
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error.message}</div>;
+    return <div>Data: {data}</div>;
+  }}
+/>
+```
+
+</CodeBlock>
+
+### 2.2 函数组件实现
+
+<CodeBlock>
+
+```jsx
+// 函数组件实现
+function DataProvider({ render, fetcher }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetcher()
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [fetcher]);
+
+  return render({ data, loading, error });
+}
+
+// 使用
+<DataProvider
+  fetcher={fetchUser}
+  render={({ data, loading, error }) => {
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error.message}</div>;
+    return <div>Welcome, {data.name}</div>;
+  }}
+/>
+```
+
+</CodeBlock>
+
+### 2.3 使用children作为函数
+
+<CodeBlock>
+
+```jsx
+// 使用children prop
+function DataProvider({ fetcher, children }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetcher()
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [fetcher]);
+
+  // children是一个函数
+  return children({ data, loading, error });
+}
+
+// 使用（更自然的语法）
+<DataProvider fetcher={fetchUser}>
+  {({ data, loading, error }) => {
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error.message}</div>;
+    return <div>Welcome, {data.name}</div>;
+  }}
+</DataProvider>
+```
+
+</CodeBlock>
+
+---
+
+## 3. 常见Render Props模式
+
+### 3.1 状态管理Render Props
+
+<CodeBlock>
+
+```jsx
+// 状态管理组件
+class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: props.initialCount || 0 };
+  }
+
+  increment = () => {
+    this.setState(prev => ({ count: prev.count + 1 }));
+  };
+
+  decrement = () => {
+    this.setState(prev => ({ count: prev.count - 1 }));
+  };
+
+  render() {
+    return this.props.render({
+      count: this.state.count,
+      increment: this.increment,
+      decrement: this.decrement
+    });
+  }
+}
+
+// 使用
+<Counter initialCount={0}>
+  {({ count, increment, decrement }) => (
+    <div className="counter">
+      <button onClick={decrement}>-</button>
+      <span>{count}</span>
+      <button onClick={increment}>+</button>
+    </div>
+  )}
+</Counter>
+```
+
+</CodeBlock>
+
+### 3.2 列表渲染Render Props
+
+<CodeBlock>
+
+```jsx
+// 虚拟列表组件
+function VirtualList({ items, itemHeight, visibleCount, renderItem }) {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const startIndex = Math.floor(scrollTop / itemHeight);
+  const endIndex = Math.min(startIndex + visibleCount, items.length);
+  const visibleItems = items.slice(startIndex, endIndex);
+  const totalHeight = items.length * itemHeight;
+
+  return (
+    <div
+      style={{ height: totalHeight, position: 'relative' }}
+      onScroll={(e) => setScrollTop(e.target.scrollTop)}
+    >
+      <div style={{ transform: `translateY(${startIndex * itemHeight}px)` }}>
+        {visibleItems.map((item, index) =>
+          renderItem(item, startIndex + index)
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 使用
+<VirtualList
+  items={users}
+  itemHeight={50}
+  visibleCount={10}
+  renderItem={(user, index) => (
+    <div key={index} style={{ height: 50 }}>
+      {user.name}
+    </div>
+  )}
+/>
+```
+
+</CodeBlock>
+
+### 3.3 异步数据Render Props
+
+<CodeBlock>
+
+```jsx
+// 异步数据获取组件
+function AsyncData({ url, render, deps = [] }) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+
+    fetch(url)
+      .then(res => res.json())
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [url, ...deps]);
+
+  return render({ data, loading, error });
+}
+
+// 使用
+<AsyncData
+  url="/api/users"
+  deps={[userId]}
+>
+  {({ data, loading, error }) => {
+    if (loading) return <div>Loading users...</div>;
+    if (error) return <div>Error loading users</div>;
+    return <UserList users={data} />;
+  }}
+</AsyncData>
+```
+
+</CodeBlock>
+
+### 3.4 主题系统Render Props
+
+<CodeBlock>
+
+```jsx
+// 主题Provider
+function ThemeProvider({ children, initialTheme = 'light' }) {
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || initialTheme;
+  });
+
+  const toggleTheme = () => {
+    setTheme(prev => {
+      const newTheme = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('theme', newTheme);
+      return newTheme;
+    });
+  };
+
+  return children({
+    theme,
+    toggleTheme,
+    isDark: theme === 'dark'
+  });
+}
+
+// 使用
+<ThemeProvider>
+  {({ theme, toggleTheme, isDark }) => (
+    <div className={`app ${isDark ? 'dark' : 'light'}`}>
+      <button onClick={toggleTheme}>
+        Switch to {isDark ? 'light' : 'dark'} mode
+      </button>
+      <div>Current theme: {theme}</div>
+    </div>
+  )}
+</ThemeProvider>
+```
+
+</CodeBlock>
+
+### 3.5 表单Render Props
+
+<CodeBlock>
+
+```jsx
+// 表单状态管理
+function Form({ initialValues, onSubmit, children }) {
+  const [values, setValues] = useState(initialValues);
+  const [touched, setTouched] = useState({});
+  const [errors, setErrors] = useState({});
+
+  const handleChange = (name, value) => {
+    setValues(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBlur = (name) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(values);
+  };
+
+  return children({
+    values,
+    touched,
+    errors,
+    handleChange,
+    handleBlur,
+    handleSubmit
+  });
+}
+
+// 使用
+<Form
+  initialValues={{ name: '', email: '' }}
+  onSubmit={(values) => console.log(values)}
+>
+  {({ values, touched, errors, handleChange, handleBlur, handleSubmit }) => (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={values.name}
+        onChange={(e) => handleChange('name', e.target.value)}
+        onBlur={() => handleBlur('name')}
+        placeholder="Name"
+      />
+      {touched.name && errors.name && <span>{errors.name}</span>}
+      <input
+        value={values.email}
+        onChange={(e) => handleChange('email', e.target.value)}
+        onBlur={() => handleBlur('email')}
+        placeholder="Email"
+      />
+      {touched.email && errors.email && <span>{errors.email}</span>}
+      <button type="submit">Submit</button>
+    </form>
+  )}
+</Form>
+```
+
+</CodeBlock>
+
+---
+
+## 4. 高级Render Props模式
+
+### 4.1 组合多个Render Props
+
+<CodeBlock>
+
+```jsx
+// 组合数据
+function DataComposer({ composers, children }) {
+  const results = composers.map(composer => {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+      composer.fetcher().then(setData).catch(setError).finally(() => setLoading(false));
+    }, [composer.fetcher]);
+
+    return { data, loading, error, ...composer };
+  });
+
+  return children({ results });
+}
+
+// 使用
+<DataComposer
+  composers={[
+    { name: 'users', fetcher: fetchUsers },
+    { name: 'posts', fetcher: fetchPosts },
+    { name: 'comments', fetcher: fetchComments }
+  ]}
+>
+  {({ results }) => {
+    const { users, posts, comments } = results;
+    return <Dashboard users={users} posts={posts} comments={comments} />;
+  }}
+</DataComposer>
+```
+
+</CodeBlock>
+
+### 4.2 条件Render Props
+
+<CodeBlock>
+
+```jsx
+// 条件渲染组件
+function ConditionalRender({ condition, ifRender, elseRender }) {
+  if (!condition) {
+    return elseRender ? elseRender() : null;
+  }
+
+  return ifRender ? ifRender() : null;
+}
+
+// 使用
+<ConditionalRender
+  condition={user.isAdmin}
+  ifRender={() => <AdminPanel />}
+  elseRender={() => <UserPanel />}
+/>
+
+// 带props的条件渲染
+<ConditionalRender
+  condition={hasPermission}
+  ifRender={(props) => <Button {...props} />}
+  elseRender={() => <button disabled>No Permission</button>}
+/>
+```
+
+</CodeBlock>
+
+### 4.3 动态Render Props
+
+<CodeBlock>
+
+```jsx
+// 动态渲染组件
+function DynamicRenderer({ type, props }) {
+  const renderers = {
+    'user-card': ({ user }) => <UserCard user={user} />,
+    'product-card': ({ product }) => <ProductCard product={product} />,
+    'article-card': ({ article }) => <ArticleCard article={article} />
+  };
+
+  const renderComponent = renderers[type] || (() => <div>Unknown type</div>);
+  return renderComponent(props);
+}
+
+// 使用
+<DynamicRenderer
+  type="user-card"
+  props={{ user: currentUser }}
+/>
+```
+
+</CodeBlock>
+
+### 4.4 渲染策略模式
+
+<CodeBlock>
+
+```jsx
+// 渲染策略
+class RenderStrategyProvider extends React.Component {
+  state = { currentStrategy: 'default' };
+
+  strategies = {
+    default: (data) => <DefaultView data={data} />,
+    grid: (data) => <GridView data={data} />,
+    list: (data) => <ListView data={data} />,
+    compact: (data) => <CompactView data={data} />
+  };
+
+  setStrategy = (strategy) => {
+    if (this.strategies[strategy]) {
+      this.setState({ currentStrategy: strategy });
+    }
+  };
+
+  render() {
+    const { data, children } = this.props;
+    const { currentStrategy } = this.state;
+
+    const strategyRenderer = this.strategies[currentStrategy];
+
+    return children({
+      currentStrategy,
+      setStrategy: this.setStrategy,
+      render: strategyRenderer,
+      data
+    });
+  }
+}
+
+// 使用
+<RenderStrategyProvider data={items}>
+  {({ currentStrategy, setStrategy, render, data }) => (
+    <div>
+      <div className="strategy-buttons">
+        <button onClick={() => setStrategy('default')}>Default</button>
+        <button onClick={() => setStrategy('grid')}>Grid</button>
+        <button onClick={() => setStrategy('list')}>List</button>
+        <button onClick={() => setStrategy('compact')}>Compact</button>
+      </div>
+      <div className={`view ${currentStrategy}`}>
+        {render(data)}
+      </div>
+    </div>
+  )}
+</RenderStrategyProvider>
+```
+
+</CodeBlock>
+
+---
+
+## 5. Render Props vs HOC vs Hooks
+
+### 5.1 模式对比
+
+<Compare>
+
+```jsx
+// HOC - 包装组件
+const EnhancedComponent = withData(WrappedComponent);
+
+// Render Props - 传递渲染函数
+<DataProvider
+  render={(data) => <WrappedComponent data={data} />}
+/>
+
+// Hooks - 自定义Hook
+function useData() {
+  const [data, setData] = useState(null);
+  // ...
+  return data;
+}
+
+function WrappedComponent() {
+  const data = useData();
+  // 使用data
+}
+
+// 差异分析
+1. 语法复杂度: HOC < Render Props < Hooks
+2. 学习曲线: HOC < Render Props < Hooks
+3. 调试体验: HOC < Render Props < Hooks
+4. 性能: Hooks ≈ Render Props < HOC
+5. 灵活性: Hooks > Render Props > HOC
+```
+
+</Compare>
+
+### 5.2 选择指南
+
+<CodeBlock>
+
+```jsx
+// 选择Render Props的场景
+1. 状态提升到父组件
+2. 多个组件共享状态逻辑
+3. 需要控制渲染逻辑
+4. children as function模式
+5. 不支持Hooks的旧版React
+
+// 选择Hooks的场景 (推荐)
+1. 新的项目
+2. 逻辑复用简单
+3. 不需要额外组件层级
+4. 更好的TypeScript支持
+5. 更好的开发体验
+
+// 选择HOC的场景
+1. 库开发 (如Redux connect)
+2. 需要继承React.Component方法
+3. 样式增强
+4. 已有大量HOC代码
+```
+
+</CodeBlock>
+
+### 5.3 性能对比
+
+<CodeBlock>
+
+```jsx
+// HOC - 可能导致重复渲染
+class withData extends React.Component {
+  render() {
+    return <WrappedComponent {...this.props} />;
+  }
+}
+
+// Render Props - 更好的控制
+<DataProvider
+  render={(data) => {
+    // 可以精确控制哪些组件更新
+    return <MyComponent data={data} />;
+  }}
+/>
+
+// Hooks - 最佳性能
+function MyComponent() {
+  const data = useData(); // 只在需要时更新
+  // ...
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 实际应用案例
+
+### 6.1 用户认证Render Props
+
+<CodeBlock>
+
+```jsx
+// 认证Provider
+function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth().then(setUser).finally(() => setLoading(false));
+  }, []);
+
+  const login = (credentials) => {
+    return loginUser(credentials).then(setUser);
+  };
+
+  const logout = () => {
+    return logoutUser().then(() => setUser(null));
+  };
+
+  return children({
+    user,
+    loading,
+    isAuthenticated: !!user,
+    login,
+    logout
+  });
+}
+
+// 使用
+<AuthProvider>
+  {({ user, loading, isAuthenticated, login, logout }) => {
+    if (loading) return <div>Loading...</div>;
+
+    return (
+      <div>
+        {isAuthenticated ? (
+          <Dashboard user={user} onLogout={logout} />
+        ) : (
+          <LoginForm onLogin={login} />
+        )}
+      </div>
+    );
+  }}
+</AuthProvider>
+```
+
+</CodeBlock>
+
+### 6.2 媒体查询Render Props
+
+<CodeBlock>
+
+```jsx
+// 媒体查询组件
+function MediaQuery({ query, children }) {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia(query).matches;
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(query);
+    setMatches(mediaQuery.matches);
+
+    const handler = (event) => setMatches(event.matches);
+    mediaQuery.addListener(handler);
+
+    return () => mediaQuery.removeListener(handler);
+  }, [query]);
+
+  return children({ matches });
+}
+
+// 使用
+<MediaQuery query="(min-width: 768px)">
+  {({ matches }) => (
+    <div>
+      {matches ? (
+        <DesktopLayout />
+      ) : (
+        <MobileLayout />
+      )}
+    </div>
+  )}
+</MediaQuery>
+```
+
+</CodeBlock>
+
+### 6.3 无限滚动Render Props
+
+<CodeBlock>
+
+```jsx
+// 无限滚动组件
+function InfiniteScroll({ hasMore, loadMore, children, threshold = 100 }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleScroll = useCallback(() => {
+    if (isLoading || !hasMore) return;
+
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight;
+    const clientHeight = document.documentElement.clientHeight;
+
+    if (scrollTop + clientHeight >= scrollHeight - threshold) {
+      setIsLoading(true);
+      loadMore().finally(() => setIsLoading(false));
+    }
+  }, [isLoading, hasMore, loadMore, threshold]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
+
+  return children({ isLoading });
+}
+
+// 使用
+<InfiniteScroll
+  hasMore={hasMore}
+  loadMore={loadMore}
+>
+  {({ isLoading }) => (
+    <div>
+      <ItemList items={items} />
+      {isLoading && <div>Loading more...</div>}
+    </div>
+  )}
+</InfiniteScroll>
+```
+
+</CodeBlock>
+
+### 6.4 错误边界Render Props
+
+<CodeBlock>
+
+```jsx
+// 错误边界Render Props
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    this.props.onError?.(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.render({
+        error: this.state.error,
+        reset: () => this.setState({ hasError: false, error: null })
+      });
+    }
+
+    return this.props.children;
+  }
+}
+
+// 使用
+<ErrorBoundary
+  onError={(error, info) => console.error(error, info)}
+  render={({ error, reset }) => (
+    <div className="error-boundary">
+      <h2>Something went wrong</h2>
+      <details>
+        <summary>Error details</summary>
+        <pre>{error.toString()}</pre>
+      </details>
+      <button onClick={reset}>Try again</button>
+    </div>
+  )}
+>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+</CodeBlock>
+
+---
+
+## 7. 最佳实践
+
+### 7.1 命名约定
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的命名
+<Provider
+  render={(data) => <Component data={data} />}
+/>
+
+<Component>
+  {(data) => <div>{data}</div>}
+</Component>
+
+// ✅ 清晰的参数名
+<DataProvider
+  render={({ data, loading, error }) => {
+    // 清晰的状态
+  }}
+/>
+
+// ✅ 描述性的render函数
+<RenderPropsComponent
+  renderUser={(user) => <UserCard user={user} />}
+  renderError={(error) => <ErrorMessage error={error} />}
+/>
+```
+
+</CodeBlock>
+
+### 7.2 Props传递
+
+<CodeBlock>
+
+```jsx
+// ✅ 传递所有必要的状态
+<Counter>
+  {({ count, increment, decrement, reset }) => (
+    <div>
+      <span>{count}</span>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  )}
+</Counter>
+
+// ✅ 避免在render中创建对象
+<Counter>
+  {({ count, increment }) => (
+    <button onClick={() => increment()}>{count}</button>
+    // 错误: 不应该在render中创建新函数
+  )}
+</Counter>
+```
+
+</CodeBlock>
+
+### 7.3 错误处理
+
+<CodeBlock>
+
+```jsx
+// ✅ 提供默认渲染
+<AsyncData
+  url="/api/data"
+  render={({ data, loading, error }) => {
+    if (loading) return <DefaultLoader />; // 默认
+    if (error) return <DefaultError onRetry={refetch} />; // 默认
+    return <CustomView data={data} />; // 自定义
+  }}
+/>
+
+// ✅ 边界情况处理
+<DataProvider
+  render={({ data }) => {
+    if (!data) return <div>No data available</div>;
+    return <div>{data}</div>;
+  }}
+/>
+```
+
+</CodeBlock>
+
+### 7.4 TypeScript支持
+
+<CodeBlock>
+
+```tsx
+// TypeScript类型定义
+interface RenderProps<T> {
+  data: T;
+  loading: boolean;
+  error: Error | null;
+}
+
+interface DataProviderProps {
+  render: (props: RenderProps<any>) => React.ReactNode;
+}
+
+function DataProvider({ render }: DataProviderProps) {
+  // 实现
+}
+
+// 泛型版本
+function DataProvider<T>({
+  render,
+  fetcher
+}: {
+  render: (props: RenderProps<T>) => React.ReactNode;
+  fetcher: () => Promise<T>;
+}) {
+  // 实现
+}
+
+// 使用
+<DataProvider<{ name: string }>
+  render={({ data, loading, error }) => {
+    // data具有类型 { name: string }
+    if (loading) return <div>Loading...</div>;
+    return <div>{data.name}</div>;
+  }}
+/>
+```
+
+</CodeBlock>
+
+---
+
+## 8. 常见陷阱
+
+### 陷阱1：渲染函数中的对象创建
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 在render中创建新对象
+<Counter>
+  {({ count, increment }) => (
+    <button onClick={() => increment()}>{count}</button>
+    // 每次渲染都创建新函数
+  )}
+</Counter>
+
+// ✅ 正确 - 函数已优化
+function MyComponent() {
+  const handleClick = useCallback(() => {
+    increment();
+  }, [increment]);
+
+  return (
+    <Counter>
+      {({ count, increment }) => (
+        <button onClick={handleClick}>{count}</button>
+      )}
+    </Counter>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：深层嵌套
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 过多嵌套
+<AuthProvider>
+  {({ user }) => (
+    <ThemeProvider>
+      {({ theme }) => (
+        <DataProvider>
+          {({ data }) => (
+            <Router>
+              {({ route }) => (
+                <div>{/* 实际内容 */}</div>
+              )}
+            </Router>
+          )}
+        </DataProvider>
+      )}
+    </ThemeProvider>
+  )}
+</AuthProvider>
+
+// ✅ 更好 - 组件组合
+function AppProviders() {
+  return (
+    <AuthProvider>
+      <ThemeProvider>
+        <DataProvider>
+          <AppContent />
+        </DataProvider>
+      </ThemeProvider>
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  const { user } = useAuth();
+  const { theme } = useTheme();
+  const { data } = useData();
+  // 渲染内容
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：忘记清理副作用
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有清理副作用
+function DataProvider({ url }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch(url).then(res => res.json()).then(setData);
+  }, [url]);
+
+  return <>{/* 渲染 */}</>;
+}
+
+// ✅ 正确 - 添加清理
+function DataProvider({ url }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch(url, { signal: controller.signal })
+      .then(res => res.json())
+      .then(setData)
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+        }
+      });
+
+    return () => controller.abort();
+  }, [url]);
+
+  return <>{/* 渲染 */}</>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：不一致的渲染逻辑
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 不同的渲染条件
+<ConditionalRender
+  condition={hasPermission}
+  ifRender={() => <Component1 />}
+  elseRender={() => <Component2 />}
+/>
+
+// 有时直接返回
+{hasPermission && <Component1 />}
+
+// ✅ 一致 - 统一使用Render Props
+<ConditionalRender
+  condition={hasPermission}
+  ifRender={() => <Component1 />}
+  elseRender={() => <Component2 />}
+/>
+```
+
+</ErrorBox>
+
+---
+
+## 9. 实践练习
+
+### 练习1：创建MouseTracker Render Props
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 跟踪鼠标位置
+- 将坐标传递给渲染函数
+- 支持可选的坐标变换（如相对位置、偏移）
+
+**实现要求**：
+```jsx
+<MouseTracker
+  render={({ x, y, relativeX, relativeY }) => (
+    <div>
+      <div>Absolute: {x}, {y}</div>
+      <div>Relative: {relativeX}, {relativeY}</div>
+    </div>
+  )}
+/>
+```
+
+**提示**：
+- 使用mousemove事件监听
+- 使用useRef存储容器引用
+- 计算相对位置
+
+</Expandable>
+
+### 练习2：创建Modal Render Props
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 控制模态框的开关
+- 传递控制函数给渲染函数
+- 支持背景点击关闭和ESC键关闭
+
+**实现要求**：
+```jsx
+<Modal
+  isOpen={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  render={({ isOpen, onClose }) => (
+    <div className={`modal ${isOpen ? 'open' : ''}`}>
+      <div className="modal-content">
+        <button onClick={onClose}>×</button>
+        <h2>Modal Content</h2>
+      </div>
+    </div>
+  )}
+/>
+```
+
+**提示**：
+- 使用键盘事件监听
+- 阻止冒泡
+- CSS过渡动画
+
+</Expandable>
+
+### 练习3：创建Tabs Render Props
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 标签页切换
+- 传递当前标签和切换函数
+- 支持键盘导航
+- 可配置默认标签
+
+**实现要求**：
+```jsx
+<Tabs defaultTab="tab1">
+  {({ activeTab, setActiveTab, tabs }) => (
+    <>
+      <div className="tab-headers">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            className={activeTab === tab.id ? 'active' : ''}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="tab-content">
+        {tabs.find(tab => tab.id === activeTab)?.content}
+      </div>
+    </>
+  )}
+</Tabs>
+```
+
+**提示**：
+- 使用useState管理当前标签
+- 添加左右箭头键盘导航
+- 使用useRef保存tabs配置
+
+</Expandable>
+
+### 练习4：创建Drag and Drop Render Props
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 拖拽功能
+- 传递拖拽状态和事件处理器
+- 支持自定义拖拽反馈
+- 边界检测
+
+**实现要求**：
+```jsx
+<DragDrop
+  onDragEnd={(data) => console.log('Dropped:', data)}
+  render={({
+    isDragging,
+    dragProps,
+    dropProps
+  }) => (
+    <div {...dropProps}>
+      <div
+        {...dragProps}
+        className={`draggable ${isDragging ? 'dragging' : ''}`}
+      >
+        Drag me
+      </div>
+    </div>
+  )}
+/>
+```
+
+**提示**：
+- 使用mousedown, mousemove, mouseup事件
+- 记录初始位置
+- 计算拖拽偏移量
+- 添加视觉反馈
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Render Props是一个prop，值为函数，告诉组件如何渲染
+- ✅ 优势：无额外组件层级、清晰的数据流、灵活的控制
+- ✅ 使用children as function使语法更自然
+- ✅ 适用场景：状态提升、逻辑复用、条件渲染
+- ✅ 相比HOC：更好的调试体验、避免命名冲突
+- ✅ 相比Hooks：更好的类型支持、旧项目友好
+- ✅ 避免在render函数中创建新对象或函数
+- ✅ 深层嵌套时考虑组件组合
+- ✅ 记住清理副作用
+- ✅ TypeScript中可以使用泛型增强类型安全
+
+</Checklist>
+
+### 模式选择指南
+
+<BestPractices>
+
+1. **新项目** - 优先使用Hooks
+2. **简单逻辑** - 使用自定义Hook
+3. **复杂状态** - 使用useReducer或Context
+4. **Render Props** - 状态提升、条件渲染、旧项目
+5. **HOC** - 库开发、样式增强、类组件
+
+</BestPractices>
+
+### 常见Render Props类型
+
+**状态管理**：
+- `<Counter>{({ count, increment }) => ...}</Counter>`
+- `<Form>{({ values, handleChange }) => ...}</Form>`
+
+**数据获取**：
+- `<AsyncData>{({ data, loading }) => ...}</AsyncData>`
+- `<InfiniteScroll>{({ isLoading }) => ...}</InfiniteScroll>`
+
+**系统集成**：
+- `<AuthProvider>{({ user }) => ...}</AuthProvider>`
+- `<ThemeProvider>{({ theme }) => ...}</ThemeProvider>`
+
+**交互**：
+- `<MouseTracker>{({ x, y }) => ...}</MouseTracker>`
+- `<Draggable>{({ dragProps }) => ...}</Draggable>`
+
+### 下一步学习
+
+现在你已经掌握了Render Props，接下来可以学习：
+
+1. **[复合组件](compound-components)** - 学习组件组合的高级技巧
+2. **[容器-展示模式](container-presentational)** - 掌握状态管理最佳实践
+3. **[错误边界](../advanced/error-boundaries)** - 深入React错误处理
+4. **[Hooks模式](../advanced/hooks-patterns)** - 现代React开发
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [Render Props](https://react.dev/reference/react) - React官方文档
+- [Composition vs Inheritance](https://react.dev/learn/thinking-in-react) - 组合模式
+- [Children as Function](https://react.dev/reference/react) - children作为函数
+
+### 推荐阅读
+
+- [Render Props vs HOCs](https://kentcdodds.com/blog/aha-moments-when-learning-react) - 模式对比
+- [Recompose库](https://github.com/acdlite/recompose) - Render Props工具库
+- [React Patterns](https://reactpatterns.com/) - React模式集合
+
+### 相关话题
+
+- [React Composition](https://react.dev/learn/thinking-in-react) - 组合思维
+- [PropGetters模式](../advanced/props-getters) - Props传递
+- [Controlled vs Uncontrolled](../advanced/controlled-uncontrolled) - 受控模式
+
+---
+
+[← 上一章：高阶组件](higher-order-components) | [下一章：复合组件 →](compound-components)
