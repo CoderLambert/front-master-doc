@@ -1,0 +1,2053 @@
+# React.memo基础 - 组件性能优化利器
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+React.memo是React 16.6引入的高阶组件，用于优化组件渲染性能。它通过记忆化（memoization）技术避免不必要的重新渲染，是React性能优化的重要工具之一。本章将深入探讨React.memo的工作原理、使用场景、性能优化策略和实际应用。
+
+## 本章学习目标
+
+- 理解React.memo的工作原理和记忆化机制
+- 掌握React.memo的基础用法和API
+- 学会使用React.memo优化组件渲染性能
+- 理解自定义比较函数的使用
+- 掌握React.memo的最佳实践和常见陷阱
+- 学会与其他性能优化技术结合使用
+- 理解React.memo的适用场景和限制
+- 掌握性能分析和测量方法
+
+---
+
+## 1. React.memo基础概念
+
+React.memo是一个高阶组件，它会记住组件的渲染结果，并在相同的props下跳过渲染，直接返回上一次的渲染结果。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心理念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>记忆化渲染</strong> - 缓存组件的渲染结果<br />
+    <strong>避免重复计算</strong> - 跳过不必要的渲染过程<br />
+    <strong>智能比较</strong> - 浅比较props变化<br />
+    <strong>提升性能</strong> - 减少DOM操作和计算开销
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础用法
+import React from 'react';
+
+// 未优化的组件 - 每次父组件更新都会重新渲染
+function UserComponent({ user, onUpdate }) {
+  console.log('UserComponent rendered');
+  return (
+    <div>
+      <h3>{user.name}</h3>
+      <p>Email: {user.email}</p>
+      <button onClick={() => onUpdate(user.id)}>Update</button>
+    </div>
+  );
+}
+
+// 使用React.memo优化
+const MemoizedUserComponent = React.memo(UserComponent);
+
+// 使用
+function App() {
+  const [user, setUser] = React.useState({ name: 'John', email: 'john@example.com' });
+  const [count, setCount] = React.useState(0);
+
+  const handleUpdate = (id) => {
+    console.log('Update called for', id);
+  };
+
+  return (
+    <div>
+      {/* count变化会触发App重新渲染，但MemoizedUserComponent不会重新渲染 */}
+      <button onClick={() => setCount(c => c + 1)}>Count: {count}</button>
+
+      {/* 只有user变化时才会重新渲染 */}
+      <MemoizedUserComponent user={user} onUpdate={handleUpdate} />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 1.1 React.memo的工作原理
+
+<CodeBlock>
+
+```jsx
+// React.memo的简化实现
+function myMemo(Component) {
+  const MemoizedComponent = React.forwardRef((props, ref) => {
+    const prevProps = useRef(null);
+
+    // 浅比较当前props和上一次的props
+    const areEqual = (prevProps, nextProps) => {
+      if (prevProps === null) {
+        return false;
+      }
+
+      const prevKeys = Object.keys(prevProps);
+      const nextKeys = Object.keys(nextProps);
+
+      if (prevKeys.length !== nextKeys.length) {
+        return false;
+      }
+
+      // 浅比较：只比较第一层
+      for (let key of prevKeys) {
+        if (prevProps[key] !== nextProps[key]) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    // 使用useRef缓存上一次props
+    if (!areEqual(prevProps.current, props)) {
+      prevProps.current = props;
+    }
+
+    // 如果props没有变化，跳过渲染
+    if (areEqual(prevProps.current, props) && prevProps.current !== null) {
+      return null; // 或返回上一次的渲染结果
+    }
+
+    // props变化，正常渲染
+    return <Component {...props} ref={ref} />;
+  });
+
+  MemoizedComponent.displayName = `Memoized(${Component.displayName || Component.name})`;
+  return MemoizedComponent;
+}
+```
+
+</CodeBlock>
+
+### 1.2 何时使用React.memo
+<CodeBlock>
+
+<Grid>
+
+<div>
+  <h4>✅ 适合使用React.memo的场景</h4>
+  <ul>
+    <li>组件渲染开销大</li>
+    <li>组件接收复杂props</li>
+    <li>组件在多处使用</li>
+    <li>数据变化频率低</li>
+    <li>组件树深层嵌套</li>
+    <li>列表中的子组件</li>
+  </ul>
+</div>
+
+<div>
+  <h4>❌ 不需要React.memo的场景</h4>
+  <ul>
+    <li>纯函数组件简单</li>
+    <li>组件状态变化频繁</li>
+    <li>组件每次props都不同</li>
+    <li>组件渲染非常快</li>
+    <li>没有性能问题</li>
+    <li>组件是叶子节点</li>
+  </ul>
+</div>
+
+</Grid>
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// 场景1：复杂列表中的组件
+function ListItem({ item, onSelect }) {
+  // 只有item变化时才重新渲染
+  return (
+    <div onClick={() => onSelect(item.id)}>
+      <h4>{item.title}</h4>
+      <p>{item.description}</p>
+    </div>
+  );
+}
+
+const MemoizedListItem = React.memo(ListItem);
+
+// 场景2：用户界面组件
+function UserProfile({ user, onEdit }) {
+  // 用户信息不经常变化，适合memo
+  return (
+    <div className="profile">
+      <img src={user.avatar} alt={user.name} />
+      <h3>{user.name}</h3>
+      <p>{user.bio}</p>
+      <button onClick={onEdit}>Edit Profile</button>
+    </div>
+  );
+}
+
+const MemoizedUserProfile = React.memo(UserProfile);
+
+// 场景3：表单组件
+function FormField({ label, value, onChange, error }) {
+  // 表单字段通常不需要memo，因为它们经常变化
+  return (
+    <div className="form-field">
+      <label>{label}</label>
+      <input value={value} onChange={onChange} />
+      {error && <span className="error">{error}</span>}
+    </div>
+  );
+}
+
+// 不需要memo的组件 - 每次输入都会变化
+```
+
+</CodeBlock>
+
+---
+
+## 2. React.memo API详解
+
+### 2.1 基本语法
+
+<CodeBlock>
+
+```jsx
+// 语法
+const MemoizedComponent = React.memo(Component, areEqual?);
+
+// 参数
+// Component: 需要优化的组件
+// areEqual: 可选的自定义比较函数(prevProps, nextProps) => boolean
+
+// 返回值
+// 返回一个记忆化的组件
+```
+
+</CodeBlock>
+
+### 2.2 简单示例
+
+<CodeBlock>
+
+```jsx
+// 示例1：基础用法
+function Button({ children, onClick, variant = 'primary' }) {
+  return (
+    <button
+      className={`btn btn-${variant}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+
+// 使用React.memo优化
+const MemoizedButton = React.memo(Button);
+
+// 使用
+function App() {
+  const [count, setCount] = useState(0);
+
+  // 每次count变化，App会重新渲染
+  // 但MemoizedButton不会重新渲染，因为props没有变化
+  return (
+    <div>
+      <MemoizedButton onClick={() => setCount(c => c + 1)}>
+        Count: {count}
+      </MemoizedButton>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 自定义比较函数
+
+<CodeBlock>
+
+```jsx
+// 自定义比较函数示例
+function UserCard({ user, onEdit, onDelete }) {
+  return (
+    <div className="user-card">
+      <h3>{user.name}</h3>
+      <p>{user.email}</p>
+      <button onClick={() => onEdit(user.id)}>Edit</button>
+      <button onClick={() => onDelete(user.id)}>Delete</button>
+    </div>
+  );
+}
+
+// 场景1：只关心user对象变化
+const MemoizedUserCard1 = React.memo(UserCard, (prevProps, nextProps) => {
+  return prevProps.user.id === nextProps.user.id &&
+         prevProps.user.name === nextProps.user.name &&
+         prevProps.user.email === nextProps.user.email;
+});
+
+// 场景2：忽略某些props变化
+const MemoizedUserCard2 = React.memo(UserCard, (prevProps, nextProps) => {
+  // 忽略onEdit和onDelete的变化
+  return prevProps.user.id === nextProps.user.id &&
+         prevProps.user.name === nextProps.user.name &&
+         prevProps.user.email === nextProps.user.email;
+});
+
+// 场景3：深度比较
+const MemoizedUserCard3 = React.memo(UserCard, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.user) === JSON.stringify(nextProps.user);
+});
+
+// 场景4：优化深度比较的性能
+const MemoizedUserCard4 = React.memo(UserCard, (prevProps, nextProps) => {
+  return (
+    prevProps.user.id === nextProps.user.id &&
+    prevProps.user.name === nextProps.user.name &&
+    prevProps.user.email === nextProps.user.email &&
+    prevProps.user.address.city === nextProps.user.address.city
+  );
+});
+```
+
+</CodeBlock>
+
+### 2.4 性能比较示例
+
+<CodeBlock>
+
+```jsx
+// 性能对比示例
+function ExpensiveComponent({ data, onUpdate }) {
+  // 模拟昂贵的计算
+  const processedData = React.useMemo(() => {
+    console.log('Expensive calculation performed');
+    return data.map(item => ({
+      ...item,
+      processed: true,
+      timestamp: Date.now()
+    }));
+  }, [data]);
+
+  return (
+    <div>
+      {processedData.map(item => (
+        <div key={item.id}>
+          {item.name} - {item.value}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const MemoizedExpensiveComponent = React.memo(ExpensiveComponent);
+
+function App() {
+  const [count, setCount] = useState(0);
+  const [data, setData] = useState([
+    { id: 1, name: 'Item 1', value: 10 },
+    { id: 2, name: 'Item 2', value: 20 }
+  ]);
+
+  // 测试性能
+  React.useEffect(() => {
+    const start = performance.now();
+    // 多次渲染测试
+    for (let i = 0; i < 1000; i++) {
+      setCount(c => c + 1);
+    }
+    const end = performance.now();
+    console.log(`Total time: ${end - start}ms`);
+  }, []);
+
+  return (
+    <div>
+      <button onClick={() => setCount(c => c + 1)}>
+        Increment: {count}
+      </button>
+      {/* 点击按钮会触发App重新渲染，但MemoizedExpensiveComponent不会重新渲染 */}
+      <MemoizedExpensiveComponent data={data} onUpdate={() => {}} />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 高级用法和模式
+
+### 3.1 与useCallback和useMemo结合
+
+<CodeBlock>
+
+```jsx
+// 组合使用示例
+function TodoList({ todos, filter, onToggle, onDelete, onAdd }) {
+  const [newTodo, setNewTodo] = useState('');
+
+  // 使用useMemo优化过滤逻辑
+  const filteredTodos = useMemo(() => {
+    return todos.filter(todo => {
+      if (filter === 'active') return !todo.completed;
+      if (filter === 'completed') return todo.completed;
+      return true;
+    });
+  }, [todos, filter]);
+
+  // 使用useCallback优化事件处理器
+  const handleToggle = useCallback((id) => {
+    onToggle(id);
+  }, [onToggle]);
+
+  const handleDelete = useCallback((id) => {
+    onDelete(id);
+  }, [onDelete]);
+
+  const handleAdd = useCallback(() => {
+    onAdd(newTodo);
+    setNewTodo('');
+  }, [newTodo, onAdd]);
+
+  // 使用React.memo优化列表项
+  const TodoItem = ({ todo }) => (
+    <div>
+      <span
+        style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+        onClick={() => handleToggle(todo.id)}
+      >
+        {todo.text}
+      </span>
+      <button onClick={() => handleDelete(todo.id)}>Delete</button>
+    </div>
+  );
+
+  const MemoizedTodoItem = React.memo(TodoItem);
+
+  return (
+    <div>
+      <input
+        value={newTodo}
+        onChange={(e) => setNewTodo(e.target.value)}
+        placeholder="Add new todo"
+      />
+      <button onClick={handleAdd}>Add</button>
+
+      <div>
+        {filteredTodos.map(todo => (
+          <MemoizedTodoItem key={todo.id} todo={todo} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const MemoizedTodoList = React.memo(TodoList);
+```
+
+</CodeBlock>
+
+### 3.2 动态组件
+
+<CodeBlock>
+
+```jsx
+// 动态组件优化
+function DynamicComponent({ type, data, onUpdate }) {
+  const components = {
+    chart: ChartComponent,
+    table: TableComponent,
+    list: ListComponent
+  };
+
+  const Component = components[type];
+
+  return (
+    <div>
+      <Component data={data} onUpdate={onUpdate} />
+    </div>
+  );
+}
+
+// 优化动态组件
+const MemoizedDynamicComponent = React.memo(DynamicComponent, (prevProps, nextProps) => {
+  return prevProps.type === nextProps.type &&
+         JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data);
+});
+
+function ChartComponent({ data, onUpdate }) {
+  // 图表组件实现
+  return <div>Chart rendering...</div>;
+}
+
+const MemoizedChartComponent = React.memo(ChartComponent);
+
+function TableComponent({ data, onUpdate }) {
+  // 表格组件实现
+  return <div>Table rendering...</div>;
+}
+
+const MemoizedTableComponent = React.memo(TableComponent);
+
+function ListComponent({ data, onUpdate }) {
+  // 列表组件实现
+  return <div>List rendering...</div>;
+}
+
+const MemoizedListComponent = React.memo(ListComponent);
+```
+
+</CodeBlock>
+
+### 3.3 条件渲染优化
+
+<CodeBlock>
+
+```jsx
+// 条件渲染优化
+function ConditionalRender({ condition, data, fallback }) {
+  const [showData, setShowData] = useState(false);
+
+  const DataComponent = useMemo(() => {
+    return React.memo(({ data }) => (
+      <div>
+        <h3>Data Component</h3>
+        <p>Data: {JSON.stringify(data)}</p>
+      </div>
+    ));
+  }, []);
+
+  if (condition && !showData) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div>
+      {condition ? (
+        <DataComponent data={data} />
+      ) : (
+        <div>{fallback}</div>
+      )}
+      <button onClick={() => setShowData(true)}>
+        Show Data
+      </button>
+    </div>
+  );
+}
+
+const MemoizedConditionalRender = React.memo(ConditionalRender);
+
+// 懒加载优化
+function LazyComponent({ data }) {
+  const LazyLoadedComponent = useMemo(() => {
+    return React.lazy(() => import('./HeavyComponent'));
+  }, []);
+
+  return (
+    <div>
+      {data && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <LazyLoadedComponent data={data} />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+const MemoizedLazyComponent = React.memo(LazyComponent);
+```
+
+</CodeBlock>
+
+---
+
+## 4. 性能优化策略
+
+### 4.1 组件拆分策略
+
+<CodeBlock>
+
+```jsx
+// 策略1：拆分大型组件
+function LargeComponent({ user, posts, comments, onUpdateUser, onAddPost, onAddComment }) {
+  // 问题：任何props变化都会导致整个组件重新渲染
+  return (
+    <div>
+      <UserSection user={user} onUpdate={onUpdateUser} />
+      <PostSection posts={posts} onAdd={onAddPost} />
+      <CommentSection comments={comments} onAdd={onAddComment} />
+    </div>
+  );
+}
+
+// 解决：拆分为小组件并使用React.memo
+const UserSection = React.memo(({ user, onUpdate }) => (
+  <div>
+    <h2>User Profile</h2>
+    <p>Name: {user.name}</p>
+    <button onClick={onUpdate}>Update Profile</button>
+  </div>
+));
+
+const PostSection = React.memo(({ posts, onAdd }) => (
+  <div>
+    <h2>Posts ({posts.length})</h2>
+    <ul>
+      {posts.map(post => <li key={post.id}>{post.title}</li>)}
+    </ul>
+    <button onClick={onAdd}>Add Post</button>
+  </div>
+));
+
+const CommentSection = React.memo(({ comments, onAdd }) => (
+  <div>
+    <h2>Comments ({comments.length})</h2>
+    <ul>
+      {comments.map(comment => <li key={comment.id}>{comment.text}</li>)}
+    </ul>
+    <button onClick={onAdd}>Add Comment</button>
+  </div>
+));
+
+function OptimizedLargeComponent(props) {
+  return (
+    <div>
+      <UserSection {...props} />
+      <PostSection {...props} />
+      <CommentSection {...props} />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 列表优化
+
+<CodeBlock>
+
+```jsx
+// 列表优化策略
+function OptimizedList({ items, onItemClick, onItemDelete }) {
+  // 策略1：使用React.memo优化列表项
+  const ListItem = React.memo(({ item, onClick, onDelete }) => (
+    <div className="list-item">
+      <span onClick={() => onClick(item.id)}>
+        {item.name}
+      </span>
+      <button onClick={() => onDelete(item.id)}>Delete</button>
+    </div>
+  ));
+
+  // 策略2：使用useCallback优化事件处理器
+  const handleClick = useCallback((id) => {
+    onItemClick(id);
+  }, [onItemClick]);
+
+  const handleDelete = useCallback((id) => {
+    onItemDelete(id);
+  }, [onItemDelete]);
+
+  // 策略3：使用key优化
+  return (
+    <div>
+      {items.map(item => (
+        <ListItem
+          key={item.id}
+          item={item}
+          onClick={handleClick}
+          onDelete={handleDelete}
+        />
+      ))}
+    </div>
+  );
+}
+
+// 高级列表优化：虚拟化
+function VirtualizedList({ items, itemHeight, visibleItems }) {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const startIndex = useMemo(() => {
+    return Math.floor(scrollTop / itemHeight);
+  }, [scrollTop, itemHeight]);
+
+  const endIndex = useMemo(() => {
+    return Math.min(startIndex + visibleItems, items.length);
+  }, [startIndex, visibleItems, items.length]);
+
+  const visibleItemsSlice = useMemo(() => {
+    return items.slice(startIndex, endIndex);
+  }, [items, startIndex, endIndex]);
+
+  const ListItem = React.memo(({ item, index }) => (
+    <div style={{ height: itemHeight }}>
+      {item.name}
+    </div>
+  ));
+
+  return (
+    <div
+      style={{ height: itemHeight * visibleItems, overflow: 'auto' }}
+      onScroll={(e) => setScrollTop(e.target.scrollTop)}
+    >
+      <div style={{ height: items.length * itemHeight, position: 'relative' }}>
+        {visibleItemsSlice.map((item, index) => (
+          <div
+            key={item.id}
+            style={{
+              position: 'absolute',
+              top: (startIndex + index) * itemHeight,
+              height: itemHeight
+            }}
+          >
+            <ListItem item={item} index={startIndex + index} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 状态结构优化
+
+<CodeBlock>
+
+```jsx
+// 策略：扁平化状态结构
+function BadStateStructure() {
+  // 问题：深层嵌套，每次更新都创建新对象
+  const [state, setState] = useState({
+    user: {
+      profile: {
+        name: '',
+        email: ''
+      },
+      preferences: {
+        theme: 'light',
+        language: 'en'
+      }
+    },
+    data: []
+  });
+
+  const updateName = (name) => {
+    setState(prev => ({
+      ...prev,
+      user: {
+        ...prev.user,
+        profile: {
+          ...prev.user.profile,
+          name
+        }
+      }
+    }));
+  };
+
+  return (
+    <div>
+      <input
+        value={state.user.profile.name}
+        onChange={(e) => updateName(e.target.value)}
+      />
+    </div>
+  );
+}
+
+function GoodStateStructure() {
+  // 解决：扁平化状态，只更新需要的部分
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [theme, setTheme] = useState('light');
+  const [language, setLanguage] = useState('en');
+  const [data, setData] = useState([]);
+
+  return (
+    <div>
+      <ProfileSection
+        name={userName}
+        email={userEmail}
+        onNameChange={setUserName}
+        onEmailChange={setUserEmail}
+      />
+      <PreferencesSection
+        theme={theme}
+        language={language}
+        onThemeChange={setTheme}
+        onLanguageChange={setLanguage}
+      />
+    </div>
+  );
+}
+
+const ProfileSection = React.memo(({ name, email, onNameChange, onEmailChange }) => (
+  <div>
+    <input value={name} onChange={(e) => onNameChange(e.target.value)} />
+    <input value={email} onChange={(e) => onEmailChange(e.target.value)} />
+  </div>
+));
+
+const PreferencesSection = React.memo(({ theme, language, onThemeChange, onLanguageChange }) => (
+  <div>
+    <select value={theme} onChange={(e) => onThemeChange(e.target.value)}>
+      <option value="light">Light</option>
+      <option value="dark">Dark</option>
+    </select>
+    <select value={language} onChange={(e) => onLanguageChange(e.target.value)}>
+      <option value="en">English</option>
+      <option value="zh">中文</option>
+    </select>
+  </div>
+));
+```
+
+</CodeBlock>
+
+---
+
+## 5. 实际应用案例
+
+### 5.1 用户管理系统
+
+<CodeBlock>
+
+```jsx
+// 完整的用户管理系统
+const UserList = React.memo(({ users, onSelect, onDelete, selectedId }) => {
+  return (
+    <div className="user-list">
+      {users.map(user => (
+        <UserItem
+          key={user.id}
+          user={user}
+          isSelected={user.id === selectedId}
+          onSelect={() => onSelect(user.id)}
+          onDelete={() => onDelete(user.id)}
+        />
+      ))}
+    </div>
+  );
+});
+
+const UserItem = React.memo(({ user, isSelected, onSelect, onDelete }) => {
+  return (
+    <div
+      className={`user-item ${isSelected ? 'selected' : ''}`}
+      onClick={onSelect}
+    >
+      <img src={user.avatar} alt={user.name} />
+      <div className="user-info">
+        <h3>{user.name}</h3>
+        <p>{user.email}</p>
+      </div>
+      <button onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+        Delete
+      </button>
+    </div>
+  );
+});
+
+const UserDetails = React.memo(({ user, onEdit, onUpdate }) => {
+  if (!user) {
+    return <div>Select a user to view details</div>;
+  }
+
+  return (
+    <div className="user-details">
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+      <p>Role: {user.role}</p>
+      <button onClick={onEdit}>Edit</button>
+      <button onClick={onUpdate}>Update</button>
+    </div>
+  );
+});
+
+function UserManagement() {
+  const [users, setUsers] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
+
+  const selectedUser = useMemo(() => {
+    return users.find(user => user.id === selectedId);
+  }, [users, selectedId]);
+
+  const handleSelect = useCallback((id) => {
+    setSelectedId(id);
+  }, []);
+
+  const handleDelete = useCallback((id) => {
+    setUsers(prev => prev.filter(user => user.id !== id));
+    if (selectedId === id) {
+      setSelectedId(null);
+    }
+  }, [selectedId]);
+
+  const handleEdit = useCallback((user) => {
+    setEditingUser(user);
+  }, []);
+
+  const handleUpdate = useCallback((userId, updates) => {
+    setUsers(prev => prev.map(user =>
+      user.id === userId ? { ...user, ...updates } : user
+    ));
+  }, []);
+
+  return (
+    <div className="user-management">
+      <div className="user-list-container">
+        <h2>Users</h2>
+        <UserList
+          users={users}
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          onDelete={handleDelete}
+        />
+      </div>
+      <div className="user-details-container">
+        <UserDetails
+          user={selectedUser}
+          onEdit={() => handleEdit(selectedUser)}
+          onUpdate={() => handleUpdate(selectedUser.id, { updated: true })}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 购物车系统
+
+<CodeBlock>
+
+```jsx
+// 购物车系统优化
+const CartItem = React.memo(({ item, onUpdateQuantity, onRemove }) => {
+  const { id, name, price, quantity, image } = item;
+
+  const handleQuantityChange = useCallback((newQuantity) => {
+    if (newQuantity <= 0) {
+      onRemove(id);
+    } else {
+      onUpdateQuantity(id, newQuantity);
+    }
+  }, [id, onUpdateQuantity, onRemove]);
+
+  const total = useMemo(() => {
+    return price * quantity;
+  }, [price, quantity]);
+
+  return (
+    <div className="cart-item">
+      <img src={image} alt={name} />
+      <div className="item-details">
+        <h3>{name}</h3>
+        <p>Price: ${price}</p>
+        <p>Total: ${total}</p>
+      </div>
+      <div className="quantity-controls">
+        <button onClick={() => handleQuantityChange(quantity - 1)}>-</button>
+        <span>{quantity}</span>
+        <button onClick={() => handleQuantityChange(quantity + 1)}>+</button>
+      </div>
+      <button onClick={() => onRemove(id)}>Remove</button>
+    </div>
+  );
+});
+
+const CartSummary = React.memo(({ items, onCheckout }) => {
+  const { totalItems, totalPrice } = useMemo(() => {
+    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPrice = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return { totalItems, totalPrice };
+  }, [items]);
+
+  return (
+    <div className="cart-summary">
+      <h3>Cart Summary</h3>
+      <p>Total Items: {totalItems}</p>
+      <p>Total Price: ${totalPrice}</p>
+      <button onClick={onCheckout} disabled={items.length === 0}>
+        Checkout
+      </button>
+    </div>
+  );
+});
+
+function ShoppingCart() {
+  const [items, setItems] = useState([]);
+
+  const handleUpdateQuantity = useCallback((id, quantity) => {
+    setItems(prev => prev.map(item =>
+      item.id === id ? { ...item, quantity } : item
+    ));
+  }, []);
+
+  const handleRemove = useCallback((id) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  const handleCheckout = useCallback(() => {
+    console.log('Proceeding to checkout...');
+    // 结算逻辑
+  }, []);
+
+  return (
+    <div className="shopping-cart">
+      <h2>Shopping Cart</h2>
+      <div className="cart-items">
+        {items.map(item => (
+          <CartItem
+            key={item.id}
+            item={item}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemove={handleRemove}
+          />
+        ))}
+      </div>
+      <CartSummary items={items} onCheckout={handleCheckout} />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 数据可视化组件
+
+<CodeBlock>
+
+```jsx
+// 数据可视化优化
+const ChartContainer = React.memo(({ data, type, width, height }) => {
+  const processedData = useMemo(() => {
+    // 预处理数据
+    return data.map(item => ({
+      ...item,
+      normalized: (item.value - item.min) / (item.max - item.min)
+    }));
+  }, [data]);
+
+  const ChartComponent = useMemo(() => {
+    const components = {
+      line: LineChart,
+      bar: BarChart,
+      pie: PieChart
+    };
+    return components[type] || LineChart;
+  }, [type]);
+
+  return (
+    <div className="chart-container" style={{ width, height }}>
+      <ChartComponent data={processedData} />
+    </div>
+  );
+});
+
+const DataPoint = React.memo(({ point, onHover, onClick }) => {
+  return (
+    <circle
+      cx={point.x}
+      cy={point.y}
+      r={point.r}
+      fill={point.color}
+      onMouseEnter={() => onHover(point)}
+      onClick={() => onClick(point)}
+    />
+  );
+});
+
+const Tooltip = React.memo(({ visible, position, content }) => {
+  if (!visible) return null;
+
+  return (
+    <div
+      className="tooltip"
+      style={{
+        left: position.x,
+        top: position.y
+      }}
+    >
+      {content}
+    </div>
+  );
+});
+
+function Dashboard() {
+  const [data, setData] = useState([]);
+  const [selectedChart, setSelectedChart] = useState('line');
+  const [hoveredPoint, setHoveredPoint] = useState(null);
+
+  const chartData = useMemo(() => {
+    // 生成示例数据
+    return Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      value: Math.random() * 100,
+      x: i * 20,
+      y: Math.random() * 200
+    }));
+  }, []);
+
+  const handleHover = useCallback((point) => {
+    setHoveredPoint(point);
+  }, []);
+
+  const handleClick = useCallback((point) => {
+    console.log('Point clicked:', point);
+  }, []);
+
+  return (
+    <div className="dashboard">
+      <div className="chart-controls">
+        <button onClick={() => setSelectedChart('line')}>Line Chart</button>
+        <button onClick={() => setSelectedChart('bar')}>Bar Chart</button>
+        <button onClick={() => setSelectedChart('pie')}>Pie Chart</button>
+      </div>
+      <ChartContainer
+        data={chartData}
+        type={selectedChart}
+        width={800}
+        height={400}
+      />
+      <Tooltip
+        visible={!!hoveredPoint}
+        position={{ x: hoveredPoint?.x || 0, y: hoveredPoint?.y || 0 }}
+        content={`Value: ${hoveredPoint?.value}`}
+      />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 性能监控和分析
+
+### 6.1 性能测量
+
+<CodeBlock>
+
+```jsx
+// 性能测量工具
+function withPerformanceMonitoring(WrappedComponent) {
+  return React.memo((props) => {
+    const renderCount = useRef(0);
+    const lastRenderTime = useRef(performance.now());
+
+    renderCount.current += 1;
+    const currentTime = performance.now();
+    const renderTime = currentTime - lastRenderTime.current;
+    lastRenderTime.current = currentTime;
+
+    useEffect(() => {
+      console.log(`${WrappedComponent.name} rendered ${renderCount.current} times`);
+      console.log(`Last render time: ${renderTime.toFixed(2)}ms`);
+    });
+
+    return <WrappedComponent {...props} />;
+  });
+}
+
+// 使用示例
+const MonitoredComponent = withPerformanceMonitoring(({ data }) => {
+  return <div>{data.map(item => <p key={item.id}>{item.name}</p>)}</div>;
+});
+
+// 性能分析Hook
+function usePerformanceMonitor(componentName) {
+  const renderCount = useRef(0);
+  const renderTimes = useRef([]);
+
+  renderCount.current += 1;
+  const startTime = performance.now();
+
+  useEffect(() => {
+    const endTime = performance.now();
+    const renderTime = endTime - startTime;
+    renderTimes.current.push(renderTime);
+
+    const avgRenderTime = renderTimes.current.reduce((a, b) => a + b, 0) / renderTimes.current.length;
+
+    console.log(`[${componentName}] Render #${renderCount.current}: ${renderTime.toFixed(2)}ms (avg: ${avgRenderTime.toFixed(2)}ms)`);
+
+    return () => {
+      // 清理历史数据
+      if (renderTimes.current.length > 100) {
+        renderTimes.current = [];
+        renderCount.current = 0;
+      }
+    };
+  });
+}
+
+const OptimizedComponent = React.memo(({ data }) => {
+  usePerformanceMonitor('OptimizedComponent');
+
+  return (
+    <div>
+      {data.map(item => <div key={item.id}>{item.name}</div>)}
+    </div>
+  );
+});
+```
+
+</CodeBlock>
+
+### 6.2 React DevTools Profiler
+
+<CodeBlock>
+
+```jsx
+// 使用React DevTools Profiler
+import { Profiler } from 'react';
+
+function onRenderCallback(
+  id, // the "id" prop of the Profiler tree that has just committed
+  phase, // either "mount" (on the initial render) or "update" (on re-renders)
+  actualDuration, // time spent rendering the committed update
+  baseDuration, // estimated time to render the entire subtree without memoization
+  startTime, // when React started rendering this update
+  commitTime, // when React committed this update
+  interactions // the Set of interactions belonging to this update
+) {
+  console.log('Profiler:', {
+    id,
+    phase,
+    actualDuration,
+    baseDuration,
+    startTime,
+    commitTime,
+    interactions: interactions.size
+  });
+}
+
+function App() {
+  return (
+    <Profiler id="App" onRender={onRenderCallback}>
+      <div>
+        <HeavyComponent data={data} />
+      </div>
+    </Profiler>
+  );
+}
+
+// 性能分析包装器
+function withProfiler(id, WrappedComponent) {
+  return (props) => (
+    <Profiler id={id} onRender={onRenderCallback}>
+      <WrappedComponent {...props} />
+    </Profiler>
+  );
+}
+
+const ProfiledComponent = withProfiler('MyComponent', MyComponent);
+```
+
+</CodeBlock>
+
+### 6.3 性能基准测试
+
+<CodeBlock>
+
+```jsx
+// 性能基准测试
+function benchmarkComponent(Component, props, iterations = 100) {
+  const results = [];
+
+  for (let i = 0; i < iterations; i++) {
+    const startTime = performance.now();
+
+    // 模拟组件渲染
+    const element = React.createElement(Component, props);
+
+    // 这里可以添加实际的渲染逻辑
+
+    const endTime = performance.now();
+    results.push(endTime - startTime);
+  }
+
+  const avgTime = results.reduce((a, b) => a + b, 0) / results.length;
+  const minTime = Math.min(...results);
+  const maxTime = Math.max(...results);
+
+  console.log('Benchmark Results:', {
+    average: avgTime.toFixed(2) + 'ms',
+    min: minTime.toFixed(2) + 'ms',
+    max: maxTime.toFixed(2) + 'ms',
+    iterations
+  });
+
+  return { average: avgTime, min: minTime, max: maxTime };
+}
+
+// 使用示例
+function MyComponent({ data }) {
+  return <div>{data.map(item => <p key={item.id}>{item.name}</p>)}</div>;
+}
+
+const MemoizedMyComponent = React.memo(MyComponent);
+
+// 对比性能
+const testData = Array.from({ length: 1000 }, (_, i) => ({
+  id: i,
+  name: `Item ${i}`
+}));
+
+console.log('--- Regular Component ---');
+benchmarkComponent(MyComponent, { data: testData });
+
+console.log('--- Memoized Component ---');
+benchmarkComponent(MemoizedMyComponent, { data: testData });
+```
+
+</CodeBlock>
+
+---
+
+## 7. 常见陷阱和解决方案
+
+### 陷阱1：错误地使用React.memo
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误：不需要优化的组件
+function SimpleText({ text }) {
+  return <p>{text}</p>;
+}
+
+const MemoizedSimpleText = React.memo(SimpleText);
+
+// 问题：组件本身很简单，memo的开销可能比渲染更大
+
+// ✅ 正确：只有复杂的组件才使用memo
+function ComplexDataProcessor({ data, filters, onUpdate }) {
+  const processedData = useMemo(() => {
+    return data
+      .filter(item => filters.includes(item.category))
+      .map(item => ({
+        ...item,
+        processed: true,
+        timestamp: Date.now()
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [data, filters]);
+
+  return (
+    <div>
+      {processedData.map(item => (
+        <DataItem
+          key={item.id}
+          item={item}
+          onUpdate={onUpdate}
+        />
+      ))}
+    </div>
+  );
+}
+
+const MemoizedComplexDataProcessor = React.memo(ComplexDataProcessor);
+```
+
+</ErrorBox>
+
+### 陷阱2：props变化导致频繁重渲染
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误：每次渲染都创建新对象
+function BadParent() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <Child
+        data={{ count, timestamp: Date.now() }} // 每次都是新对象！
+        onUpdate={() => {}} // 每次都是新函数！
+      />
+    </div>
+  );
+}
+
+// ✅ 正确：使用useMemo和useCallback
+function GoodParent() {
+  const [count, setCount] = useState(0);
+
+  const data = useMemo(() => ({
+    count,
+    timestamp: Date.now()
+  }), [count]);
+
+  const handleUpdate = useCallback(() => {
+    console.log('Update');
+  }, []);
+
+  return (
+    <div>
+      <Child data={data} onUpdate={handleUpdate} />
+    </div>
+  );
+}
+
+const MemoizedChild = React.memo(Child);
+```
+
+</ErrorBox>
+
+### 陷阱3：深层嵌套的props比较
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误：深层嵌套对象
+function BadExample() {
+  const [user, setUser] = useState({
+    name: 'John',
+    address: {
+      city: 'New York',
+      zipCode: '10001'
+    }
+  });
+
+  // 每次更新都会创建新的user对象
+  const updateCity = (city) => {
+    setUser(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        city
+      }
+    }));
+  };
+
+  return (
+    <UserCard user={user} onUpdate={updateCity} />
+  );
+}
+
+// ✅ 正确：扁平化状态或使用自定义比较
+const UserCard = React.memo(
+  ({ user, onUpdate }) => (
+    <div>
+      <h3>{user.name}</h3>
+      <p>City: {user.address.city}</p>
+    </div>
+  ),
+  (prevProps, nextProps) => {
+    return prevProps.user.name === nextProps.user.name &&
+           prevProps.user.address.city === nextProps.user.address.city &&
+           prevProps.user.address.zipCode === nextProps.user.address.zipCode;
+  }
+);
+
+// 或者更简单：拆分状态
+function GoodExample() {
+  const [userName, setUserName] = useState('John');
+  const [city, setCity] = useState('New York');
+  const [zipCode, setZipCode] = useState('10001');
+
+  const user = useMemo(() => ({
+    name: userName,
+    address: { city, zipCode }
+  }), [userName, city, zipCode]);
+
+  return (
+    <UserCard user={user} onUpdate={() => {}} />
+  );
+}
+
+const UserCard = React.memo(({ user }) => (
+  <div>
+    <h3>{user.name}</h3>
+    <p>City: {user.address.city}</p>
+  </div>
+));
+```
+
+</ErrorBox>
+
+### 陷阱4：忽略函数依赖
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误：useCallback依赖不正确
+function BadComponent({ data, onProcess }) {
+  const processedData = useMemo(() => {
+    return data.map(item => onProcess(item));
+  }, [data, onProcess]); // onProcess可能每次都是新函数
+
+  return <div>{processedData.length}</div>;
+}
+
+function Parent() {
+  const [data, setData] = useState([]);
+
+  const handleProcess = (item) => {
+    return {
+      ...item,
+      processed: true
+    };
+  };
+
+  return (
+    <BadComponent
+      data={data}
+      onProcess={handleProcess} // 每次Parent渲染都是新函数
+    />
+  );
+}
+
+// ✅ 正确：稳定化函数或使用useCallback
+function GoodComponent({ data, onProcess }) {
+  const processedData = useMemo(() => {
+    return data.map(item => onProcess(item));
+  }, [data, onProcess]);
+
+  return <div>{processedData.length}</div>;
+}
+
+function GoodParent() {
+  const [data, setData] = useState([]);
+
+  const handleProcess = useCallback((item) => {
+    return {
+      ...item,
+      processed: true
+    };
+  }, []); // 稳定的函数
+
+  return (
+    <GoodComponent
+      data={data}
+      onProcess={handleProcess}
+    />
+  );
+}
+
+// 或者使用useCallback优化Parent
+const MemoizedGoodComponent = React.memo(GoodComponent);
+
+function OptimizedParent() {
+  const [data, setData] = useState([]);
+
+  const handleProcess = useCallback((item) => {
+    return {
+      ...item,
+      processed: true
+    };
+  }, []);
+
+  return (
+    <MemoizedGoodComponent
+      data={data}
+      onProcess={handleProcess}
+    />
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 8. 最佳实践
+
+### 8.1 何时使用React.memo
+
+<BestPractices>
+
+```jsx
+// ✅ 适合使用React.memo的场景
+
+// 1. 渲染开销大的组件
+function HeavyComponent({ data, calculations }) {
+  const result = useMemo(() => {
+    // 复杂计算
+    return data.reduce((acc, item) => {
+      return calculations.reduce((sum, calc) => sum + calc(item), 0);
+    }, 0);
+  }, [data, calculations]);
+
+  return <div>Result: {result}</div>;
+}
+
+const MemoizedHeavyComponent = React.memo(HeavyComponent);
+
+// 2. 接收复杂props的组件
+function UserProfile({ user, settings, preferences, stats }) {
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>Settings: {settings.theme}</p>
+      <p>Preferences: {preferences.language}</p>
+      <Stats stats={stats} />
+    </div>
+  );
+}
+
+const MemoizedUserProfile = React.memo(UserProfile);
+
+// 3. 列表中的子组件
+function ListItem({ item, index, onSelect, onDelete }) {
+  return (
+    <div>
+      <span onClick={() => onSelect(item.id)}>
+        {index + 1}. {item.title}
+      </span>
+      <button onClick={() => onDelete(item.id)}>Delete</button>
+    </div>
+  );
+}
+
+const MemoizedListItem = React.memo(ListItem);
+
+function List({ items }) {
+  const handleSelect = useCallback((id) => {
+    console.log('Selected:', id);
+  }, []);
+
+  const handleDelete = useCallback((id) => {
+    console.log('Deleted:', id);
+  }, []);
+
+  return (
+    <div>
+      {items.map((item, index) => (
+        <MemoizedListItem
+          key={item.id}
+          item={item}
+          index={index}
+          onSelect={handleSelect}
+          onDelete={handleDelete}
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+</BestPractices>
+
+### 8.2 性能优化原则
+
+<BestPractices>
+
+```jsx
+// 1. 避免过度优化
+function optimizeComponent(Component) {
+  // 检查组件是否真的需要优化
+  if (isSimpleComponent(Component)) {
+    return Component; // 不要优化简单组件
+  }
+  return React.memo(Component);
+}
+
+// 2. 组合使用优化技术
+function OptimizedList({ items }) {
+  const [filter, setFilter] = useState('');
+
+  // 使用useMemo优化过滤结果
+  const filteredItems = useMemo(() => {
+    return items.filter(item =>
+      item.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [items, filter]);
+
+  // 使用useCallback优化事件处理器
+  const handleFilterChange = useCallback((e) => {
+    setFilter(e.target.value);
+  }, []);
+
+  const ListItem = useCallback(({ item }) => (
+    <div>{item.name}</div>
+  ), []);
+
+  const MemoizedListItem = React.memo(ListItem);
+
+  return (
+    <div>
+      <input
+        value={filter}
+        onChange={handleFilterChange}
+        placeholder="Filter..."
+      />
+      <div>
+        {filteredItems.map(item => (
+          <MemoizedListItem key={item.id} item={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 3. 监控性能
+function withPerformanceTracking(Component) {
+  return (props) => {
+    const renderCount = useRef(0);
+    const startTime = useRef(performance.now());
+
+    renderCount.current += 1;
+
+    useEffect(() => {
+      const endTime = performance.now();
+      const renderTime = endTime - startTime.current;
+
+      if (renderTime > 16) { // 超过一帧的时间
+        console.warn(
+          `${Component.name} render took ${renderTime.toFixed(2)}ms (${renderCount.current} renders)`
+        );
+      }
+
+      startTime.current = performance.now();
+    });
+
+    return <Component {...props} />;
+  };
+}
+```
+
+</BestPractices>
+
+### 8.3 代码组织
+
+<BestPractices>
+
+```jsx
+// 1. 组件库组织
+// components/memoized/index.js
+export { default as MemoizedButton } from './MemoizedButton';
+export { default as MemoizedInput } from './MemoizedInput';
+export { default as MemoizedList } from './MemoizedList';
+
+// components/memoized/MemoizedButton.js
+import React from 'react';
+
+function Button({ children, variant = 'primary', ...props }) {
+  return (
+    <button className={`btn btn-${variant}`} {...props}>
+      {children}
+    </button>
+  );
+}
+
+export default React.memo(Button);
+
+// 2. 自定义Hook模式
+function useOptimizedList(items, options = {}) {
+  const {
+    keyExtractor = item => item.id,
+    filterFn = () => true,
+    sortFn = (a, b) => 0
+  } = options;
+
+  const [filter, setFilter] = useState('');
+
+  const processedItems = useMemo(() => {
+    return items
+      .filter(item => filterFn(item, filter))
+      .sort(sortFn);
+  }, [items, filter, filterFn, sortFn]);
+
+  const filteredItems = useMemo(() => {
+    return processedItems.filter(item =>
+      item.name.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [processedItems, filter]);
+
+  const ListItem = useCallback(({ item }) => (
+    <div>{item.name}</div>
+  ), []);
+
+  const MemoizedListItem = React.memo(ListItem);
+
+  return {
+    items: filteredItems,
+    filter,
+    setFilter,
+    ListItem: MemoizedListItem
+  };
+}
+
+// 使用
+function MyComponent({ data }) {
+  const { items, filter, setFilter, ListItem } = useOptimizedList(data);
+
+  return (
+    <div>
+      <input
+        value={filter}
+        onChange={(e) => setFilter(e.target.value)}
+      />
+      {items.map(item => (
+        <ListItem key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
+```
+
+</BestPractices>
+
+---
+
+## 9. 实践练习
+
+### 练习1：优化用户列表组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建用户列表显示组件
+- 支持用户选择和删除
+- 优化列表项渲染性能
+- 实现搜索和过滤功能
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const UserList = React.memo(({ users, onSelect, onDelete, selectedId }) => {
+  // 渲染用户列表
+});
+
+const UserItem = React.memo(({ user, isSelected, onSelect, onDelete }) => {
+  // 渲染单个用户项
+});
+
+// 性能优化要求
+// - 使用React.memo避免不必要的重渲染
+// - 使用useCallback稳定事件处理器
+// - 使用useMemo优化计算结果
+// - 正确设置key属性
+```
+
+**提示**：
+- 考虑列表项的props变化频率
+- 使用useCallback优化事件处理器
+- 使用useMemo优化复杂计算
+- 监控渲染次数
+
+</Expandable>
+
+### 练习2：实现虚拟化长列表
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建可显示10000+项的长列表
+- 实现虚拟滚动优化
+- 支持动态高度列表项
+- 优化滚动性能
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+function VirtualizedList({ items, itemHeight, visibleItems }) {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  // 计算可见的列表项
+  const visibleItems = useMemo(() => {
+    // 计算起始和结束索引
+  }, [scrollTop, itemHeight, items.length]);
+
+  // 渲染优化的列表项
+  return (
+    <div style={{ height: itemHeight * visibleItems, overflow: 'auto' }}>
+      <div style={{ height: items.length * itemHeight }}>
+        {visibleItems.map((item, index) => (
+          // 渲染列表项
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+**提示**：
+- 只渲染视窗内的列表项
+- 使用position: absolute定位
+- 计算滚动位置和可见范围
+- 使用React.memo优化列表项
+
+</Expandable>
+
+### 练习3：优化数据可视化组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建图表组件（折线图、柱状图等）
+- 支持数据点悬停显示详情
+- 实现图表缩放和平移
+- 优化大量数据点的渲染
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const Chart = React.memo(({ data, type, width, height }) => {
+  // 处理数据并渲染图表
+});
+
+const DataPoint = React.memo(({ point, onHover, onClick }) => {
+  // 渲染单个数据点
+});
+
+const Tooltip = React.memo(({ visible, position, content }) => {
+  // 渲染工具提示
+});
+
+// 性能优化要求
+// - 使用React.memo优化组件
+// - 使用useMemo优化数据处理
+// - 使用useCallback优化事件处理
+// - 实现防抖处理鼠标事件
+```
+
+**提示**：
+- 大数据点的渲染优化
+- 鼠标事件防抖处理
+- 图表重绘优化
+- 内存使用优化
+
+</Expandable>
+
+### 练习4：实现性能监控面板
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建性能监控组件
+- 实时显示组件渲染次数
+- 显示渲染时间统计
+- 提供性能分析报告
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+function usePerformanceMonitor(componentName) {
+  // 跟踪渲染次数和渲染时间
+}
+
+function PerformanceMonitor({ children }) {
+  // 汇总所有子组件的性能数据
+  // 显示性能报告
+}
+
+// 集成使用
+const MonitoredComponent = withPerformanceTracking(MyComponent);
+```
+
+**提示**：
+- 使用React.useRef存储数据
+- 使用useEffect进行数据采集
+- 计算平均值、最大值、最小值
+- 提供可视化展示
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ React.memo通过记忆化避免不必要的组件重新渲染
+- ✅ React.memo使用浅比较来检查props变化
+- ✅ 自定义比较函数可以精确控制何时重新渲染
+- ✅ React.memo适用于渲染开销大、props复杂的组件
+- ✅ 与useCallback和useMemo结合使用效果更佳
+- ✅ 正确使用key属性对列表性能至关重要
+- ✅ 避免在React.memo组件中创建新的对象或函数
+- ✅ 性能监控是优化工作的重要环节
+- ✅ 过度优化可能适得其反，需要权衡利弊
+- ✅ 性能优化应基于实际测量而非猜测
+
+</Checklist>
+
+### React.memo最佳实践
+
+<BestPractices>
+
+1. **适度使用** - 只优化真正需要优化的组件
+2. **结合其他优化** - 与useCallback、useMemo配合使用
+3. **稳定props** - 避免在每次渲染时创建新对象
+4. **监控性能** - 使用Profiler等工具测量效果
+5. **理解限制** - React.memo不能解决所有性能问题
+6. **避免过度优化** - 简单的组件不需要优化
+7. **正确比较** - 自定义比较函数需要全面考虑
+8. **状态结构** - 扁平化状态减少不必要更新
+
+</BestPractices>
+
+### 何时使用React.memo
+
+<BestPractices>
+
+**推荐使用**：
+- 组件渲染开销大
+- 组件接收复杂对象props
+- 列表中的子组件
+- 深层嵌套的组件树
+- 频繁父组件更新但自身props不变
+
+**不需要使用**：
+- 简单纯函数组件
+- 组件状态经常变化
+- 组件渲染非常快
+- 叶子节点组件
+- 没有性能问题的组件
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了React.memo的基础和实践，接下来可以学习：
+
+1. **[虚拟化技术](./virtualization)** - 大数据列表优化
+2. **[代码分割](../advanced/code-splitting)** - 动态导入和懒加载
+3. **[性能优化进阶](../advanced/advanced-optimization)** - 深入性能优化
+4. **[React Profiler使用](../tools/profiler)** - 性能分析工具
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [memo](https://react.dev/reference/react/memo) - React官方文档
+- [React Profiler](https://react.dev/reference/react/Profiler) - 性能分析工具
+- [Performance](https://react.dev/reference/react) - 性能相关API
+
+### 推荐阅读
+
+- [Optimizing React Performance](https://kentcdodds.com/blog/application-state-management-with-react) - 性能优化指南
+- [When to useMemo and useCallback](https://kentcdodds.com/blog/) - 优化策略
+- [React.memo vs useMemo](https://blog.logrocket.com/) - 优化技术对比
+
+### 相关话题
+
+- [useCallback和useMemo](../hooks/advanced/useCallback) - Hook性能优化
+- [状态管理](../state-management/) - 状态更新优化
+- [组件模式](../patterns/) - 性能友好的组件设计
+
+---
+
+[← 上一章：状态管理总结](../state-management/) | [下一章：虚拟化技术 →](../virtualization)

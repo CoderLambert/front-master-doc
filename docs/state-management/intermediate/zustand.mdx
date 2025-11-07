@@ -1,0 +1,2403 @@
+# Zustand轻量方案 - 极简状态管理
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+Zustand是React生态系统中一个轻量级的状态管理库，以其简洁的API、高效的性能和最小的样板代码而闻名。本章将深入探讨Zustand的核心概念、使用模式、最佳实践以及实际应用场景。
+
+## 本章学习目标
+
+- 理解Zustand的设计理念和核心优势
+- 掌握Zustand的基础用法和API
+- 学会使用Zustand进行状态管理
+- 理解Zustand的middleware系统
+- 掌握异步操作在Zustand中的处理
+- 学会使用Zustand进行性能优化
+- 掌握Zustand与React的集成
+- 理解Zustand的最佳实践
+- 掌握Zustand与其他状态管理方案的对比
+- 学会在大型项目中使用Zustand
+
+---
+
+## 1. Zustand是什么？
+
+Zustand是一个快速、可扩展的状态管理库，使用简单的API设计，让状态管理变得简单而有趣。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心理念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>极简主义</strong> - 最少的样板代码，最简单的API<br />
+    <strong>高性能</strong> - 自动优化的选择器，只重渲染必要的组件<br />
+    <strong>TypeScript友好</strong> - 完整的类型推导支持<br />
+    <strong>可扩展</strong> - 强大的middleware系统
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// Zustand示例 - 简单三步
+// 1. 创建store
+const useStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+  decrement: () => set((state) => ({ count: state.count - 1 })),
+}));
+
+// 2. 在组件中使用
+function Counter() {
+  const { count, increment, decrement } = useStore();
+
+  return (
+    <div>
+      <h1>Count: {count}</h1>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+    </div>
+  );
+}
+
+// 3. 订阅状态变化
+const count = useStore((state) => state.count);
+```
+
+</CodeBlock>
+
+### 1.1 Zustand的核心优势
+
+<Grid>
+
+<div>
+  <h4>🚀 性能</h4>
+  <ul>
+    <li>自动优化选择器</li>
+    <li>最小化重渲染</li>
+    <li>浅比较（shallow）</li>
+    <li>无深层订阅</li>
+  </ul>
+</div>
+
+<div>
+  <h4>📦 体积</h4>
+  <ul>
+    <li>极小的Bundle体积</li>
+    <li>零依赖</li>
+    <li>Tree-shaking友好</li>
+    <li>~12kb minified</li>
+  </ul>
+</div>
+
+<div>
+  <h4>🎯 API</h4>
+  <ul>
+    <li>直观的API设计</li>
+    <li>学习曲线平缓</li>
+    <li>无样板代码</li>
+    <li>原生支持TypeScript</li>
+  </ul>
+</div>
+
+<div>
+  <h4>🔧 可扩展</h4>
+  <ul>
+    <li>强大的middleware</li>
+    <li>持久化支持</li>
+    <li>Immer集成</li>
+    <li>Redux DevTools支持</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 与其他状态管理方案对比
+
+<CodeBlock>
+
+```jsx
+// 对比：创建store
+
+// ❌ Redux - 样板代码多
+import { createStore } from 'redux';
+const initialState = { count: 0 };
+function reducer(state = initialState, action) {
+  switch (action.type) {
+    case 'INCREMENT':
+      return { count: state.count + 1 };
+    default:
+      return state;
+  }
+}
+const store = createStore(reducer);
+
+// ✅ Zustand - 简洁直接
+const useStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+}));
+```
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// 对比：组件使用
+
+// ❌ React-Redux - 需要Provider和connect
+import { useSelector, useDispatch } from 'react-redux';
+const count = useSelector((state) => state.count);
+const dispatch = useDispatch();
+dispatch(increment());
+
+// ✅ Zustand - 直接使用hook
+const { count, increment } = useStore();
+```
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// 对比：性能优化
+
+// ❌ React-Redux - 需要reselect
+import { createSelector } from 'reselect';
+const selectCount = createSelector(
+  (state) => state,
+  (state) => state.count
+);
+const count = useSelector(selectCount);
+
+// ✅ Zustand - 自动优化
+const count = useStore((state) => state.count); // 自动浅比较
+```
+
+</CodeBlock>
+
+---
+
+## 2. 快速开始
+
+### 2.1 安装Zustand
+
+<CodeBlock>
+
+```bash
+# 使用npm
+npm install zustand
+
+# 使用yarn
+yarn add zustand
+
+# 使用pnpm
+pnpm add zustand
+```
+
+</CodeBlock>
+
+### 2.2 基础用法
+
+<CodeBlock>
+
+```jsx
+// 基础计数器示例
+import { create } from 'zustand';
+
+// 1. 创建store
+const useCounterStore = create((set) => ({
+  count: 0,
+  // 同步操作
+  increment: () => set((state) => ({ count: state.count + 1 })),
+  decrement: () => set((state) => ({ count: state.count - 1 })),
+  // 重置
+  reset: () => set({ count: 0 }),
+}));
+
+// 2. 在组件中使用
+function Counter() {
+  const { count, increment, decrement, reset } = useCounterStore();
+
+  return (
+    <div>
+      <h2>Count: {count}</h2>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 更复杂的状态结构
+
+<CodeBlock>
+
+```jsx
+// 复杂状态示例 - 用户和待办事项
+const useUserStore = create((set) => ({
+  // 状态
+  user: null,
+  todos: [],
+  isLoading: false,
+  error: null,
+
+  // 动作
+  setUser: (user) => set({ user }),
+  addTodo: (todo) =>
+    set((state) => ({
+      todos: [...state.todos, { id: Date.now(), ...todo }],
+    })),
+  toggleTodo: (id) =>
+    set((state) => ({
+      todos: state.todos.map((t) =>
+        t.id === id ? { ...t, completed: !t.completed } : t
+      ),
+    })),
+  removeTodo: (id) =>
+    set((state) => ({
+      todos: state.todos.filter((t) => t.id !== id),
+    })),
+
+  // 异步操作
+  fetchUser: async (userId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await api.getUser(userId);
+      set({ user, isLoading: false });
+    } catch (error) {
+      set({ error: error.message, isLoading: false });
+    }
+  },
+}));
+
+// 使用
+function UserProfile() {
+  const { user, fetchUser } = useUserStore();
+
+  useEffect(() => {
+    fetchUser(123);
+  }, [fetchUser]);
+
+  if (!user) return <div>Loading...</div>;
+
+  return <div>Welcome, {user.name}!</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 核心概念深入
+
+### 3.1 Store的结构
+
+<CodeBlock>
+
+```jsx
+// Zustand store由三部分组成
+const useStore = create((set, get) => ({
+  // 1. State - 状态
+  // 包含应用中需要共享的所有数据
+  state1: value1,
+  state2: value2,
+  nestedState: {
+    field1: value1,
+    field2: value2,
+  },
+
+  // 2. Actions - 操作
+  // 用于更新状态的函数
+  actionName: (params) => set((state) => ({ /* 新状态 */ })),
+  actionName2: (params) =>
+    set((state) => {
+      // 可以使用get()获取当前状态
+      const currentState = get();
+      // 返回新状态
+      return { /* 新状态 */ };
+    }),
+
+  // 3. Selectors - 选择器（可选）
+  // 用于选择状态的函数，通常在组件中定义
+}));
+
+// set函数有两个参数
+set((state) => newState);     // 函数式更新（推荐）
+set(newState);                // 直接更新
+set(undefined, true);         // 替换整个状态
+```
+
+</CodeBlock>
+
+### 3.2 set函数的工作原理
+
+<CodeBlock>
+
+```jsx
+const useStore = create((set) => ({
+  count: 0,
+  text: 'hello',
+
+  // 1. 函数式更新 - 不会覆盖其他状态
+  increment: () => set((state) => ({ count: state.count + 1 })),
+  updateText: (text) => set((state) => ({ text })),
+
+  // 2. 直接更新 - 不会覆盖其他状态
+  setCount: (count) => set({ count }),
+  setText: (text) => set({ text }),
+
+  // 3. 替换整个状态
+  reset: () => set({ count: 0, text: '' }, false), // 第二个参数为true时替换
+
+  // 4. 使用get获取当前状态
+  incrementBy: (amount) => {
+    const current = get(); // 获取当前状态
+    set({ count: current.count + amount });
+  },
+
+  // 5. 多次更新
+  incrementAndUpdateText: () => {
+    set((state) => ({ count: state.count + 1 })); // 第一次更新
+    set((state) => ({ text: `Count: ${state.count}` })); // 第二次更新
+  },
+}));
+
+// ❌ 错误：直接修改状态
+badUpdate: () => set((state) => {
+  state.count += 1; // 不要直接修改state
+  return state; // 仍然会触发重渲染，但可能导致问题
+}),
+
+// ✅ 正确：返回新状态
+goodUpdate: () => set((state) => ({
+  ...state,
+  count: state.count + 1,
+})),
+```
+
+</CodeBlock>
+
+### 3.3 状态选择器
+
+<CodeBlock>
+
+```jsx
+const useStore = create((set) => ({
+  count: 0,
+  text: 'hello',
+  number: 10,
+}));
+
+// 1. 选择整个状态
+const state1 = useStore(); // { count: 0, text: 'hello', number: 10 }
+
+// 2. 选择单个字段
+const count = useStore((state) => state.count);
+
+// 3. 计算值
+const double = useStore((state) => state.count * 2);
+
+// 4. 选择多个字段
+const { count, text } = useStore((state) => ({
+  count: state.count,
+  text: state.text,
+}));
+
+// 5. 条件选择
+const message = useStore((state) => {
+  if (state.count > 10) return 'Too high!';
+  return 'OK';
+});
+```
+
+</CodeBlock>
+
+### 3.4 自动优化重渲染
+
+<CodeBlock>
+
+```jsx
+const useStore = create((set) => ({
+  count: 0,
+  text: 'hello',
+  deep: { nested: { value: 0 } },
+}));
+
+// 1. 默认行为：浅比较
+function Component1() {
+  const count = useStore((state) => state.count);
+  // 只在count变化时重渲染
+  return <div>Count: {count}</div>;
+}
+
+// 2. 显式比较
+const deepValue = useStore(
+  (state) => state.deep,
+  (a, b) => a.deep.nested.value === b.deep.nested.value
+);
+
+// 3. 使用shallow比较器
+import { shallow } from 'zustand/shallow';
+
+const { count, text } = useStore(
+  (state) => ({ count: state.count, text: state.text }),
+  shallow
+);
+```
+
+</CodeBlock>
+
+---
+
+## 4. 状态模式和组织
+
+### 4.1 基础状态管理
+
+<CodeBlock>
+
+```jsx
+// 基础模式：简单的getter和setter
+const useBasicStore = create((set) => ({
+  // 数据
+  data: [],
+  loading: false,
+  error: null,
+
+  // 动作
+  setData: (data) => set({ data }),
+  setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
+  clear: () => set({ data: [], error: null }),
+
+  // 复合动作
+  updateItem: (id, updates) =>
+    set((state) => ({
+      data: state.data.map((item) =>
+        item.id === id ? { ...item, ...updates } : item
+      ),
+    })),
+  removeItem: (id) =>
+    set((state) => ({
+      data: state.data.filter((item) => item.id !== id),
+    })),
+  addItem: (item) =>
+    set((state) => ({
+      data: [...state.data, item],
+    })),
+}));
+```
+
+</CodeBlock>
+
+### 4.2 异步操作模式
+
+<CodeBlock>
+
+```jsx
+// 异步操作模式
+const useAsyncStore = create((set) => ({
+  // 状态
+  data: null,
+  loading: false,
+  error: null,
+
+  // 异步动作
+  fetchData: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch('/api/data');
+      const data = await response.json();
+      set({ data, loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+    }
+  },
+
+  // 带有参数的异步操作
+  fetchUserById: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch(`/api/users/${id}`);
+      if (!response.ok) throw new Error('Failed to fetch');
+      const user = await response.json();
+      set({ data: user, loading: false });
+      return user;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  // 多个异步操作
+  fetchMultiple: async (ids) => {
+    set({ loading: true, error: null });
+    try {
+      const promises = ids.map((id) => fetch(`/api/items/${id}`));
+      const responses = await Promise.all(promises);
+      const data = await Promise.all(
+        responses.map((r) => r.json())
+      );
+      set({ data, loading: false });
+    } catch (error) {
+      set({ error: error.message, loading: false });
+    }
+  },
+}));
+```
+
+</CodeBlock>
+
+### 4.3 复杂业务逻辑模式
+
+<CodeBlock>
+
+```jsx
+// 复杂业务逻辑
+const useEcommerceStore = create((set, get) => ({
+  // 状态
+  products: [],
+  cart: [],
+  user: null,
+  filters: {
+    category: 'all',
+    priceRange: [0, 1000],
+    search: '',
+  },
+
+  // 基础动作
+  setProducts: (products) => set({ products }),
+  setUser: (user) => set({ user }),
+  setFilters: (filters) => set((state) => ({
+    filters: { ...state.filters, ...filters },
+  })),
+
+  // 复杂动作
+  addToCart: (productId) => {
+    const { products, cart } = get();
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
+
+    const existingItem = cart.find((item) => item.id === productId);
+    if (existingItem) {
+      set({
+        cart: cart.map((item) =>
+          item.id === productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        ),
+      });
+    } else {
+      set({
+        cart: [...cart, { ...product, quantity: 1 }],
+      });
+    }
+  },
+
+  removeFromCart: (productId) =>
+    set((state) => ({
+      cart: state.cart.filter((item) => item.id !== productId),
+    })),
+
+  updateCartQuantity: (productId, quantity) =>
+    set((state) => ({
+      cart: state.cart.map((item) =>
+        item.id === productId ? { ...item, quantity } : item
+      ),
+    })),
+
+  clearCart: () => set({ cart: [] }),
+
+  // 计算派生状态
+  getCartTotal: () => {
+    const { cart } = get();
+    return cart.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+  },
+
+  getCartItemsCount: () => {
+    const { cart } = get();
+    return cart.reduce((count, item) => count + item.quantity, 0);
+  },
+
+  // 过滤产品
+  getFilteredProducts: () => {
+    const { products, filters } = get();
+    return products.filter((product) => {
+      if (filters.category !== 'all' && product.category !== filters.category) {
+        return false;
+      }
+      if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) {
+        return false;
+      }
+      if (filters.search && !product.name.toLowerCase().includes(filters.search.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
+  },
+}));
+```
+
+</CodeBlock>
+
+---
+
+## 5. Middleware系统
+
+Zustand的强大之处在于其可扩展的middleware系统。
+
+### 5.1 持久化中间件
+
+<CodeBlock>
+
+```jsx
+// 1. 基础持久化
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+const useStore = create(
+  persist(
+    (set) => ({
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 })),
+    }),
+    {
+      name: 'my-store', // localStorage中的键名
+      // storage: customStorage, // 自定义存储
+      // partialize: (state) => ({ count: state.count }), // 只持久化部分状态
+      // version: 1, // 版本号
+      // migrate: (persistedState, version) => { // 迁移函数
+      //   if (version === 0) {
+      //     // 从版本0升级到版本1
+      //     return { ...persistedState, newField: 'value' };
+      //   }
+      //   return persistedState;
+      // },
+    }
+  )
+);
+
+// 2. 只持久化特定字段
+const usePartialStore = create(
+  persist(
+    (set) => ({
+      count: 0,
+      text: 'hello',
+      temp: 'not persisted',
+    }),
+    {
+      name: 'partial-store',
+      partialize: (state) => ({ count: state.count, text: state.text }),
+    }
+  )
+);
+
+// 3. 使用sessionStorage
+const useSessionStore = create(
+  persist(
+    (set) => ({
+      data: null,
+      setData: (data) => set({ data }),
+    }),
+    {
+      name: 'session-store',
+      storage: createJSONStorage(() => sessionStorage),
+    }
+  )
+);
+```
+
+</CodeBlock>
+
+### 5.2 Immer中间件
+
+<CodeBlock>
+
+```jsx
+// 使用Immer进行不可变更新
+import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
+import { produce } from 'immer';
+
+const useStore = create(
+  immer((set) => ({
+    count: 0,
+    todos: [],
+    increment: () =>
+      set((state) => {
+        state.count += 1; // 可以直接修改
+      }),
+    addTodo: (todo) =>
+      set((state) => {
+        state.todos.push({ id: Date.now(), ...todo }); // 可以直接修改数组
+      }),
+    toggleTodo: (id) =>
+      set((state) => {
+        const todo = state.todos.find((t) => t.id === id);
+        if (todo) {
+          todo.completed = !todo.completed; // 可以直接修改嵌套对象
+        }
+      }),
+    updateTodo: (id, updates) =>
+      set((state) => {
+        const index = state.todos.findIndex((t) => t.id === id);
+        if (index !== -1) {
+          state.todos[index] = { ...state.todos[index], ...updates };
+        }
+      }),
+    // 也可以使用produce函数
+    complexUpdate: (id, newData) =>
+      set(
+        produce((state) => {
+          const todo = state.todos.find((t) => t.id === id);
+          if (todo) {
+            Object.assign(todo, newData);
+            todo.updatedAt = new Date().toISOString();
+          }
+        })
+      ),
+  }))
+);
+```
+
+</CodeBlock>
+
+### 5.3 Redux DevTools中间件
+
+<CodeBlock>
+
+```jsx
+// 使用Redux DevTools调试
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware/devtools';
+
+const useStore = create(
+  devtools(
+    (set) => ({
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 })),
+    }),
+    {
+      name: 'counter-store', // 在DevTools中显示的名称
+      // serialize: true, // 启用序列化
+      // anonymousActionType: 'INCREMENT', // 匿名动作的类型
+    }
+  )
+);
+
+// 命名空间管理
+const createNamedStore = (name, fn) =>
+  create(devtools(fn, { name }));
+
+const useUserStore = createNamedStore('user', (set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
+
+const useCartStore = createNamedStore('cart', (set) => ({
+  items: [],
+  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+}));
+```
+
+</CodeBlock>
+
+### 5.4 combine中间件
+
+<CodeBlock>
+
+```jsx
+// 使用combine组合多个store
+import { create } from 'zustand';
+import { combine } from 'zustand/middleware';
+
+const useStore = create(
+  combine(
+    {
+      // 状态
+      count: 0,
+      text: 'hello',
+    },
+    (set) => ({
+      // 动作
+      increment: () => set((state) => ({ count: state.count + 1 })),
+      updateText: (text) => set({ text }),
+    })
+  )
+);
+
+// 推荐的文件组织方式
+// store/counter.js
+export const useCounterStore = create(
+  combine(
+    { count: 0 },
+    (set) => ({
+      increment: () => set((state) => ({ count: state.count + 1 })),
+      decrement: () => set((state) => ({ count: state.count - 1 })),
+      reset: () => set({ count: 0 }),
+    })
+  )
+);
+
+// store/todos.js
+export const useTodosStore = create(
+  combine(
+    { todos: [] },
+    (set) => ({
+      addTodo: (todo) =>
+        set((state) => ({ todos: [...state.todos, { id: Date.now(), ...todo }] })),
+      toggleTodo: (id) =>
+        set((state) => ({
+          todos: state.todos.map((t) =>
+            t.id === id ? { ...t, completed: !t.completed } : t
+          ),
+        })),
+      removeTodo: (id) =>
+        set((state) => ({
+          todos: state.todos.filter((t) => t.id !== id),
+        })),
+    })
+  )
+);
+```
+
+</CodeBlock>
+
+### 5.5 自定义中间件
+
+<CodeBlock>
+
+```jsx
+// 创建自定义中间件
+import { StateCreator } from 'zustand';
+
+// 1. 日志中间件
+const logger =
+  (config) =>
+  (set, get, api) =>
+    config(
+      (...args) => {
+        console.log('Applying action:', args);
+        set(...args);
+        console.log('New state:', get());
+      },
+      get,
+      api
+    );
+
+// 2. 自动保存中间件
+const autoSave =
+  (config) =>
+  (set, get, api) => {
+    const store = config(set, get, api);
+
+    api.subscribe((state) => {
+      localStorage.setItem('auto-save', JSON.stringify(state));
+    });
+
+    return store;
+  };
+
+// 3. 错误处理中间件
+const errorHandler =
+  (config) =>
+  (set, get, api) => {
+    return config(
+      (...args) => {
+        try {
+          set(...args);
+        } catch (error) {
+          console.error('State update error:', error);
+          // 可以发送到错误追踪服务
+        }
+      },
+      get,
+      api
+    );
+  };
+
+// 使用自定义中间件
+const useStore = create(
+  logger(
+    autoSave(
+      errorHandler((set) => ({
+        count: 0,
+        increment: () => set((state) => ({ count: state.count + 1 })),
+      }))
+    )
+  )
+);
+```
+
+</CodeBlock>
+
+---
+
+## 6. React集成
+
+### 6.1 Provider模式
+
+<CodeBlock>
+
+```jsx
+// 创建带Provider的store
+import { createContext, useContext, useRef } from 'react';
+import { create } from 'zustand';
+
+// 1. 创建Context
+const StoreContext = createContext();
+
+// 2. 创建Provider组件
+export const StoreProvider = ({ children }) => {
+  const storeRef = useRef();
+  if (!storeRef.current) {
+    storeRef.current = create((set) => ({
+      // store定义
+      count: 0,
+      increment: () => set((state) => ({ count: state.count + 1 })),
+    }));
+  }
+
+  return (
+    <StoreContext.Provider value={storeRef.current}>
+      {children}
+    </StoreContext.Provider>
+  );
+};
+
+// 3. 自定义Hook
+export const useStore = (selector) => {
+  const store = useContext(StoreContext);
+  return store(selector);
+};
+
+// 4. 使用
+function App() {
+  return (
+    <StoreProvider>
+      <Counter />
+    </StoreProvider>
+  );
+}
+
+function Counter() {
+  const { count, increment } = useStore((state) => ({
+    count: state.count,
+    increment: state.increment,
+  }));
+
+  return <button onClick={increment}>{count}</button>;
+}
+```
+
+</CodeBlock>
+
+### 6.2 组件内外使用
+
+<CodeBlock>
+
+```jsx
+// 1. 组件内使用（最常见）
+function Component1() {
+  const { count, increment } = useStore();
+
+  return <button onClick={increment}>Count: {count}</button>;
+}
+
+// 2. 组件外使用（需要选择器）
+// ❌ 错误：不要在组件外直接使用
+const useStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+}));
+
+// ❌ 错误做法
+const state = useStore(); // 这不会工作
+
+// ✅ 正确：使用getState()
+const store = useStore.getState();
+const count = store.count;
+
+// 3. 订阅状态变化
+import { useEffect } from 'react';
+
+function Component2() {
+  const { count } = useStore();
+
+  useEffect(() => {
+    // 订阅count变化
+    const unsubscribe = useStore.subscribe(
+      (state) => state.count,
+      (count) => {
+        console.log('Count changed to:', count);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  return <div>Count: {count}</div>;
+}
+
+// 4. 条件订阅
+function Component3() {
+  const count = useStore((state) => state.count);
+  const [notification, setNotification] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = useStore.subscribe(
+      (state) => state.count,
+      (count) => {
+        if (count > 10) {
+          setNotification('Count is too high!');
+        } else {
+          setNotification(null);
+        }
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <div>
+      <div>Count: {count}</div>
+      {notification && <div>{notification}</div>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 性能优化
+
+<CodeBlock>
+
+```jsx
+// 1. 使用浅比较
+import { shallow } from 'zustand/shallow';
+
+function OptimizedComponent() {
+  // ❌ 不好：每次都创建新对象
+  const { count, text } = useStore((state) => ({
+    count: state.count,
+    text: state.text,
+  }));
+
+  // ✅ 好：使用shallow
+  const { count, text } = useStore(
+    (state) => ({ count: state.count, text: state.text }),
+    shallow
+  );
+
+  return <div>{text} {count}</div>;
+}
+
+// 2. 选择特定字段
+function SpecificField() {
+  // 只订阅count
+  const count = useStore((state) => state.count);
+  // 即使text变化也不会重渲染
+  return <div>Count: {count}</div>;
+}
+
+// 3. 使用useEffect优化
+function EffectOptimized() {
+  const count = useStore((state) => state.count);
+
+  // 只在count变化时执行
+  useEffect(() => {
+    console.log('Count changed:', count);
+  }, [count]);
+
+  return <div>{count}</div>;
+}
+
+// 4. 拆分store
+const useCountStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+}));
+
+const useTextStore = create((set) => ({
+  text: 'hello',
+  setText: (text) => set({ text }),
+}));
+
+function CountComponent() {
+  const { count, increment } = useCountStore();
+  return <button onClick={increment}>{count}</button>;
+}
+
+function TextComponent() {
+  const { text, setText } = useTextStore();
+  return <input value={text} onChange={(e) => setText(e.target.value)} />;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实际应用案例
+
+### 7.1 购物车系统
+
+<CodeBlock>
+
+```jsx
+// 购物车Store
+export const useCartStore = create(
+  persist(
+    (set, get) => ({
+      // 状态
+      items: [],
+      isOpen: false,
+
+      // 基础操作
+      addItem: (product) => {
+        const { items } = get();
+        const existingItem = items.find((item) => item.id === product.id);
+
+        if (existingItem) {
+          set({
+            items: items.map((item) =>
+              item.id === product.id
+                ? { ...item, quantity: item.quantity + 1 }
+                : item
+            ),
+          });
+        } else {
+          set({
+            items: [...items, { ...product, quantity: 1 }],
+          });
+        }
+      },
+
+      removeItem: (productId) =>
+        set({
+          items: get().items.filter((item) => item.id !== productId),
+        }),
+
+      updateQuantity: (productId, quantity) => {
+        if (quantity <= 0) {
+          get().removeItem(productId);
+          return;
+        }
+
+        set({
+          items: get().items.map((item) =>
+            item.id === productId ? { ...item, quantity } : item
+          ),
+        });
+      },
+
+      clearCart: () => set({ items: [] }),
+
+      // UI操作
+      openCart: () => set({ isOpen: true }),
+      closeCart: () => set({ isOpen: false }),
+
+      // 计算值
+      getTotalItems: () => {
+        return get().items.reduce((total, item) => total + item.quantity, 0);
+      },
+
+      getTotalPrice: () => {
+        return get().items.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0
+        );
+      },
+
+      getTotalSavings: () => {
+        return get().items.reduce(
+          (total, item) =>
+            total + (item.originalPrice - item.price) * item.quantity,
+          0
+        );
+      },
+    }),
+    {
+      name: 'cart-storage',
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+);
+
+// 购物车组件
+function Cart() {
+  const { items, isOpen, closeCart, getTotalPrice } = useCartStore();
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="cart">
+      <h2>Shopping Cart</h2>
+      {items.length === 0 ? (
+        <p>Cart is empty</p>
+      ) : (
+        <>
+          {items.map((item) => (
+            <CartItem key={item.id} item={item} />
+          ))}
+          <div className="total">
+            Total: ${getTotalPrice().toFixed(2)}
+          </div>
+        </>
+      )}
+}
+
+// 添加到购物车按钮
+function AddToCartButton({ product }) {
+  const addItem = useCartStore((state) => state.addItem);
+
+  return (
+    <button onClick={() => addItem(product)}>
+      Add to Cart
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 用户认证系统
+
+<CodeBlock>
+
+```jsx
+// 认证Store
+export const useAuthStore = create(
+  persist(
+    (set, get) => ({
+      // 状态
+      user: null,
+      token: null,
+      refreshToken: null,
+      isAuthenticated: false,
+      loading: false,
+      error: null,
+
+      // 动作
+      login: async (credentials) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(credentials),
+          });
+
+          if (!response.ok) throw new Error('Login failed');
+
+          const { user, token, refreshToken } = await response.json();
+
+          set({
+            user,
+            token,
+            refreshToken,
+            isAuthenticated: true,
+            loading: false,
+          });
+
+          // 设置token到所有请求
+          setAuthToken(token);
+
+          return user;
+        } catch (error) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      register: async (userData) => {
+        set({ loading: true, error: null });
+        try {
+          const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData),
+          });
+
+          if (!response.ok) throw new Error('Registration failed');
+
+          const { user, token, refreshToken } = await response.json();
+
+          set({
+            user,
+            token,
+            refreshToken,
+            isAuthenticated: true,
+            loading: false,
+          });
+
+          setAuthToken(token);
+          return user;
+        } catch (error) {
+          set({ error: error.message, loading: false });
+          throw error;
+        }
+      },
+
+      logout: () => {
+        set({
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        });
+        clearAuthToken();
+      },
+
+      refreshAccessToken: async () => {
+        const { refreshToken } = get();
+        if (!refreshToken) {
+          get().logout();
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refreshToken }),
+          });
+
+          if (!response.ok) throw new Error('Token refresh failed');
+
+          const { token } = await response.json();
+
+          set({ token });
+          setAuthToken(token);
+        } catch (error) {
+          get().logout();
+          throw error;
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);
+
+// 受保护的路由
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useAuthStore();
+
+  if (loading) return <div>Loading...</div>;
+  if (!isAuthenticated) return <Navigate to="/login" />;
+
+  return children;
+}
+
+// 登录组件
+function LoginForm() {
+  const { login, loading, error } = useAuthStore();
+  const [formData, setFormData] = useState({ email: '', password: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await login(formData);
+      // 登录成功，跳转到首页
+    } catch (error) {
+      // 错误由store处理
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <div className="error">{error}</div>}
+      <input
+        type="email"
+        placeholder="Email"
+        value={formData.email}
+        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={formData.password}
+        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+      />
+      <button type="submit" disabled={loading}>
+        {loading ? 'Loading...' : 'Login'}
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.3 数据获取和缓存
+
+<CodeBlock>
+
+```jsx
+// 数据获取Store
+export const useDataStore = create(
+  persist(
+    (set, get) => ({
+      // 状态
+      data: {},
+      loading: {},
+      errors: {},
+
+      // 基础获取方法
+      fetchData: async (key, fetcher) => {
+        set((state) => ({
+          loading: { ...state.loading, [key]: true },
+          errors: { ...state.errors, [key]: null },
+        }));
+
+        try {
+          const data = await fetcher();
+          set((state) => ({
+            data: { ...state.data, [key]: data },
+            loading: { ...state.loading, [key]: false },
+          }));
+          return data;
+        } catch (error) {
+          set((state) => ({
+            errors: { ...state.errors, [key]: error.message },
+            loading: { ...state.loading, [key]: false },
+          }));
+          throw error;
+        }
+      },
+
+      // 缓存策略
+      fetchWithCache: async (key, fetcher, ttl = 5 * 60 * 1000) => {
+        const { data, dataFetched } = get();
+
+        // 检查缓存
+        if (data[key] && dataFetched[key] && Date.now() - dataFetched[key] < ttl) {
+          return data[key];
+        }
+
+        // 获取新数据
+        return get().fetchData(key, fetcher);
+      },
+
+      // 批量获取
+      fetchBatch: async (requests) => {
+        const promises = requests.map(([key, fetcher]) =>
+          get().fetchData(key, fetcher)
+        );
+
+        try {
+          const results = await Promise.all(promises);
+          return results;
+        } catch (error) {
+          // 如果任何一个请求失败
+          throw error;
+        }
+      },
+
+      // 乐观更新
+      updateData: (key, updater) => {
+        set((state) => {
+          const newData = typeof updater === 'function'
+            ? updater(state.data[key])
+            : updater;
+
+          return {
+            data: { ...state.data, [key]: newData },
+          };
+        });
+      },
+
+      // 错误处理
+      clearError: (key) =>
+        set((state) => ({
+          errors: { ...state.errors, [key]: null },
+        })),
+
+      clearAll: () => set({ data: {}, loading: {}, errors: {} }),
+    }),
+    {
+      name: 'data-storage',
+      partialize: (state) => ({ data: state.data }),
+    }
+  )
+);
+
+// 数据获取组件
+function DataComponent({ id }) {
+  const { data, loading, errors, fetchData } = useDataStore();
+
+  useEffect(() => {
+    if (!data[id]) {
+      fetchData(id, () => api.getData(id));
+    }
+  }, [id, fetchData, data]);
+
+  if (loading[id]) return <div>Loading...</div>;
+  if (errors[id]) return <div>Error: {errors[id]}</div>;
+  if (!data[id]) return null;
+
+  return <div>{data[id].content}</div>;
+}
+
+// 缓存列表
+function CachedList() {
+  const { data, fetchWithCache, loading } = useDataStore();
+
+  useEffect(() => {
+    fetchWithCache('items', () => api.getItems(), 10 * 60 * 1000); // 10分钟缓存
+  }, [fetchWithCache]);
+
+  if (loading['items']) return <div>Loading...</div>;
+  if (!data['items']) return null;
+
+  return (
+    <ul>
+      {data['items'].map((item) => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 最佳实践
+
+### 8.1 Store设计原则
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的实践
+
+// 1. 保持store精简
+const useUserStore = create((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+  logout: () => set({ user: null }),
+}));
+
+// 2. 分离关注点
+const useAuthStore = create((set) => ({
+  // 认证相关
+  user: null,
+  login: (user) => set({ user }),
+}));
+
+const useCartStore = create((set) => ({
+  // 购物车相关
+  items: [],
+  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+}));
+
+// 3. 命名清晰
+const useStore = create((set) => ({
+  // 状态
+  isLoading: false,
+  error: null,
+  userData: null,
+
+  // 动作
+  startLoading: () => set({ isLoading: true }),
+  stopLoading: () => set({ isLoading: false }),
+  setError: (error) => set({ error }),
+  setUserData: (data) => set({ userData: data }),
+}));
+
+// 4. 使用TypeScript
+import { create } from 'zustand';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface UserState {
+  user: User | null;
+  setUser: (user: User) => void;
+  logout: () => void;
+}
+
+const useUserStore = create<UserState>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+  logout: () => set({ user: null }),
+}));
+```
+
+</CodeBlock>
+
+### 8.2 性能优化实践
+
+<CodeBlock>
+
+```jsx
+// ❌ 避免：大型单一store
+const useAppStore = create((set) => ({
+  // 不要把所有东西放在一个store里
+  user: null,
+  products: [],
+  cart: [],
+  orders: [],
+  // ... 100个字段
+  updateUser: () => {},
+  addProduct: () => {},
+  // ... 100个方法
+}));
+
+// ✅ 推荐：分离的多个store
+const useUserStore = create((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+}));
+
+const useProductStore = create((set) => ({
+  products: [],
+  addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
+}));
+
+const useCartStore = create((set) => ({
+  items: [],
+  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
+}));
+
+// ✅ 推荐：使用shallow比较
+import { shallow } from 'zustand/shallow';
+
+function Component() {
+  const { count, text } = useStore(
+    (state) => ({ count: state.count, text: state.text }),
+    shallow
+  );
+  return <div>{text} {count}</div>;
+}
+
+// ✅ 推荐：选择特定字段
+function OptimizedComponent() {
+  const count = useStore((state) => state.count);
+  // 只使用count，不会因其他字段变化而重渲染
+  return <div>{count}</div>;
+}
+```
+
+</CodeBlock>
+
+### 8.3 异步操作最佳实践
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的异步处理
+const useAsyncStore = create((set, get) => ({
+  data: null,
+  loading: false,
+  error: null,
+
+  fetchData: async (url) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Request failed');
+      const data = await response.json();
+      set({ data, loading: false });
+      return data;
+    } catch (error) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  // 带重试的fetch
+  fetchWithRetry: async (url, retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await get().fetchData(url);
+      } catch (error) {
+        if (i === retries - 1) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+  },
+
+  // 取消操作
+  fetchWithCancel: (url) => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    set({ loading: true });
+    fetch(url, { signal })
+      .then((response) => response.json())
+      .then((data) => set({ data, loading: false }))
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          set({ error: error.message, loading: false });
+        }
+      });
+
+    return () => controller.abort();
+  },
+}));
+
+// ✅ 好的错误处理
+function SafeComponent() {
+  const { data, loading, error, fetchData } = useAsyncStore();
+
+  useEffect(() => {
+    fetchData('/api/data').catch(() => {
+      // 错误已在store中处理
+    });
+  }, [fetchData]);
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMessage error={error} />;
+  if (!data) return <div>No data</div>;
+
+  return <DataList data={data} />;
+}
+```
+
+</CodeBlock>
+
+### 8.4 状态持久化
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的持久化实践
+const usePersistentStore = create(
+  persist(
+    (set) => ({
+      // 需要持久化的状态
+      user: null,
+      preferences: {
+        theme: 'light',
+        language: 'en',
+      },
+
+      // 不需要持久化的状态
+      loading: false,
+      temporaryData: null,
+    }),
+    {
+      name: 'app-storage',
+      partialize: (state) => ({
+        // 只持久化必要的数据
+        user: state.user,
+        preferences: state.preferences,
+      }),
+      // version: 1,
+      // migrate: (persistedState) => {
+      //   if (persistedState.version === 0) {
+      //     return { ...persistedState, newField: 'default' };
+      //   }
+      //   return persistedState;
+      // },
+    }
+  )
+);
+
+// ✅ 避免存储敏感信息
+const useAuthStore = create(
+  persist(
+    (set) => ({
+      user: null,
+      token: null, // ❌ 不好：不要在localStorage中存储token
+    }),
+    {
+      name: 'auth-storage',
+      partialize: (state) => ({
+        // 只持久化非敏感信息
+        user: state.user,
+        // 不要包含token
+      }),
+    }
+  )
+);
+
+// ✅ 使用sessionStorage
+const useSessionStore = create(
+  persist(
+    (set) => ({
+      data: null,
+    }),
+    {
+      name: 'session-data',
+      storage: createJSONStorage(() => sessionStorage),
+    }
+  )
+);
+```
+
+</CodeBlock>
+
+---
+
+## 9. 常见陷阱和解决方案
+
+### 陷阱1：错误的不可变更新
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改状态
+const useBadStore = create((set) => ({
+  count: 0,
+  array: [],
+  increment: () => set((state) => {
+    state.count += 1; // 不要直接修改
+    state.array.push(1); // 不要直接修改数组
+    return state;
+  }),
+}));
+
+// ✅ 正确 - 返回新状态
+const useGoodStore = create((set) => ({
+  count: 0,
+  array: [],
+  increment: () => set((state) => ({
+    count: state.count + 1,
+    array: [...state.array, 1],
+  })),
+}));
+
+// 或者使用Immer
+import { immer } from 'zustand/middleware/immer';
+
+const useImmerStore = create(
+  immer((set) => ({
+    count: 0,
+    array: [],
+    increment: () => set((state) => {
+      state.count += 1;
+      state.array.push(1);
+    }),
+  }))
+);
+```
+
+</ErrorBox>
+
+### 陷阱2：过度订阅状态
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 订阅整个状态
+function BadComponent() {
+  const state = useStore(); // 订阅整个状态
+  return <div>{state.count}</div>; // 任何状态变化都会导致重渲染
+}
+
+// ✅ 正确 - 只订阅需要的部分
+function GoodComponent() {
+  const count = useStore((state) => state.count); // 只订阅count
+  return <div>{count}</div>;
+}
+
+// ✅ 正确 - 使用shallow
+const selector = (state) => ({ count: state.count, text: state.text });
+const { count } = useStore(selector, shallow);
+```
+
+</ErrorBox>
+
+### 陷阱3：在组件外使用store
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 在组件外直接使用
+const useStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+}));
+
+// 错误做法
+const state = useStore(); // 这不会工作
+
+// ✅ 正确 - 使用getState()
+const store = useStore.getState();
+const count = store.count;
+const increment = store.increment;
+
+// ✅ 正确 - 在useEffect中订阅
+function Component() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = useStore.subscribe(
+      (state) => state.count,
+      setCount
+    );
+    return () => unsubscribe();
+  }, []);
+
+  return <div>{count}</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：大型store的性能问题
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 单个巨大的store
+const useBadStore = create((set) => ({
+  // 100个字段和100个方法
+  // 任何变化都会导致所有订阅者重渲染
+}));
+
+// ✅ 正确 - 分离为多个store
+const useUserStore = create((set) => ({ user: null, setUser: (user) => set({ user }) }));
+const useCartStore = create((set) => ({ items: [], addItem: (item) => set((state) => ({ items: [...state.items, item] })) }));
+const useProductStore = create((set) => ({ products: [], addProduct: (product) => set((state) => ({ products: [...state.products, product] })) }));
+
+// ✅ 正确 - 深层状态
+const useNestedStore = create((set) => ({
+  nested: {
+    deep: {
+      value: 0,
+    },
+  },
+  // 使用选择器避免深层订阅的警告
+  increment: () => set((state) => ({
+    nested: {
+      ...state.nested,
+      deep: { ...state.nested.deep, value: state.nested.deep.value + 1 },
+    },
+  })),
+}));
+
+function Component() {
+  const value = useNestedStore((state) => state.nested.deep.value);
+  return <div>{value}</div>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 10. 实践练习
+
+### 练习1：实现简单的计数器应用
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 增加/减少按钮
+- 重置按钮
+- 显示当前值
+- 显示操作历史
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const useCounterStore = create((set) => ({
+  count: 0,
+  history: [],
+  // increment: () => {},
+  // decrement: () => {},
+  // reset: () => {},
+}));
+```
+
+**提示**：
+- 使用不可变更新
+- 记录操作历史
+- 使用shallow比较优化
+
+</Expandable>
+
+### 练习2：实现待办事项管理
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 添加待办事项
+- 标记完成/未完成
+- 删除待办事项
+- 过滤（全部/活跃/已完成）
+- 持久化到localStorage
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const useTodoStore = create(
+  persist(
+    (set) => ({
+      todos: [],
+      filter: 'all',
+      // addTodo: () => {},
+      // toggleTodo: () => {},
+      // removeTodo: () => {},
+      // setFilter: () => {},
+    }),
+    {
+      name: 'todo-storage',
+    }
+  )
+);
+```
+
+**提示**：
+- 使用Immer简化不可变更新
+- 实现过滤逻辑
+- 持久化到localStorage
+
+</Expandable>
+
+### 练习3：实现博客文章系统
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 获取文章列表
+- 获取单篇文章
+- 搜索功能
+- 收藏文章
+- 阅读历史
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const useBlogStore = create(
+  persist(
+    (set, get) => ({
+      articles: [],
+      selectedArticle: null,
+      searchQuery: '',
+      favorites: [],
+      history: [],
+      // fetchArticles: async () => {},
+      // fetchArticle: async (id) => {},
+      // searchArticles: (query) => {},
+      // addToFavorites: (id) => {},
+    }),
+    {
+      name: 'blog-storage',
+    }
+  )
+);
+```
+
+**提示**：
+- 实现异步数据获取
+- 使用缓存策略
+- 乐观更新
+
+</Expandable>
+
+### 练习4：实现复杂表单状态管理
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 多步骤表单
+- 表单验证
+- 自动保存草稿
+- 步骤间导航
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const useFormStore = create(
+  persist(
+    (set) => ({
+      currentStep: 0,
+      totalSteps: 3,
+      formData: {
+        step1: {},
+        step2: {},
+        step3: {},
+      },
+      errors: {},
+      // nextStep: () => {},
+      // prevStep: () => {},
+      // updateField: () => {},
+      // validate: () => {},
+    }),
+    {
+      name: 'form-storage',
+    }
+  )
+);
+```
+
+**提示**：
+- 分步管理数据
+- 验证每个步骤
+- 持久化草稿
+
+</Expandable>
+
+---
+
+## 11. Zustand vs 其他方案
+
+### 11.1 Zustand vs Redux
+
+<Compare>
+
+| 特性 | Zustand | Redux |
+|------|---------|-------|
+| **学习曲线** | 平缓 - 直观API | 陡峭 - 需要理解复杂概念 |
+| **样板代码** | 极少 | 较多 |
+| **Bundle大小** | ~12kb | 较大 |
+| **TypeScript** | 优秀 | 良好 |
+| **性能** | 优秀 - 自动优化 | 优秀 - 需要配置 |
+| **DevTools** | Redux DevTools支持 | 官方DevTools |
+| **中间件** | 轻量级 | 丰富 |
+| **生态** | 新兴 | 成熟 |
+
+</Compare>
+
+<CodeBlock>
+
+```jsx
+// 复杂度对比
+
+// ❌ Redux - 复杂
+// 需要定义types、actions、reducers
+const INCREMENT = 'counter/increment';
+function increment() {
+  return { type: INCREMENT };
+}
+function counterReducer(state = 0, action) {
+  switch (action.type) {
+    case INCREMENT:
+      return state + 1;
+    default:
+      return state;
+  }
+}
+const store = createStore(counterReducer);
+
+// ✅ Zustand - 简单
+const useStore = create((set) => ({
+  count: 0,
+  increment: () => set((state) => ({ count: state.count + 1 })),
+}));
+```
+
+</CodeBlock>
+
+### 11.2 Zustand vs Context
+
+<Compare>
+
+| 特性 | Zustand | Context |
+|------|---------|---------|
+| **性能** | 优秀 - 自动选择器 | 较差 - 所有消费者重渲染 |
+| **样板代码** | 极少 | 适中 |
+| **功能** | 丰富 - middleware、DevTools | 基础 - 只提供状态共享 |
+| **学习成本** | 低 | 低 |
+| **适用场景** | 复杂状态 | 简单状态 |
+
+</Compare>
+
+<CodeBlock>
+
+```jsx
+// 性能对比
+
+// ❌ Context - 每次都重渲染
+const AppContext = createContext();
+
+function AppProvider({ children }) {
+  const [state, setState] = useState({ count: 0, text: 'hello' });
+  return (
+    <AppContext.Provider value={{ state, setState }}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// 任何状态变化，所有Consumer都重渲染
+function Consumer() {
+  const { state } = useContext(AppContext);
+  return <div>{state.count}</div>; // 即使只使用count，text变化也会重渲染
+}
+
+// ✅ Zustand - 只订阅需要的状态
+const useStore = create((set) => ({
+  count: 0,
+  text: 'hello',
+}));
+
+function OptimizedConsumer() {
+  const count = useStore((state) => state.count);
+  // 只有count变化时才重渲染
+  return <div>{count}</div>;
+}
+```
+
+</CodeBlock>
+
+### 11.3 Zustand vs Jotai
+
+<Compare>
+
+| 特性 | Zustand | Jotai |
+|------|---------|-------|
+| **范式** | 全局状态 | 原子化状态 |
+| **粒度** | 粗粒度 | 细粒度 |
+| **学习成本** | 低 | 中等 |
+| **性能** | 优秀 | 优秀 |
+| **类型安全** | 良好 | 优秀 |
+| **生态** | 中等 | 较小 |
+
+</Compare>
+
+<CodeBlock>
+
+```jsx
+// 范式对比
+
+// ✅ Zustand - 集中式store
+const useStore = create((set) => ({
+  user: null,
+  posts: [],
+  comments: [],
+  setUser: (user) => set({ user }),
+  addPost: (post) => set((state) => ({ posts: [...state.posts, post] })),
+  addComment: (comment) => set((state) => ({ comments: [...state.comments, comment] })),
+}));
+
+// ✅ Jotai - 原子化
+const userAtom = atom(null);
+const postsAtom = atom([]);
+const commentsAtom = atom([]);
+
+function UserComponent() {
+  const [user, setUser] = useAtom(userAtom);
+  return <div>{user?.name}</div>;
+}
+
+function PostsComponent() {
+  const [posts] = useAtom(postsAtom);
+  return posts.map((post) => <div key={post.id}>{post.title}</div>);
+}
+
+// 选择：Zustand适合传统状态管理，Jotai适合更细粒度的控制
+```
+
+</CodeBlock>
+
+---
+
+## 12. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Zustand是一个轻量级的状态管理库
+- ✅ 简洁的API设计，最少的样板代码
+- ✅ 自动优化的选择器，最小化重渲染
+- ✅ 强大的middleware系统
+- ✅ 原生支持TypeScript
+- ✅ 易于学习和使用
+- ✅ 适用于各种规模的项目
+- ✅ 与React完美集成
+- ✅ 支持状态持久化
+- ✅ 支持Redux DevTools调试
+
+</Checklist>
+
+### Zustand最佳实践
+
+<BestPractices>
+
+1. **保持store精简** - 将大型应用拆分为多个小store
+2. **使用选择器** - 只订阅需要的状态部分
+3. **分离关注点** - 按功能模块组织状态
+4. **使用Immer** - 简化不可变更新
+5. **TypeScript优先** - 充分利用类型系统
+6. **持久化策略** - 只持久化必要数据
+7. **性能优化** - 使用shallow比较
+8. **中间件应用** - 合理使用middleware
+
+</BestPractices>
+
+### 何时使用Zustand
+
+<BestPractices>
+
+**推荐使用Zustand的场景**：
+- 中小型到大型应用
+- 需要简单、易维护的状态管理
+- 性能要求较高的应用
+- TypeScript项目
+- 快速原型开发
+- 团队对新状态管理库开放
+
+**考虑其他方案的场景**：
+- 已有Redux架构的遗留系统
+- 需要复杂中间件生态
+- 团队熟悉Redux不愿迁移
+- 需要官方支持的生态
+
+**Zustand不适合的场景**：
+- 极简状态（Context足够）
+- 原子化状态需求（Jotai更适合）
+- 需要大量第三方插件
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了Zustand的基础和实践，接下来可以学习：
+
+1. **[Jotai原子化状态](./jotai)** - 细粒度状态管理
+2. **[状态管理对比分析]** - 全面对比各种方案
+3. **[性能优化基础](../performance/react-memo)** - 状态更新性能优化
+4. **[自定义Hooks进阶](../hooks/advanced/custom-hooks)** - 逻辑复用模式
+
+---
+
+## 13. 延伸阅读
+
+### 官方资源
+
+- [Zustand官方文档](https://github.com/pmndrs/zustand) - 完整的API参考
+- [Zustand示例](https://github.com/pmndrs/zustand/tree/main/examples) - 实际应用示例
+- [Zustand Middleware](https://github.com/pmndrs/zustand#middleware) - 中间件列表
+
+### 推荐阅读
+
+- [Zustand设计原理](https://github.com/pmndrs/zustand#design-principles) - 设计理念
+- [Zustand性能指南](https://docs.pmnd.rs/zustand/recipes/performance) - 性能优化
+- [Zustand TypeScript指南](https://docs.pmnd.rs/zustand/typescript) - 类型系统
+
+### 相关话题
+
+- [Redux基础](./redux-fundamentals) - 传统状态管理
+- [Context API](../context-api) - React内置状态管理
+- [状态管理对比] - 各方案详细对比
+
+---
+
+[← 上一章：Redux基础](redux-fundamentals) | [下一章：Jotai原子化状态 →](jotai)

@@ -1,0 +1,1630 @@
+# Props Getters模式 - 灵活的Props传递与组合
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+Props Getters模式是一种通过返回Props对象的函数来管理组件Props的高级模式，它提供了一种更灵活、可组合的方式来处理Props的传递、组合和覆盖。该模式在构建可复用组件库、抽象复杂逻辑和创建灵活的API时非常有用。在本章中，我们将深入探讨Props Getters的概念、实现方式、最佳实践和使用场景。
+
+## 本章学习目标
+
+- 理解Props Getters模式的核心概念和设计理念
+- 掌握Props Getters的基本实现方式
+- 学会使用Props Getters处理复杂Props逻辑
+- 理解Props Getters与Render Props的关系
+- 掌握Props组合和覆盖的策略
+- 学会构建基于Props Getters的可复用组件
+- 理解Props Getters的优势和局限性
+- 掌握Props Getters的实际应用案例
+
+---
+
+## 1. 什么是Props Getters？
+
+Props Getters模式是一种通过函数返回Props对象的模式，这些Props对象可以被应用到组件上。与直接传递Props不同，Props Getters提供了一个中间层，让我们可以在运行时动态生成、组合和修改Props。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Props Getters</strong>是返回Props对象的函数，它们接受可选的覆盖参数，允许用户自定义Props的同时保持默认行为。这种模式提供了最大的<strong>灵活性和可组合性</strong>。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础Props Getters模式
+function Button({ children, getProps }) {
+  // 获取默认Props
+  const defaultProps = {
+    style: { padding: '10px 20px', borderRadius: '5px' },
+    onClick: () => console.log('Clicked')
+  };
+
+  // 合并用户自定义的Props
+  const props = getProps ? getProps(defaultProps) : defaultProps;
+
+  return <button {...props}>{children}</button>;
+}
+
+// 使用Props Getters
+<Button
+  getProps={({ onClick, style }) => ({
+    style: {
+      ...style,
+      backgroundColor: 'blue',
+      color: 'white'
+    },
+    onClick: (e) => {
+      onClick(e);
+      customHandler(e);
+    }
+  })}
+>
+  Click me
+</Button>
+```
+
+</CodeBlock>
+
+### 1.1 Props Getters的设计思想
+
+<CodeBlock>
+
+```jsx
+// Props Getters解决了什么问题？
+
+// ❌ 传统方式 - Props传递复杂
+<Component
+  prop1="value1"
+  prop2="value2"
+  prop3="value3"
+  onClick={handleClick}
+  onMouseEnter={handleMouseEnter}
+  className="custom-class"
+  style={{ color: 'red' }}
+/>
+
+// ❌ 传统方式 - 难以动态修改
+<MyComponent
+  onClick={(e) => {
+    analytics.track('click', e);
+    originalHandler(e);
+  }}
+  onFocus={(e) => {
+    validationHandler(e);
+  }}
+/>
+
+// ✅ Props Getters方式 - 统一管理
+<FlexibleComponent getProps={getHandlers} />
+
+// 其中getHandlers可以：
+// 1. 合并多个事件处理器
+// 2. 动态生成Props
+// 3. 应用条件逻辑
+// 4. 提供默认值和覆盖
+```
+
+</CodeBlock>
+
+### 1.2 Props Getters vs 其他模式
+
+<Compare>
+
+```jsx
+// Props Getters vs Render Props
+
+// Render Props
+<MouseTracker render={(position) => (
+  <Cat position={position} />
+)} />
+
+// Props Getters
+<MouseTracker getProps={({ position }) => ({
+  style: { position: `${position.x}px ${position.y}px` }
+})} />
+
+// 优势对比
+// ✅ Props Getters更简洁
+// ✅ Props Getters更容易组合
+// ✅ Props Getters支持部分覆盖
+// ❌ Render Props语义更明确
+// ❌ Props Getters可读性略低
+```
+
+</Compare>
+
+---
+
+## 2. Props Getters基础实现
+
+### 2.1 简单的Props Getter
+
+<CodeBlock>
+
+```jsx
+// 基础Props Getter
+function usePropsGetter() {
+  const getButtonProps = (overrides = {}) => {
+    const baseProps = {
+      style: {
+        padding: '10px 20px',
+        borderRadius: '5px',
+        border: 'none',
+        cursor: 'pointer',
+        fontSize: '14px'
+      },
+      type: 'button'
+    };
+
+    return mergeProps(baseProps, overrides);
+  };
+
+  const getInputProps = (overrides = {}) => {
+    const baseProps = {
+      style: {
+        padding: '8px 12px',
+        borderRadius: '4px',
+        border: '1px solid #ccc',
+        fontSize: '14px'
+      }
+    };
+
+    return mergeProps(baseProps, overrides);
+  };
+
+  return { getButtonProps, getInputProps };
+}
+
+// 使用
+function MyForm() {
+  const { getButtonProps, getInputProps } = usePropsGetter();
+
+  return (
+    <form>
+      <input {...getInputProps({ placeholder: 'Name' })} />
+      <button {...getButtonProps()}>
+        Submit
+      </button>
+      <button
+        {...getButtonProps({
+          style: { backgroundColor: 'red' },
+          onClick: () => console.log('Cancel')
+        })}
+      >
+        Cancel
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 合并Props的辅助函数
+
+<CodeBlock>
+
+```jsx
+// Props合并函数
+function mergeProps(source, target) {
+  if (!target) return source;
+
+  const result = { ...source };
+
+  Object.keys(target).forEach(key => {
+    const sourceValue = result[key];
+    const targetValue = target[key];
+
+    // 处理事件处理器合并
+    if (typeof sourceValue === 'function' && typeof targetValue === 'function') {
+      result[key] = (...args) => {
+        sourceValue(...args);
+        targetValue(...args);
+      };
+    }
+    // 处理className合并
+    else if (key === 'className') {
+      result[key] = [sourceValue, targetValue].filter(Boolean).join(' ');
+    }
+    // 处理style合并
+    else if (key === 'style' && typeof sourceValue === 'object' && typeof targetValue === 'object') {
+      result[key] = { ...sourceValue, ...targetValue };
+    }
+    // 默认覆盖
+    else {
+      result[key] = targetValue;
+    }
+  });
+
+  return result;
+}
+
+// 使用示例
+const defaultProps = {
+  onClick: () => console.log('default'),
+  className: 'base-class',
+  style: { color: 'blue' }
+};
+
+const customProps = {
+  onClick: () => console.log('custom'),
+  className: 'custom-class',
+  style: { fontSize: '16px' }
+};
+
+const merged = mergeProps(defaultProps, customProps);
+// 结果：
+// {
+//   onClick: () => { console.log('default'); console.log('custom'); },
+//   className: 'base-class custom-class',
+//   style: { color: 'blue', fontSize: '16px' }
+// }
+```
+
+</CodeBlock>
+
+### 2.3 条件性Props
+
+<CodeBlock>
+
+```jsx
+// 支持条件逻辑的Props Getter
+function createPropsGetter(defaults) {
+  return function getProps(options = {}) {
+    const {
+      overrides = {},
+      condition,
+      whenTrue,
+      whenFalse
+    } = options;
+
+    let result = { ...defaults };
+
+    // 应用覆盖
+    result = mergeProps(result, overrides);
+
+    // 应用条件逻辑
+    if (condition !== undefined) {
+      const conditionalProps = condition ? whenTrue : whenFalse;
+      result = mergeProps(result, conditionalProps);
+    }
+
+    return result;
+  };
+}
+
+// 使用
+const getButtonProps = createPropsGetter({
+  style: { padding: '10px 20px' }
+});
+
+function MyButton({ isPrimary, isDisabled }) {
+  return (
+    <>
+      {/* 条件性Props */}
+      <button {...getButtonProps({
+        condition: isPrimary,
+        whenTrue: { style: { backgroundColor: 'blue' } },
+        whenFalse: { style: { backgroundColor: 'gray' } }
+      })}>
+        Primary Button
+      </button>
+
+      {/* 覆盖Props */}
+      <button {...getButtonProps({
+        overrides: {
+          style: { backgroundColor: 'red' },
+          onClick: () => console.log('Custom click')
+        }
+      })}>
+        Custom Button
+      </button>
+
+      {/* 禁用状态 */}
+      <button {...getButtonProps({
+        condition: isDisabled,
+        whenTrue: {
+          style: { opacity: 0.5, cursor: 'not-allowed' },
+          disabled: true
+        }
+      })}>
+        Disabled Button
+      </button>
+    </>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 高级Props Getters模式
+
+### 3.1 链式Props Getters
+
+<CodeBlock>
+
+```jsx
+// 链式Props组合
+function createChainedPropsGetters(...getters) {
+  return function getChainedProps(overrides = {}) {
+    return getters.reduce((props, getter) => {
+      return mergeProps(props, getter(overrides));
+    }, { ...overrides });
+  };
+}
+
+// 示例：多重修饰的Props
+const getButtonProps = createChainedPropsGetters(
+  // 基础样式
+  (overrides) => ({
+    style: {
+      padding: '10px 20px',
+      borderRadius: '5px',
+      ...overrides?.style
+    }
+  }),
+  // 主题样式
+  (overrides) => ({
+    className: `theme-${overrides?.theme || 'default'}`,
+    style: {
+      fontFamily: 'Arial, sans-serif',
+      ...overrides?.style
+    }
+  }),
+  // 尺寸样式
+  (overrides) => ({
+    className: `size-${overrides?.size || 'medium'}`,
+    style: {
+      ...overrides?.style,
+      ...(overrides?.size === 'small' && { fontSize: '12px' }),
+      ...(overrides?.size === 'large' && { fontSize: '18px' })
+    }
+  })
+);
+
+// 使用
+<button {...getButtonProps({
+  theme: 'primary',
+  size: 'large',
+  overrides: {
+    onClick: () => console.log('Clicked'),
+    className: 'custom-button'
+  }
+})}>
+  Click me
+</button>
+
+// 结果将应用所有层级的Props
+```
+
+</CodeBlock>
+
+### 3.2 动态Props生成
+
+<CodeBlock>
+
+```jsx
+// 根据状态动态生成Props
+function createDynamicPropsGetter() {
+  const getDynamicProps = (componentType, state) => {
+    switch (componentType) {
+      case 'input':
+        return {
+          value: state.value,
+          onChange: (e) => state.setValue(e.target.value),
+          className: `input ${state.error ? 'error' : ''}`,
+          style: {
+            borderColor: state.error ? 'red' : '#ccc',
+            ...state.customStyle
+          }
+        };
+
+      case 'button':
+        return {
+          disabled: state.isLoading,
+          className: `button ${state.isLoading ? 'loading' : ''}`,
+          onClick: state.isLoading ? undefined : state.onClick,
+          style: {
+            opacity: state.isLoading ? 0.6 : 1,
+            ...state.customStyle
+          }
+        };
+
+      case 'form':
+        return {
+          onSubmit: (e) => {
+            e.preventDefault();
+            if (!state.error) {
+              state.onSubmit();
+            }
+          },
+          noValidate: state.disableValidation
+        };
+
+      default:
+        return {};
+    }
+  };
+
+  return { getDynamicProps };
+}
+
+// 使用
+function MyForm() {
+  const [value, setValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const { getDynamicProps } = createDynamicPropsGetter();
+
+  return (
+    <form {...getDynamicProps('form', {
+      value, setValue, isLoading, error, onSubmit: handleSubmit
+    })}>
+      <input {...getDynamicProps('input', {
+        value, setValue, error, customStyle: { width: '100%' }
+      })} />
+      {error && <span className="error">{error}</span>}
+      <button {...getDynamicProps('button', {
+        isLoading, customStyle: { marginTop: '10px' }
+      })}>
+        {isLoading ? 'Submitting...' : 'Submit'}
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 Props验证和约束
+
+<CodeBlock>
+
+```jsx
+// 带验证的Props Getter
+function createValidatedPropsGetter(validationRules) {
+  return function getValidatedProps(overrides = {}) {
+    const props = { ...overrides };
+
+    // 应用验证规则
+    Object.keys(validationRules).forEach(key => {
+      const rule = validationRules[key];
+      const value = props[key];
+
+      if (rule.required && (value === undefined || value === null)) {
+        console.warn(`Prop "${key}" is required`);
+      }
+
+      if (rule.validator && !rule.validator(value)) {
+        console.warn(`Prop "${key}" failed validation`);
+      }
+
+      if (rule.default !== undefined && value === undefined) {
+        props[key] = rule.default;
+      }
+    });
+
+    return props;
+  };
+}
+
+// 验证规则定义
+const inputValidationRules = {
+  value: {
+    required: true,
+    validator: (v) => typeof v === 'string',
+    default: ''
+  },
+  onChange: {
+    required: true,
+    validator: (f) => typeof f === 'function'
+  },
+  maxLength: {
+    validator: (n) => typeof n === 'number' && n > 0,
+    default: 100
+  }
+};
+
+const getInputProps = createValidatedPropsGetter(inputValidationRules);
+
+// 使用
+function ValidatedInput(props) {
+  const inputProps = getValidatedProps(props);
+  return <input {...inputProps} />;
+}
+
+// 如果没有提供required的props，会收到警告
+<ValidatedInput
+  value="test"
+  onChange={() => {}}
+/>
+```
+
+</CodeBlock>
+
+### 3.4 部分Props覆盖
+
+<CodeBlock>
+
+```jsx
+// 支持部分覆盖的Props Getter
+function createPartialPropsGetter(baseProps) {
+  return {
+    getProps: (overrides = {}) => {
+      return mergeProps(baseProps, overrides);
+    },
+    getPartialProps: (keys) => {
+      // 返回部分Props
+      const partialProps = {};
+      keys.forEach(key => {
+        if (key in baseProps) {
+          partialProps[key] = baseProps[key];
+        }
+      });
+      return partialProps;
+    },
+    updateBaseProps: (newBaseProps) => {
+      // 更新基础Props
+      Object.assign(baseProps, newBaseProps);
+    }
+  };
+}
+
+// 使用
+const buttonPropsManager = createPartialPropsGetter({
+  style: { padding: '10px 20px' },
+  className: 'base-button',
+  type: 'button'
+});
+
+function MyComponent() {
+  return (
+    <>
+      {/* 获取完整Props */}
+      <button {...buttonPropsManager.getProps()}>
+        Default
+      </button>
+
+      {/* 覆盖部分Props */}
+      <button {...buttonPropsManager.getProps({
+        style: { backgroundColor: 'red' }
+      })}>
+        Red Button
+      </button>
+
+      {/* 使用部分Props */}
+      <div {...buttonPropsManager.getPartialProps(['className'])}>
+        This div has the base button class
+      </div>
+    </>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 实际应用案例
+
+### 4.1 表单输入组件
+
+<CodeBlock>
+
+```jsx
+// 使用Props Getters构建灵活表单
+function useFormInput(initialValue = '', validationRules = {}) {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
+
+  const validate = useCallback((val) => {
+    for (const rule of validationRules) {
+      if (rule.required && !val) {
+        return rule.message || 'This field is required';
+      }
+      if (rule.pattern && !rule.pattern.test(val)) {
+        return rule.message || 'Invalid format';
+      }
+      if (rule.minLength && val.length < rule.minLength) {
+        return rule.message || `Minimum length is ${rule.minLength}`;
+      }
+    }
+    return '';
+  }, [validationRules]);
+
+  useEffect(() => {
+    if (touched) {
+      setError(validate(value));
+    }
+  }, [value, touched, validate]);
+
+  const getInputProps = useCallback((overrides = {}) => {
+    const baseProps = {
+      value,
+      onChange: (e) => {
+        setValue(e.target.value);
+        overrides.onChange?.(e);
+      },
+      onBlur: (e) => {
+        setTouched(true);
+        overrides.onBlur?.(e);
+      },
+      className: `form-input ${error ? 'error' : ''}`,
+      style: {
+        borderColor: error ? 'red' : '#ccc',
+        padding: '8px 12px',
+        ...overrides.style
+      }
+    };
+
+    return mergeProps(baseProps, overrides);
+  }, [value, error, touched]);
+
+  const getErrorProps = useCallback(() => ({
+    className: `error-message ${error ? 'visible' : 'hidden'}`,
+    children: error
+  }), [error]);
+
+  return {
+    value,
+    error,
+    touched,
+    getInputProps,
+    getErrorProps,
+    setValue,
+    setTouched
+  };
+}
+
+// 使用
+function LoginForm() {
+  const email = useFormInput('', [
+    { required: true, message: 'Email is required' },
+    { pattern: /^\S+@\S+$/, message: 'Invalid email' }
+  ]);
+
+  const password = useFormInput('', [
+    { required: true, message: 'Password is required' },
+    { minLength: 6, message: 'Minimum 6 characters' }
+  ]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // 提交逻辑
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Email</label>
+        <input {...email.getInputProps()} />
+        <span {...email.getErrorProps()} />
+      </div>
+
+      <div>
+        <label>Password</label>
+        <input
+          {...password.getInputProps({
+            type: 'password',
+            placeholder: 'Enter password'
+          })}
+        />
+        <span {...password.getErrorProps()} />
+      </div>
+
+      <button {...password.getInputProps({
+        disabled: email.error || password.error
+      })}>
+        Login
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 拖拽组件
+
+<CodeBlock>
+
+```jsx
+// 使用Props Getters实现拖拽功能
+function useDraggable() {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const getDragHandleProps = useCallback((overrides = {}) => {
+    const baseProps = {
+      onMouseDown: (e) => {
+        setIsDragging(true);
+        setDragStart({
+          x: e.clientX - position.x,
+          y: e.clientY - position.y
+        });
+        overrides.onMouseDown?.(e);
+      },
+      style: {
+        cursor: isDragging ? 'grabbing' : 'grab',
+        ...overrides.style
+      }
+    };
+
+    return mergeProps(baseProps, overrides);
+  }, [position, isDragging]);
+
+  const getDragContainerProps = useCallback((overrides = {}) => {
+    const baseProps = {
+      onMouseMove: (e) => {
+        if (isDragging) {
+          setPosition({
+            x: e.clientX - dragStart.x,
+            y: e.clientY - dragStart.y
+          });
+        }
+        overrides.onMouseMove?.(e);
+      },
+      onMouseUp: (e) => {
+        setIsDragging(false);
+        overrides.onMouseUp?.(e);
+      },
+      style: {
+        position: 'relative',
+        ...overrides.style
+      }
+    };
+
+    return mergeProps(baseProps, overrides);
+  }, [isDragging, dragStart]);
+
+  return {
+    position,
+    isDragging,
+    getDragHandleProps,
+    getDragContainerProps
+  };
+}
+
+// 使用
+function DraggableBox() {
+  const { position, isDragging, getDragHandleProps, getDragContainerProps } =
+    useDraggable();
+
+  return (
+    <div {...getDragContainerProps()}>
+      <div
+        {...getDragHandleProps()}
+        style={{
+          position: 'absolute',
+          left: position.x,
+          top: position.y,
+          width: '100px',
+          height: '100px',
+          backgroundColor: isDragging ? 'lightblue' : 'blue',
+          color: 'white',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        Drag me
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 可访问性增强
+
+<CodeBlock>
+
+```jsx
+// 可访问性Props Getters
+function useA11y() {
+  const getAriaProps = useCallback((overrides = {}) => {
+    const baseProps = {
+      role: 'button',
+      tabIndex: 0,
+      ...overrides
+    };
+
+    return baseProps;
+  }, []);
+
+  const getFormFieldProps = useCallback((label, id, errors = {}) => {
+    return {
+      label: {
+        htmlFor: id,
+        children: label
+      },
+      input: {
+        id,
+        'aria-invalid': errors[id] ? 'true' : 'false',
+        'aria-describedby': errors[id] ? `${id}-error` : undefined
+      },
+      error: {
+        id: `${id}-error`,
+        role: 'alert',
+        children: errors[id]
+      }
+    };
+  }, []);
+
+  const getModalProps = useCallback((isOpen, onClose) => ({
+    dialog: {
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-hidden': !isOpen,
+      style: {
+        display: isOpen ? 'block' : 'none'
+      }
+    },
+    overlay: {
+      style: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)'
+      },
+      onClick: onClose
+    },
+    content: {
+      style: {
+        position: 'absolute',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        backgroundColor: 'white',
+        padding: '20px',
+        borderRadius: '8px'
+      }
+    }
+  }), []);
+
+  return { getAriaProps, getFormFieldProps, getModalProps };
+}
+
+// 使用
+function AccessibleForm() {
+  const { getFormFieldProps } = useA11y();
+  const [errors, setErrors] = useState({});
+
+  const emailProps = getFormFieldProps('Email Address', 'email', errors);
+
+  return (
+    <form>
+      <label {...emailProps.label} />
+      <input {...emailProps.input} />
+      {errors.email && <span {...emailProps.error} />}
+    </form>
+  );
+}
+
+function Modal({ isOpen, onClose }) {
+  const { getModalProps } = useA11y();
+  const modalProps = getModalProps(isOpen, onClose);
+
+  if (!isOpen) return null;
+
+  return (
+    <div {...modalProps.overlay}>
+      <div {...modalProps.dialog}>
+        <div {...modalProps.content}>
+          <h2>Modal Title</h2>
+          <p>Modal content here</p>
+          <button onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. Props Getters最佳实践
+
+### 5.1 设计原则
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的Props Getters设计
+
+// 1. 保持API简单
+function getSimpleProps(overrides = {}) {
+  return {
+    style: { padding: '10px' },
+    ...overrides
+  };
+}
+
+// 2. 提供有意义的默认值
+function getButtonProps(options = {}) {
+  const {
+    variant = 'primary',
+    size = 'medium',
+    disabled = false
+  } = options;
+
+  const variants = {
+    primary: { backgroundColor: 'blue', color: 'white' },
+    secondary: { backgroundColor: 'gray', color: 'black' }
+  };
+
+  const sizes = {
+    small: { fontSize: '12px', padding: '5px 10px' },
+    medium: { fontSize: '14px', padding: '8px 16px' },
+    large: { fontSize: '16px', padding: '12px 24px' }
+  };
+
+  return {
+    style: {
+      ...variants[variant],
+      ...sizes[size],
+      opacity: disabled ? 0.5 : 1,
+      cursor: disabled ? 'not-allowed' : 'pointer'
+    },
+    disabled
+  };
+}
+
+// 3. 支持渐进式增强
+function getEnhancedProps(baseProps) {
+  return {
+    // 基础功能总是可用
+    ...baseProps,
+
+    // 增强功能可选
+    getButtonProps: (options) => getButtonProps(options),
+    getInputProps: (options) => getInputProps(options),
+
+    // 组合方法
+    getProps: (componentType, options) => {
+      const getters = {
+        button: getButtonProps,
+        input: getInputProps
+      };
+      return getters[componentType]?.(options) || {};
+    }
+  };
+}
+```
+
+</CodeBlock>
+
+### 5.2 性能优化
+
+<CodeBlock>
+
+```jsx
+// 缓存Props Getter结果
+function createCachedPropsGetter(getter) {
+  const cache = new Map();
+
+  return function getCachedProps(key, overrides = {}) {
+    // 使用key作为缓存键
+    if (cache.has(key)) {
+      const cached = cache.get(key);
+      return mergeProps(cached, overrides);
+    }
+
+    // 生成新Props
+    const props = getter(overrides);
+    cache.set(key, props);
+    return mergeProps(props, overrides);
+  };
+}
+
+// 使用React.memo优化
+const MemoizedButton = React.memo(function MemoizedButton({ getProps }) {
+  const buttonProps = getProps();
+
+  return <button {...buttonProps} />;
+});
+
+// 避免在render中创建新函数
+function BadExample() {
+  return (
+    <MyComponent
+      getProps={() => ({  // ❌ 每次渲染都创建新函数
+        style: { color: 'red' }
+      })}
+    />
+  );
+}
+
+// 使用useCallback
+function GoodExample() {
+  const getProps = useCallback(() => ({
+    style: { color: 'red' }
+  }), []);
+
+  return <MyComponent getProps={getProps} />;
+}
+```
+
+</CodeBlock>
+
+### 5.3 类型安全
+
+<CodeBlock>
+
+```tsx
+// TypeScript类型定义
+type PropsGetter<T = {}, U = {}> = (overrides?: U) => T;
+
+interface BaseButtonProps {
+  style: React.CSSProperties;
+  className?: string;
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
+}
+
+interface ButtonOptions {
+  variant?: 'primary' | 'secondary' | 'danger';
+  size?: 'small' | 'medium' | 'large';
+}
+
+type ButtonPropsGetter = PropsGetter<BaseButtonProps, ButtonOptions>;
+
+// 创建带类型的Props Getter
+function createButtonPropsGetter(): ButtonPropsGetter {
+  return (overrides = {}) => {
+    const {
+      variant = 'primary',
+      style,
+      className,
+      ...rest
+    } = overrides;
+
+    const variantStyles = {
+      primary: { backgroundColor: 'blue', color: 'white' },
+      secondary: { backgroundColor: 'gray', color: 'black' },
+      danger: { backgroundColor: 'red', color: 'white' }
+    };
+
+    return {
+      style: {
+        ...variantStyles[variant],
+        ...style
+      },
+      className: `btn ${variant} ${className || ''}`.trim(),
+      type: 'button',
+      ...rest
+    };
+  };
+}
+
+// 泛型Props Getter
+function createPropsGetter<T, U>(
+  defaults: T,
+  transform?: (overrides: U) => Partial<T>
+): PropsGetter<T, U> {
+  return (overrides = {} as U) => {
+    const transformed = transform ? transform(overrides) : {};
+    return { ...defaults, ...transformed, ...overrides };
+  };
+}
+```
+
+</CodeBlock>
+
+### 5.4 文档和测试
+
+<CodeBlock>
+
+```jsx
+// 完整的Props Getter文档示例
+
+/**
+ * 创建按钮Props的Getter
+ * @param {Object} options - 配置选项
+ * @param {string} options.variant - 按钮变体: 'primary' | 'secondary' | 'danger'
+ * @param {string} options.size - 按钮尺寸: 'small' | 'medium' | 'large'
+ * @param {boolean} options.disabled - 是否禁用
+ * @param {Object} options.style - 自定义样式
+ * @param {string} options.className - 自定义类名
+ * @returns {Object} 合并后的按钮Props
+ *
+ * @example
+ * const getProps = createButtonProps();
+ *
+ * // 基础按钮
+ * <button {...getProps()}>Click me</button>
+ *
+ * // 带选项的按钮
+ * <button {...getProps({ variant: 'danger', size: 'large' })}>
+ *   Delete
+ * </button>
+ *
+ * @example
+ * // 自定义覆盖
+ * <button {...getProps({
+ *   variant: 'primary',
+ *   onClick: () => console.log('Clicked!')
+ * })}>
+ *   Custom Button
+ * </button>
+ */
+function createButtonProps(options = {}) {
+  // 实现...
+}
+
+// 测试
+describe('createButtonProps', () => {
+  it('should return default props when no options provided', () => {
+    const getProps = createButtonProps();
+    const props = getProps();
+
+    expect(props.style).toBeDefined();
+    expect(props.className).toContain('btn');
+  });
+
+  it('should apply variant styles', () => {
+    const getProps = createButtonProps();
+    const props = getProps({ variant: 'danger' });
+
+    expect(props.style.backgroundColor).toBe('red');
+  });
+
+  it('should merge overrides correctly', () => {
+    const getProps = createButtonProps();
+    const props = getProps({
+      variant: 'primary',
+      onClick: () => console.log('test')
+    });
+
+    expect(props.style.backgroundColor).toBe('blue');
+    expect(typeof props.onClick).toBe('function');
+  });
+});
+```
+
+</CodeBlock>
+
+---
+
+## 6. Props Getters常见陷阱
+
+### 陷阱1：过度复杂化
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 过度复杂化
+function OverlyComplexGetter() {
+  return {
+    getProps: (options) => {
+      // 过度复杂的多层嵌套
+      return {
+        getButtonProps: (opts) => {
+          return {
+            getInputProps: (o) => {
+              // 嵌套过深，难以理解和维护
+              return { /* ... */ };
+            }
+          };
+        }
+      };
+    }
+  };
+}
+
+// ✅ 正确 - 保持简单清晰
+function SimpleGetter() {
+  return {
+    getButtonProps: (overrides) => ({
+      style: { padding: '10px' },
+      ...overrides
+    }),
+    getInputProps: (overrides) => ({
+      style: { border: '1px solid #ccc' },
+      ...overrides
+    })
+  };
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：不正确的Props合并
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 简单覆盖导致事件丢失
+function BadMerge(target, source) {
+  return { ...target, ...source };
+}
+
+const defaultProps = {
+  onClick: () => console.log('default')
+};
+
+const customProps = {
+  onClick: () => console.log('custom')
+};
+
+// 覆盖后丢失默认事件处理器
+const merged = BadMerge(defaultProps, customProps);
+merged.onClick(); // 只输出 'custom'，丢失了 'default'
+
+// ✅ 正确 - 智能合并
+function GoodMerge(target, source) {
+  const result = { ...target };
+
+  Object.keys(source).forEach(key => {
+    const targetValue = result[key];
+    const sourceValue = source[key];
+
+    if (typeof targetValue === 'function' && typeof sourceValue === 'function') {
+      // 组合函数
+      result[key] = (...args) => {
+        targetValue(...args);
+        sourceValue(...args);
+      };
+    } else {
+      // 直接覆盖
+      result[key] = sourceValue;
+    }
+  });
+
+  return result;
+}
+
+const merged = GoodMerge(defaultProps, customProps);
+merged.onClick(); // 输出 'default' 和 'custom'
+```
+
+</ErrorBox>
+
+### 陷阱3：忘记清理函数
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有清理副作用
+function useBadPropsGetter() {
+  const [value, setValue] = useState('');
+
+  const getProps = (overrides) => {
+    const handler = () => {
+      // 内存泄漏：每次渲染都创建新函数，没有清理
+      console.log('Handler created');
+    };
+
+    return {
+      value,
+      onChange: (e) => setValue(e.target.value),
+      onClick: handler,
+      ...overrides
+    };
+  };
+
+  return { getProps };
+}
+
+// ✅ 正确 - 使用useCallback缓存
+function useGoodPropsGetter() {
+  const [value, setValue] = useState('');
+
+  const getProps = useCallback((overrides) => {
+    const handler = useCallback(() => {
+      console.log('Handler cached');
+    }, []);
+
+    return {
+      value,
+      onChange: (e) => setValue(e.target.value),
+      onClick: handler,
+      ...overrides
+    };
+  }, []);
+
+  return { getProps };
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：忽略默认值
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 覆盖时丢失默认值
+function createBadInputGetter() {
+  return {
+    getProps: (overrides) => ({
+      style: { padding: '10px', borderRadius: '5px' },
+      ...overrides  // 覆盖时完全丢失默认style
+    })
+  };
+}
+
+const getProps = createBadInputGetter();
+<button {...getProps({ style: { color: 'red' } })}>
+// 结果只有 { color: 'red' }，丢失了 padding 和 borderRadius
+
+// ✅ 正确 - 正确合并样式
+function createGoodInputGetter() {
+  return {
+    getProps: (overrides) => {
+      const defaultStyle = { padding: '10px', borderRadius: '5px' };
+      const customStyle = overrides.style || {};
+
+      return {
+        style: { ...defaultStyle, ...customStyle },
+        ...overrides
+      };
+    }
+  };
+}
+
+const getProps = createGoodInputGetter();
+<button {...getProps({ style: { color: 'red' } })}>
+// 结果有 { padding: '10px', borderRadius: '5px', color: 'red' }
+```
+
+</ErrorBox>
+
+---
+
+## 7. 实践练习
+
+### 练习1：创建可配置的工具提示组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 支持多种触发方式：hover、click、focus
+- 可配置位置：top、bottom、left、right
+- 支持自定义样式和内容
+- 可访问性支持
+
+**实现要求**：
+```javascript
+function useTooltip(options) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  const getTriggerProps = (overrides) => {
+    // 触发器Props
+  };
+
+  const getTooltipProps = (overrides) => {
+    // 工具提示Props
+  };
+
+  return { getTriggerProps, getTooltipProps, isVisible };
+}
+```
+
+**提示**：
+- 使用useState管理可见性
+- 根据options配置事件处理器
+- 正确合并Props
+- 支持键盘导航
+
+</Expandable>
+
+### 练习2：创建可复用的折叠面板
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 支持单个或多个面板同时展开
+- 可配置动画效果
+- 支持键盘导航
+- 可自定义头部和内容
+
+**实现要求**：
+```javascript
+function useAccordion(options) {
+  const [openItems, setOpenItems] = useState([]);
+
+  const getItemProps = (id, overrides) => {
+    // 单个面板Props
+  };
+
+  const getToggleProps = (id, overrides) => {
+    // 切换按钮Props
+  };
+
+  const getPanelProps = (id, overrides) => {
+    // 面板内容Props
+  };
+
+  return { getItemProps, getToggleProps, getPanelProps, openItems };
+}
+```
+
+**提示**：
+- 管理多个面板状态
+- 处理键盘事件
+- 动画实现
+- ARIA属性
+
+</Expandable>
+
+### 练习3：创建无限滚动列表
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 自动加载更多数据
+- 支持自定义加载指示器
+- 错误处理和重试
+- 虚拟化支持
+
+**实现要求**：
+```javascript
+function useInfiniteScroll(options) {
+  const [isFetching, setIsFetching] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const getListProps = (overrides) => {
+    // 列表容器Props
+  };
+
+  const getItemProps = (index, overrides) => {
+    // 列表项Props
+  };
+
+  const getSentinelProps = (overrides) => {
+    // 哨兵元素Props（用于触发加载）
+  };
+
+  return { getListProps, getItemProps, getSentinelProps, isFetching, hasMore };
+}
+```
+
+**提示**：
+- Intersection Observer
+- 数据管理
+- 性能优化
+- 错误边界
+
+</Expandable>
+
+### 练习4：创建拖拽排序组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 支持列表项拖拽排序
+- 视觉反馈（拖拽预览）
+- 动画过渡
+- 可触摸设备支持
+
+**实现要求**：
+```javascript
+function useSortable(items) {
+  const [draggedItem, setDraggedItem] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(-1);
+
+  const getContainerProps = (overrides) => {
+    // 容器Props
+  };
+
+  const getItemProps = (index, item, overrides) => {
+    // 单项Props
+  };
+
+  const getHandleProps = (index, overrides) => {
+    // 拖拽手柄Props
+  };
+
+  return { getContainerProps, getItemProps, getHandleProps, items };
+}
+```
+
+**提示**：
+- 拖拽API
+- 位置计算
+- CSS Transform
+- 触摸事件
+
+</Expandable>
+
+---
+
+## 8. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Props Getters是通过函数返回Props对象的模式
+- ✅ 提供了灵活、可组合的Props管理方式
+- ✅ 支持Props的动态生成、合并和覆盖
+- ✅ 适合构建可复用组件库
+- ✅ 需要正确的Props合并策略
+- ✅ 使用useCallback优化性能
+- ✅ TypeScript增强类型安全
+- ✅ 避免过度复杂化
+- ✅ 提供清晰的文档和示例
+- ✅ 测试各种使用场景
+
+</Checklist>
+
+### Props Getters最佳实践
+
+<BestPractices>
+
+1. **保持简单** - Props Getters应该简单易用
+2. **正确合并** - 智能合并事件处理器和样式
+3. **性能优化** - 使用useCallback缓存函数
+4. **类型安全** - TypeScript提供完整类型
+5. **文档完整** - 清晰的使用示例和说明
+6. **测试覆盖** - 测试各种Props组合
+7. **默认值** - 提供有意义的默认值
+8. **可扩展性** - 支持渐进式增强
+
+</BestPractices>
+
+### Props Getters适用场景
+
+<BestPractices>
+
+**推荐使用**：
+- 可复用组件库开发
+- 复杂表单组件
+- 拖拽、排序等交互组件
+- 可访问性增强组件
+- 主题系统实现
+
+**谨慎使用**：
+- 简单的静态组件
+- 性能敏感的深层组件
+- 团队不熟悉函数式编程
+- 需要高可读性的业务代码
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了Props Getters模式，接下来可以学习：
+
+1. **[受控与非受控](../advanced/controlled-uncontrolled)** - 表单组件模式
+2. **[组合 vs 继承](../advanced/composition-vs-inheritance)** - React设计哲学
+3. **[Children模式](../advanced/children-patterns)** - 深入React children
+4. **[自定义Hooks进阶](../hooks/advanced/custom-hooks)** - 深入自定义Hooks
+
+---
+
+## 9. 延伸阅读
+
+### 官方资源
+
+- [React组件设计](https://react.dev/reference/react) - React官方文档
+- [组合模式](https://react.dev/learn/thinking-in-react) - 组合思维
+- [可复用组件](https://react.dev/reference/react) - 组件复用
+
+### 推荐阅读
+
+- [Props Getters模式](https://kentcdodds.com/blog/) - 深入理解
+- [React组件模式](https://reactpatterns.com/) - 模式集合
+- [函数式组件设计](https://www.smashingmagazine.com/) - 设计指南
+
+### 相关话题
+
+- [Render Props](render-props) - 渲染属性模式
+- [Children模式](children-patterns) - 深入React children
+- [自定义Hooks](../hooks/advanced/custom-hooks) - 逻辑复用
+- [组合模式](../basics/compound-components) - 复合组件
+
+---
+
+[← 上一章：错误边界](error-boundaries) | [下一章：受控与非受控 →](controlled-uncontrolled)

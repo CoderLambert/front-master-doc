@@ -1,0 +1,1762 @@
+# Children模式 - 灵活的组件组合与内容传递
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+Children模式是React中一种通过props.children传递组件内容的重要模式，它允许组件接受任意类型的子元素，并提供了强大的组合能力。Children模式广泛用于构建灵活、可复用的组件系统，如布局组件、容器组件、复合组件等。在本章中，我们将深入探讨Children模式的概念、使用方法、高级技巧和实际应用。
+
+## 本章学习目标
+
+- 理解Children prop的核心概念和工作原理
+- 掌握React.Children API的使用方法
+- 学会使用children as function（渲染函数）模式
+- 理解children类型和检查方法
+- 掌握children的遍历、转换和过滤技巧
+- 学会构建基于Children模式的复合组件
+- 理解Children模式与其他模式的关系
+- 掌握Children模式的最佳实践和常见陷阱
+
+---
+
+## 1. 什么是Children？
+
+在React中，children是组件接收的特殊prop，它允许组件接收和渲染嵌套内容。通过children prop，组件可以接受任何JSX元素作为其"子组件"，从而实现灵活的内容组合和复用。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>children</strong>是组件自动接收的prop，包含组件<strong>JSX标签之间的所有内容</strong>。可以是文本、元素、组件或任意组合。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础children使用
+function Welcome(props) {
+  return <div>Hello {props.name}!</div>;
+}
+
+// children作为文本
+<Welcome name="World">Hello World</Welcome>  // ⚠️ children会被忽略
+
+// 正确使用
+function Container(props) {
+  return <div className="container">{props.children}</div>;
+}
+
+// 使用children
+<Container>
+  <h1>Title</h1>
+  <p>Content</p>
+</Container>
+
+// React自动传递children
+function AutoContainer({ children }) {
+  return <div>{children}</div>;
+}
+```
+
+</CodeBlock>
+
+### 1.1 Children的组成
+
+<Grid>
+
+<div>
+  <h4>简单Children</h4>
+  <ul>
+    <li>字符串：`<div>Hello</div>`</li>
+    <li>数字：`<div>{42}</div>`</li>
+    <li>单个元素：`<div><span>A</span></div>`</li>
+    <li>单个组件：`<div><MyComponent /></div>`</li>
+  </ul>
+</div>
+
+<div>
+  <h4>复杂Children</h4>
+  <ul>
+    <li>多个元素：`<div><A /><B /><C /></div>`</li>
+    <li>混合内容：`<div>Text<A />Text</div>`</li>
+    <li>条件渲染：`<div>{condition ? <A /> : <B />}</div>`</li>
+    <li>数组/列表：`<div>{[<A />, <B />, <C />]}</div>`</li>
+  </ul>
+</div>
+
+</Grid>
+
+<CodeBlock>
+
+```jsx
+// 各种children类型
+// 1. 字符串
+<Card>Hello World</Card>
+
+// 2. 单个元素
+<Card><h1>Title</h1></Card>
+
+// 3. 多个元素
+<Card>
+  <h1>Title</h1>
+  <p>Content</p>
+  <button>Action</button>
+</Card>
+
+// 4. 混合内容
+<Card>
+  <img src="logo.png" />
+  Welcome to our app
+</Card>
+
+// 5. 条件内容
+<Card>
+  {user.isLoggedIn ? (
+    <Dashboard />
+  ) : (
+    <LoginForm />
+  )}
+</Card>
+
+// 6. 列表
+<Card>
+  {items.map(item => <Item key={item.id} {...item} />)}
+</Card>
+```
+
+</CodeBlock>
+
+### 1.2 children prop的工作机制
+
+<CodeBlock>
+
+```jsx
+// 组件接收children的三种方式
+// 方式1：使用props.children
+function Container1({ children }) {
+  return <div>{children}</div>;
+}
+
+// 方式2：使用解构
+function Container2({ children }) {
+  return <div className="container">{children}</div>;
+}
+
+// 方式3：剩余参数（不推荐，但有效）
+function Container3(props) {
+  return <div>{props.children}</div>;
+}
+
+// 使用时，React自动传递children
+<Container>
+  <h1>Title</h1>
+</Container>
+
+// 等价于
+<Container children={<h1>Title</h1>} />
+```
+
+</CodeBlock>
+
+---
+
+## 2. React.Children API
+
+React提供了专门的React.Children API来安全地操作children，处理各种边缘情况，避免直接操作数组时可能出现的问题。
+
+<CodeBlock>
+
+```jsx
+// React.Children提供的方法
+React.Children.map      // 遍历children
+React.Children.forEach // 遍历children（无返回值）
+React.Children.count   // 计算children数量
+React.Children.only    // 验证children是单个元素
+React.Children.toArray // 将children转换为数组
+
+// 辅助方法
+React.isValidElement   // 验证是否是React元素
+```
+
+</CodeBlock>
+
+### 2.1 遍历children
+
+<CodeBlock>
+
+```jsx
+// 使用React.Children.map安全遍历
+function List({ children }) {
+  return (
+    <ul>
+      {React.Children.map(children, (child, index) => (
+        <li key={index}>{child}</li>
+      ))}
+    </ul>
+  );
+}
+
+// 使用
+<List>
+  <span>Item 1</span>
+  <span>Item 2</span>
+  <span>Item 3</span>
+</List>
+
+// 对比：直接操作children（不推荐）
+function BadList({ children }) {
+  return (
+    <ul>
+      {children.map((child, index) => (  // ⚠️ 如果children是单个元素会出错
+        <li key={index}>{child}</li>
+      ))}
+    </ul>
+  );
+}
+
+// 使用React.Children.forEach
+function ForEachList({ children }) {
+  const items = [];
+  React.Children.forEach(children, (child) => {
+    items.push(<li>{child}</li>);
+  });
+  return <ul>{items}</ul>;
+}
+```
+
+</CodeBlock>
+
+### 2.2 转换和过滤
+
+<CodeBlock>
+
+```jsx
+// 转换children
+function UppercaseList({ children }) {
+  return (
+    <ul>
+      {React.Children.map(children, (child) => {
+        // 检查是否是文本
+        if (typeof child === 'string') {
+          return child.toUpperCase();
+        }
+        return child;
+      })}
+    </ul>
+  );
+}
+
+// 过滤children
+function FilteredList({ children, visible = true }) {
+  return (
+    <ul>
+      {React.Children.map(children, (child) => {
+        if (!visible) return null;
+        return child;
+      })}
+    </ul>
+  );
+}
+
+// 高级过滤：按类型过滤
+function TypeFilteredList({ children }) {
+  return (
+    <div>
+      {React.Children.toArray(children).filter((child) => {
+        return React.isValidElement(child) && child.type === 'li';
+      })}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 替换children
+
+<CodeBlock>
+
+```jsx
+// 替换特定children
+function EnhancedList({ children }) {
+  return (
+    <ul>
+      {React.Children.map(children, (child, index) => {
+        // 为每个列表项添加序号
+        return (
+          <React.Fragment key={index}>
+            {index + 1}. {child}
+          </React.Fragment>
+        );
+      })}
+    </ul>
+  );
+}
+
+// 为children添加包装
+function WithTooltip({ children }) {
+  return (
+    <div className="tooltip-container">
+      {React.Children.map(children, (child) => (
+        <div className="tooltip-wrapper" title="Helpful tooltip">
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.4 验证children
+
+<CodeBlock>
+
+```jsx
+// 使用React.Children.only验证单个子元素
+function SingleChild({ children }) {
+  const onlyChild = React.Children.only(children);
+  return <div className="single">{onlyChild}</div>;
+}
+
+// 正确使用
+<SingleChild><h1>Title</h1></SingleChild>  // ✅ 有效
+
+// 错误使用
+<SingleChild>
+  <h1>Title</h1>
+  <p>Content</p>
+</SingleChild>  // ❌ 抛出错误
+
+// 计数children
+function CountChildren({ children }) {
+  const count = React.Children.count(children);
+  return <div>Number of children: {count}</div>;
+}
+
+<CountChildren>
+  <A />
+  <B />
+  <C />
+</CountChildren>  // 显示: 3
+
+// 转换为数组
+function ToArrayList({ children }) {
+  const childrenArray = React.Children.toArray(children);
+  return (
+    <ul>
+      {childrenArray.map((child, index) => (
+        <li key={index}>{child}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. Children as Function (渲染函数)
+
+children as function是Children模式的高级应用，允许将children作为函数传递，从而实现更灵活的内容渲染和状态共享。
+
+<CodeBlock>
+
+```jsx
+// 基础渲染函数模式
+function RenderPropsExample({ children }) {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      {children({ count, increment: () => setCount(c => c + 1) })}
+    </div>
+  );
+}
+
+// 使用
+<RenderPropsExample>
+  {({ count, increment }) => (
+    <button onClick={increment}>
+      Clicked {count} times
+    </button>
+  )}
+</RenderPropsExample>
+```
+
+</CodeBlock>
+
+### 3.1 基础渲染函数
+
+<CodeBlock>
+
+```jsx
+// 状态共享的渲染函数
+function StateProvider({ children }) {
+  const [state, setState] = useState({ value: '' });
+  const actions = {
+    update: (key, value) => setState(prev => ({ ...prev, [key]: value })),
+    reset: () => setState({ value: '' })
+  };
+
+  return children(state, actions);
+}
+
+// 使用
+<StateProvider>
+  {(state, actions) => (
+    <div>
+      <input
+        value={state.value}
+        onChange={(e) => actions.update('value', e.target.value)}
+      />
+      <p>Value: {state.value}</p>
+      <button onClick={actions.reset}>Reset</button>
+    </div>
+  )}
+</StateProvider>
+
+// 等价于Render Props模式
+class StateProviderClass extends React.Component {
+  state = { value: '' };
+
+  render() {
+    const { children } = this.props;
+    const actions = {
+      update: (key, value) => this.setState(prev => ({ ...prev, [key]: value })),
+      reset: () => this.setState({ value: '' })
+    };
+
+    return children(this.state, actions);
+  }
+}
+```
+
+</CodeBlock>
+
+### 3.2 条件渲染优化
+
+<CodeBlock>
+
+```jsx
+// 基于条件渲染的children
+function ConditionalRender({ condition, children }) {
+  if (!condition) return null;
+
+  if (typeof children === 'function') {
+    return children();
+  }
+
+  return children;
+}
+
+// 使用
+<ConditionalRender condition={user.isLoggedIn}>
+  {() => <Dashboard user={user} />}
+</ConditionalRender>
+
+// 复杂条件渲染
+function Authenticated({ user, children, fallback }) {
+  if (!user) {
+    return fallback || <LoginPrompt />;
+  }
+
+  if (typeof children === 'function') {
+    return children(user);
+  }
+
+  return children;
+}
+
+// 使用
+<Authenticated
+  user={currentUser}
+  fallback={<div>Please log in</div>}
+>
+  {(user) => <Dashboard user={user} />}
+</Authenticated>
+```
+
+</CodeBlock>
+
+### 3.3 数据转换
+
+<CodeBlock>
+
+```jsx
+// 数据处理和转换
+function DataProcessor({ data, children }) {
+  const processedData = useMemo(() => {
+    return data.map(item => ({
+      ...item,
+      processed: true,
+      timestamp: Date.now()
+    }));
+  }, [data]);
+
+  if (typeof children === 'function') {
+    return children(processedData);
+  }
+
+  return processedData;
+}
+
+// 使用
+<DataProcessor data={rawData}>
+  {(processedData) => (
+    <ul>
+      {processedData.map(item => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  )}
+</DataProcessor>
+
+// 多阶段数据处理
+function DataPipeline({ children }) {
+  const [rawData] = useState([1, 2, 3]);
+  const [transformed] = useState(rawData.map(n => n * 2));
+  const [filtered] = useState(transformed.filter(n => n > 2));
+
+  return children({
+    raw: rawData,
+    transformed,
+    filtered
+  });
+}
+
+// 使用
+<DataPipeline>
+  ({ raw, transformed, filtered }) => (
+    <div>
+      <p>Raw: {raw.join(', ')}</p>
+      <p>Transformed: {transformed.join(', ')}</p>
+      <p>Filtered: {filtered.join(', ')}</p>
+    </div>
+  )}
+</DataPipeline>
+```
+
+</CodeBlock>
+
+### 3.4 上下文注入
+
+<CodeBlock>
+
+```jsx
+// 动态上下文注入
+function ContextInjector({ children, context }) {
+  return children(context);
+}
+
+// 使用ContextInjector
+<ContextInjector context={themeContext}>
+  {(theme) => (
+    <div className={theme.dark ? 'dark' : 'light'}>
+      Themed content
+    </div>
+  )}
+</ContextInjector>
+
+// 功能注入
+function FeatureInjector({ children }) {
+  const features = {
+    canEdit: true,
+    canDelete: false,
+    canShare: true
+  };
+
+  return children(features);
+}
+
+<FeatureInjector>
+  {(features) => (
+    <div>
+      {features.canEdit && <button>Edit</button>}
+      {features.canDelete && <button>Delete</button>}
+      {features.canShare && <button>Share</button>}
+    </div>
+  )}
+</FeatureInjector>
+```
+
+</CodeBlock>
+
+---
+
+## 4. 高级Children技巧
+
+### 4.1 动态children组合
+
+<CodeBlock>
+
+```jsx
+// 动态添加children
+function ExpandableList({ children, maxItems = 3 }) {
+  const [expanded, setExpanded] = useState(false);
+  const childrenArray = React.Children.toArray(children);
+
+  const displayChildren = expanded
+    ? childrenArray
+    : childrenArray.slice(0, maxItems);
+
+  return (
+    <div>
+      <ul>{displayChildren}</ul>
+      {childrenArray.length > maxItems && (
+        <button onClick={() => setExpanded(!expanded)}>
+          {expanded ? 'Show Less' : 'Show More'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// 使用
+<ExpandableList maxItems={2}>
+  <li>Item 1</li>
+  <li>Item 2</li>
+  <li>Item 3</li>
+  <li>Item 4</li>
+  <li>Item 5</li>
+</ExpandableList>
+```
+
+</CodeBlock>
+
+### 4.2 children重构和重组
+
+<CodeBlock>
+
+```jsx
+// 重构children结构
+function ReorderedContainer({ children, direction = 'row' }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: direction }}>
+      {React.Children.toArray(children).reverse()}
+    </div>
+  );
+}
+
+// 条件重新排序
+function SortableContainer({ children, sortBy = 'asc' }) {
+  const sortedChildren = React.Children.toArray(children).sort((a, b) => {
+    return sortBy === 'asc'
+      ? a.key.localeCompare(b.key)
+      : b.key.localeCompare(a.key);
+  });
+
+  return <div>{sortedChildren}</div>;
+}
+```
+
+</CodeBlock>
+
+### 4.3 children验证和类型检查
+
+<CodeBlock>
+
+```jsx
+// 验证children类型
+function StrictList({ children }) {
+  React.Children.forEach(children, (child) => {
+    if (!React.isValidElement(child) || child.type !== 'li') {
+      throw new Error('Only <li> elements are allowed as children');
+    }
+  });
+
+  return <ul>{children}</ul>;
+}
+
+// 使用
+<StrictList>
+  <li>Item 1</li>
+  <li>Item 2</li>
+  <li>Item 3</li>
+</StrictList>  // ✅ 有效
+
+<StrictList>
+  <span>Invalid</span>  // ❌ 抛出错误
+</StrictList>
+
+// 可配置的验证
+function TypedList({ children, allowedTypes = ['li', 'div'] }) {
+  React.Children.forEach(children, (child) => {
+    if (React.isValidElement(child) && !allowedTypes.includes(child.type)) {
+      throw new Error(`Child type ${child.type} is not allowed`);
+    }
+  });
+
+  return <div>{children}</div>;
+}
+```
+
+</CodeBlock>
+
+### 4.4 延迟加载children
+
+<CodeBlock>
+
+```jsx
+// 延迟渲染children
+function LazyChildren({ children, delay = 0 }) {
+  const [shouldRender, setShouldRender] = useState(delay === 0);
+
+  useEffect(() => {
+    if (delay > 0) {
+      const timer = setTimeout(() => {
+        setShouldRender(true);
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }
+  }, [delay]);
+
+  return shouldRender ? <div>{children}</div> : <div>Loading...</div>;
+}
+
+// 条件懒加载
+function ConditionalLazyLoad({ condition, children }) {
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (condition) {
+      setShouldLoad(true);
+    }
+  }, [condition]);
+
+  return shouldLoad ? children : <div>Loading...</div>;
+}
+
+// 使用
+<ConditionalLazyLoad condition={isVisible}>
+  <HeavyComponent />
+</ConditionalLazyLoad>
+```
+
+</CodeBlock>
+
+---
+
+## 5. 基于Children的复合组件
+
+### 5.1 标签页组件
+
+<CodeBlock>
+
+```jsx
+// 标签页上下文
+const TabsContext = React.createContext();
+
+function Tabs({ children, defaultTab, onChange }) {
+  const [activeTab, setActiveTab] = useState(defaultTab);
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    onChange?.(tabId);
+  };
+
+  return (
+    <TabsContext.Provider value={{ activeTab, onTabChange: handleTabChange }}>
+      <div className="tabs">
+        {children}
+      </div>
+    </TabsContext.Provider>
+  );
+}
+
+function TabList({ children }) {
+  const { activeTab } = useContext(TabsContext);
+
+  return (
+    <div className="tab-list">
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, { isActive: child.props.tabId === activeTab });
+        }
+        return child;
+      })}
+    </div>
+  );
+}
+
+function Tab({ tabId, children, isActive }) {
+  const { onTabChange } = useContext(TabsContext);
+
+  return (
+    <button
+      className={`tab ${isActive ? 'active' : ''}`}
+      onClick={() => onTabChange(tabId)}
+    >
+      {children}
+    </button>
+  );
+}
+
+function TabPanels({ children }) {
+  return <div className="tab-panels">{children}</div>;
+}
+
+function TabPanel({ tabId, children }) {
+  const { activeTab } = useContext(TabsContext);
+
+  if (tabId !== activeTab) return null;
+
+  return (
+    <div className="tab-panel">
+      {children}
+    </div>
+  );
+}
+
+// 使用
+<Tabs defaultTab="tab1">
+  <TabList>
+    <Tab tabId="tab1">Tab 1</Tab>
+    <Tab tabId="tab2">Tab 2</Tab>
+    <Tab tabId="tab3">Tab 3</Tab>
+  </TabList>
+
+  <TabPanels>
+    <TabPanel tabId="tab1">Content 1</TabPanel>
+    <TabPanel tabId="tab2">Content 2</TabPanel>
+    <TabPanel tabId="tab3">Content 3</TabPanel>
+  </TabPanels>
+</Tabs>
+```
+
+</CodeBlock>
+
+### 5.2 折叠面板组件
+
+<CodeBlock>
+
+```jsx
+// 折叠面板上下文
+const AccordionContext = React.createContext();
+
+function Accordion({ children, allowMultiple = false }) {
+  const [openPanels, setOpenPanels] = useState({});
+
+  const togglePanel = (panelId) => {
+    setOpenPanels(prev => {
+      if (allowMultiple) {
+        return {
+          ...prev,
+          [panelId]: !prev[panelId]
+        };
+      }
+      return { [panelId]: !prev[panelId] };
+    });
+  };
+
+  return (
+    <AccordionContext.Provider value={{ openPanels, togglePanel }}>
+      <div className="accordion">
+        {children}
+      </div>
+    </AccordionContext.Provider>
+  );
+}
+
+function AccordionItem({ children, id }) {
+  return (
+    <AccordionContext.Consumer>
+      {({ openPanels, togglePanel }) => {
+        const isOpen = openPanels[id] || false;
+
+        return (
+          <div className="accordion-item">
+            {React.Children.map(children, (child) => {
+              if (React.isValidElement(child)) {
+                return React.cloneElement(child, { isOpen, togglePanel: () => togglePanel(id) });
+              }
+              return child;
+            })}
+          </div>
+        );
+      }}
+    </AccordionContext.Consumer>
+  );
+}
+
+function AccordionHeader({ children, isOpen, togglePanel }) {
+  return (
+    <div className="accordion-header" onClick={togglePanel}>
+      {children}
+      <span>{isOpen ? '▲' : '▼'}</span>
+    </div>
+  );
+}
+
+function AccordionPanel({ children, isOpen }) {
+  return (
+    <div className={`accordion-panel ${isOpen ? 'open' : ''}`}>
+      {isOpen && children}
+    </div>
+  );
+}
+
+// 使用
+<Accordion allowMultiple={true}>
+  <AccordionItem id="item1">
+    <AccordionHeader>Section 1</AccordionHeader>
+    <AccordionPanel>Content 1</AccordionPanel>
+  </AccordionItem>
+
+  <AccordionItem id="item2">
+    <AccordionHeader>Section 2</AccordionHeader>
+    <AccordionPanel>Content 2</AccordionPanel>
+  </AccordionItem>
+</Accordion>
+```
+
+</CodeBlock>
+
+### 5.3 菜单组件
+
+<CodeBlock>
+
+```jsx
+// 菜单上下文
+const MenuContext = React.createContext();
+
+function Menu({ children, onSelect }) {
+  const [activeItem, setActiveItem] = useState(null);
+
+  const handleSelect = (itemId) => {
+    setActiveItem(itemId);
+    onSelect?.(itemId);
+  };
+
+  return (
+    <MenuContext.Provider value={{ activeItem, onSelect: handleSelect }}>
+      <ul className="menu">
+        {children}
+      </ul>
+    </MenuContext.Provider>
+  );
+}
+
+function MenuItem({ children, id, disabled = false }) {
+  const { activeItem, onSelect } = useContext(MenuContext);
+  const isActive = activeItem === id;
+
+  return (
+    <li
+      className={`menu-item ${isActive ? 'active' : ''} ${disabled ? 'disabled' : ''}`}
+      onClick={() => !disabled && onSelect(id)}
+    >
+      {children}
+    </li>
+  );
+}
+
+function MenuDivider() {
+  return <li className="menu-divider" />;
+}
+
+function MenuLabel({ children }) {
+  return <li className="menu-label">{children}</li>;
+}
+
+// 使用
+<Menu onSelect={(id) => console.log('Selected:', id)}>
+  <MenuLabel>Options</MenuLabel>
+  <MenuItem id="new">New File</MenuItem>
+  <MenuItem id="open">Open File</MenuItem>
+  <MenuDivider />
+  <MenuItem id="save" disabled>Save</MenuItem>
+  <MenuItem id="export">Export</MenuItem>
+</Menu>
+```
+
+</CodeBlock>
+
+### 5.4 Wizard/向导组件
+
+<CodeBlock>
+
+```jsx
+// 向导上下文
+const WizardContext = React.createContext();
+
+function Wizard({ children, initialStep = 0, onComplete }) {
+  const [currentStep, setCurrentStep] = useState(initialStep);
+  const steps = React.Children.toArray(children).filter(
+    child => React.isValidElement(child) && child.type === WizardStep
+  );
+
+  const next = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      onComplete?.();
+    }
+  };
+
+  const prev = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const goTo = (step) => {
+    if (step >= 0 && step < steps.length) {
+      setCurrentStep(step);
+    }
+  };
+
+  return (
+    <WizardContext.Provider value={{
+      currentStep,
+      totalSteps: steps.length,
+      next,
+      prev,
+      goTo,
+      isFirst: currentStep === 0,
+      isLast: currentStep === steps.length - 1
+    }}>
+      <div className="wizard">
+        {children}
+      </div>
+    </WizardContext.Provider>
+  );
+}
+
+function WizardStep({ children }) {
+  return children;
+}
+
+function WizardNavigation() {
+  const { currentStep, totalSteps, next, prev, isFirst, isLast } = useContext(WizardContext);
+
+  return (
+    <div className="wizard-navigation">
+      <button onClick={prev} disabled={isFirst}>Previous</button>
+      <span>Step {currentStep + 1} of {totalSteps}</span>
+      <button onClick={next}>{isLast ? 'Finish' : 'Next'}</button>
+    </div>
+  );
+}
+
+function WizardContent() {
+  const { currentStep } = useContext(WizardContext);
+  const steps = React.Children.toArray(
+    React.Children.only(this.props.children)
+  ).filter(
+    child => React.isValidElement(child) && child.type === WizardStep
+  );
+
+  return steps[currentStep];
+}
+
+// 使用
+<Wizard onComplete={() => alert('Wizard completed!')}>
+  <WizardStep>
+    <div>
+      <h2>Step 1: Personal Information</h2>
+      <input placeholder="Name" />
+    </div>
+  </WizardStep>
+
+  <WizardStep>
+    <div>
+      <h2>Step 2: Account Details</h2>
+      <input placeholder="Email" />
+    </div>
+  </WizardStep>
+
+  <WizardStep>
+    <div>
+      <h2>Step 3: Confirmation</h2>
+      <p>Please review your information</p>
+    </div>
+  </WizardStep>
+
+  <WizardNavigation />
+</Wizard>
+```
+
+</CodeBlock>
+
+---
+
+## 6. Children模式最佳实践
+
+### 6.1 合理使用React.Children
+
+<CodeBlock>
+
+```jsx
+// ✅ 推荐：使用React.Children处理
+function SafeList({ children }) {
+  return (
+    <ul>
+      {React.Children.map(children, (child) => (
+        <li>{child}</li>
+      ))}
+    </ul>
+  );
+}
+
+// ✅ 推荐：验证children
+function RequiredChildren({ children }) {
+  if (React.Children.count(children) === 0) {
+    throw new Error('This component requires at least one child');
+  }
+  return children;
+}
+
+// ❌ 避免：直接操作children数组
+function BadComponent({ children }) {
+  return children.map(child => <div>{child}</div>);  // 可能出错
+}
+
+// ✅ 推荐：使用React.Children.only确保单个子元素
+function Modal({ children }) {
+  const onlyChild = React.Children.only(children);
+  return (
+    <div className="modal">
+      {onlyChild}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 children as function的使用场景
+
+<Compare>
+
+```jsx
+// ✅ 适合children as function的场景
+1. 状态共享
+   <StateProvider>
+     {(state, actions) => <Component state={state} actions={actions} />}
+   </StateProvider>
+
+2. 条件渲染
+   <ConditionalRender condition={isVisible}>
+     {() => <ExpensiveComponent />}
+   </ConditionalRender>
+
+3. 数据处理
+   <DataProcessor data={rawData}>
+     {(processed) => <Display data={processed} />}
+   </DataProcessor>
+
+4. 上下文注入
+   <ThemeProvider>
+     {(theme) => <App theme={theme} />}
+   </ThemeProvider>
+
+// ❌ 不适合的场景
+1. 简单的内容传递
+   <Container>
+     {(content) => <div>{content}</div>}  // 过度复杂化
+   </Container>
+
+2. 已有良好的API
+   <Modal>
+     {(isOpen) => <ModalContent isOpen={isOpen} />}  // 已有props
+   </Modal>
+```
+
+</Compare>
+
+### 6.3 性能优化
+
+<CodeBlock>
+
+```jsx
+// 使用React.memo优化子组件
+const ExpensiveChild = React.memo(function ExpensiveChild({ children }) {
+  return <div>{children}</div>;
+});
+
+// 缓存children处理
+function OptimizedContainer({ children }) {
+  const processedChildren = useMemo(() => {
+    return React.Children.map(children, (child) => {
+      // 昂贵的处理逻辑
+      return React.cloneElement(child, { enhanced: true });
+    });
+  }, [children]);
+
+  return <div>{processedChildren}</div>;
+}
+
+// 避免在render中创建新函数
+function BadExample({ children }) {
+  return (
+    <div>
+      {React.Children.map(children, child => (
+        <div onClick={() => console.log('clicked')}>  // ❌ 每次render创建新函数
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 使用useCallback
+function GoodExample({ children }) {
+  const handleClick = useCallback(() => {
+    console.log('clicked');
+  }, []);
+
+  return (
+    <div>
+      {React.Children.map(children, child => (
+        <div onClick={handleClick}>  // ✅ 缓存函数
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.4 类型安全
+
+<CodeBlock>
+
+```tsx
+// TypeScript类型定义
+type ChildrenProps = {
+  children: React.ReactNode;
+};
+
+type RenderFunction<T> = (value: T) => React.ReactNode;
+
+type RenderPropsChildren<T> = {
+  children: RenderFunction<T>;
+};
+
+// 简单children
+function SimpleComponent({ children }: ChildrenProps) {
+  return <div>{children}</div>;
+}
+
+// 渲染函数children
+function RenderPropsComponent<T>({ children }: RenderPropsChildren<T>) {
+  const value: T = { data: 'test' };
+  return <div>{children(value)}</div>;
+}
+
+// 使用
+<RenderPropsComponent>
+  {(value) => <span>{value.data}</span>}
+</RenderPropsComponent>
+
+// 可选children
+function OptionalChildren({ children }: { children?: React.ReactNode }) {
+  return <div>{children || 'Default content'}</div>;
+}
+
+// 单个子元素
+function SingleChild({ children }: { children: React.ReactElement }) {
+  return <div>{children}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 常见陷阱
+
+### 陷阱1：直接操作children数组
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 假设children是数组
+function BadList({ children }) {
+  return (
+    <ul>
+      {children.map(child => <li key={child.key}>{child}</li>)}
+    </ul>
+  );
+}
+
+// 如果传入单个子元素，children不是数组，会报错
+
+// ✅ 正确 - 使用React.Children
+function GoodList({ children }) {
+  return (
+    <ul>
+      {React.Children.map(children, child => (
+        <li>{child}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：忽略key属性
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 丢失key
+function BadWrapper({ children }) {
+  return (
+    <div>
+      {React.Children.map(children, child => (
+        <div className="wrapper">  // 缺少key
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ✅ 正确 - 传递key
+function GoodWrapper({ children }) {
+  return (
+    <div>
+      {React.Children.map(children, (child, index) => (
+        <div className="wrapper" key={index}>
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 更安全的key处理
+function SafeWrapper({ children }) {
+  return (
+    <div>
+      {React.Children.map(children, child => {
+        const key = child.key || `child-${Math.random()}`;
+        return (
+          <div className="wrapper" key={key}>
+            {child}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：嵌套渲染函数
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 复杂的嵌套
+function OverlyComplex({ children }) {
+  return children(value => (
+    <div>
+      {children(data => (
+        <Component data={data} value={value} />
+      ))}
+    </div>
+  ));
+}
+
+// ✅ 正确 - 简化设计
+function SimpleProvider({ children }) {
+  const [value] = useState('data');
+  return <div>{children(value)}</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：不变性假设
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 假设children不变
+function CacheComponent({ children }) {
+  const cachedChildren = children;  // 错误：children可能在每次render都不同
+
+  return (
+    <div>
+      {cachedChildren}
+    </div>
+  );
+}
+
+// ✅ 正确 - 使用useMemo缓存
+function MemoizedComponent({ children }) {
+  const cachedChildren = useMemo(() => children, [children]);
+
+  return <div>{cachedChildren}</div>;
+}
+
+// 或者使用key
+function KeyedComponent({ children, cacheKey }) {
+  return (
+    <div key={cacheKey}>
+      {children}
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 8. 实践练习
+
+### 练习1：实现组件库布局系统
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 布局容器：支持Grid和Flexbox
+- 可配置的行数和列数
+- 自动填充和空白处理
+- 响应式断点
+
+**实现要求**：
+```jsx
+<Layout rows={3} cols={3} gap="16px">
+  <Layout.Item row={1} col={1}>A</Layout.Item>
+  <Layout.Item row={1} col={2} colSpan={2}>B</Layout.Item>
+  <Layout.Item row={2} col={1} rowSpan={2}>C</Layout.Item>
+  <Layout.Item row={2} col={2}>D</Layout.Item>
+  <Layout.Item row={2} col={3}>E</Layout.Item>
+  <Layout.Item row={3} col={2} colSpan={2}>F</Layout.Item>
+</Layout>
+```
+
+**提示**：
+- 使用React.Children进行children处理
+- 计算网格位置和跨度
+- 处理响应式布局
+- 支持自定义断点
+
+</Expandable>
+
+### 练习2：实现动态表单构建器
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 字段类型：input, select, checkbox, textarea
+- 字段验证：必填、格式、长度
+- 条件显示：根据其他字段值显示/隐藏
+- 动态添加/删除字段
+
+**实现要求**：
+```jsx
+<FormBuilder initialValues={initialData}>
+  <FormBuilder.Field
+    name="email"
+    type="email"
+    label="Email"
+    required
+    validation={{ pattern: /\S+@\S+\.\S+/ }}
+  />
+
+  <FormBuilder.Field
+    name="age"
+    type="number"
+    label="Age"
+    required
+    validation={{ min: 18, max: 100 }}
+    showIf={(values) => values.country === 'US'}
+  />
+
+  <FormBuilder.Submit>Submit</FormBuilder.Submit>
+  <FormBuilder.Reset>Reset</FormBuilder.Reset>
+</FormBuilder>
+```
+
+**提示**：
+- 使用children as function传递表单API
+- 实现字段验证逻辑
+- 条件渲染字段
+- 动态管理字段状态
+
+</Expandable>
+
+### 练习3：实现权限控制组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 角色权限：admin, user, guest
+- 条件渲染：基于权限显示/隐藏
+- 降级内容：权限不足时显示替代内容
+- 权限继承：支持自定义权限检查
+
+**实现要求**：
+```jsx
+<PermissionProvider user={currentUser}>
+  <PermissionGate required="admin">
+    <AdminPanel />
+  </PermissionGate>
+
+  <PermissionGate required="user" fallback={<GuestMessage />}>
+    <UserDashboard />
+  </PermissionGate>
+
+  <PermissionGate
+    required={['admin', 'moderator']}
+    renderUnauthorized={() => <NoAccess />}
+  >
+    <ModerationTools />
+  </PermissionGate>
+</PermissionProvider>
+```
+
+**提示**：
+- 使用Context传递用户权限
+- 实现权限检查逻辑
+- 处理多种权限组合
+- 提供灵活的降级策略
+
+</Expandable>
+
+### 练习4：实现无限滚动列表
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 自动加载更多数据
+- 加载状态显示
+- 错误处理和重试
+- 虚拟化支持
+
+**实现要求**：
+```jsx
+<InfiniteList
+  fetchMore={loadMore}
+  hasMore={hasMore}
+  loading={isLoading}
+  error={error}
+  onRetry={retry}
+>
+  {items.map(item => (
+    <ListItem key={item.id} item={item} />
+  ))}
+</InfiniteList>
+```
+
+**提示**：
+- 使用Intersection Observer
+- React.Children处理列表项
+- 状态管理：加载、错误、完成
+- 性能优化：虚拟滚动
+
+</Expandable>
+
+---
+
+## 9. Children模式与其他模式
+
+### 9.1 Children vs Render Props
+
+<Compare>
+
+```jsx
+// Children as Function
+<MouseTracker>
+  {(position) => (
+    <div style={{ position: 'absolute', left: position.x, top: position.y }}>
+      Cat
+    </div>
+  )}
+</MouseTracker>
+
+// Render Props
+<MouseTracker render={(position) => (
+  <div style={{ position: 'absolute', left: position.x, top: position.y }}>
+    Cat
+  </div>
+)} />
+
+// 对比
+// ✅ Children更简洁
+// ✅ 更容易嵌套
+// ❌ 命名不够明确
+// ❌ 与组件属性冲突时需使用this.props.children
+```
+
+</Compare>
+
+### 9.2 Children vs HOC
+
+<Compare>
+
+```jsx
+// Children模式
+<DataProvider data={data}>
+  {(processedData) => <Component data={processedData} />}
+</DataProvider>
+
+// HOC模式
+const EnhancedComponent = withData(Component);
+return <EnhancedComponent data={data} />;
+
+// 对比
+// ✅ Children更灵活
+// ✅ 组件嵌套更自然
+// ❌ 重复嵌套时代码可读性下降
+// ❌ 不支持静态分析
+```
+
+</Compare>
+
+### 9.3 Children vs Context
+
+<Compare>
+
+```jsx
+// Children模式传递数据
+<ThemeProvider>
+  {(theme) => <App theme={theme} />}
+</ThemeProvider>
+
+// Context模式
+<App />
+
+// 对比
+// ✅ Children更明确：数据流向清晰
+// ✅ 避免上下文污染
+// ❌ 需要层层传递
+// ❌ 深层嵌套时繁琐
+```
+
+</Compare>
+
+### 9.4 组合使用
+
+<CodeBlock>
+
+```jsx
+// 组合Children和Context
+function EnhancedProvider({ children }) {
+  return (
+    <DataContext.Provider value={data}>
+      <UIContext.Provider value={uiState}>
+        {children}
+      </UIContext.Provider>
+    </DataContext.Provider>
+  );
+}
+
+// 组合Children和HOC
+function DataBoundComponent({ children }) {
+  const data = useData();
+  return children(data);
+}
+
+// 组合Children和Render Props
+<ContextProvider>
+  {(context) => (
+    <RenderPropsComponent
+      render={(data) => <FinalComponent context={context} data={data} />}
+    />
+  )}
+</ContextProvider>
+```
+
+</CodeBlock>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ children是组件接收的特殊prop，包含JSX标签间的所有内容
+- ✅ React.Children API提供安全的children操作方法
+- ✅ children as function模式实现灵活的内容渲染
+- ✅ React.Children.map/forEach用于安全遍历
+- ✅ React.Children.only验证单个子元素
+- ✅ 复合组件大量使用Children模式
+- ✅ children可以传递任何类型的内容
+- ✅ 使用React.Children避免直接操作children数组
+- ✅ 合理使用children提升组件复用性
+- ✅ 注意children的key属性和性能优化
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **安全操作** - 始终使用React.Children处理children
+2. **合理使用** - 简单内容用props，复杂逻辑用children as function
+3. **性能优化** - 缓存处理后的children，避免重复计算
+4. **类型安全** - TypeScript明确定义children类型
+5. **key处理** - 遍历children时始终传递key
+6. **验证输入** - 验证children类型和结构
+7. **文档完整** - 记录children的期望类型和使用方式
+8. **测试覆盖** - 测试各种children场景
+
+</BestPractices>
+
+### 适用场景
+
+<BestPractices>
+
+**推荐使用**：
+- 复合组件（Tabs、Accordion、Modal）
+- 渲染函数模式
+- 条件渲染优化
+- 动态内容组合
+- 布局组件
+
+**谨慎使用**：
+- 简单的内容传递
+- 深层嵌套
+- 与现有API冲突
+- 性能敏感场景
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了Children模式，接下来可以学习：
+
+1. **[Props Getters模式](props-getters)** - 灵活的Props传递模式
+2. **[受控与非受控](../advanced/controlled-uncontrolled)** - 表单组件模式
+3. **[组合 vs 继承](../advanced/composition-vs-inheritance)** - React设计哲学
+4. **[组件组合模式](../basics/compound-components)** - 深入复合组件
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [React Children](https://react.dev/reference/react) - React官方文档
+- [Composition vs Inheritance](https://react.dev/learn/thinking-in-react) - 组合模式
+- [Children in JSX](https://react.dev/learn/writing-markup-with-jsx#children-in-jsx) - JSX中的Children
+
+### 推荐阅读
+
+- [React Children的陷阱与技巧](https://kentcdodds.com/blog/) - 高级使用技巧
+- [Render Props模式](https://reactpatterns.com/) - 渲染属性模式
+- [复合组件设计](https://www.smashingmagazine.com/) - 组件设计指南
+
+### 相关话题
+
+- [React.Children API](https://react.dev/reference/react) - Children API详解
+- [组件组合](https://react.dev/learn/thinking-in-react) - 组合思维
+- [Render Props](render-props) - 渲染属性模式
+
+---
+
+[← 上一章：错误边界](error-boundaries) | [下一章：Props Getters模式 →](props-getters)

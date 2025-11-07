@@ -1,0 +1,1811 @@
+# Redux基础 - 工业级状态管理解决方案
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+Redux是React生态系统中最成熟的状态管理解决方案，它为JavaScript应用提供了可预测的状态容器。虽然学习曲线相对较陡，但Redux提供了强大的时间旅行调试、中间件支持和不可变数据更新，使其成为复杂企业级应用的首选。
+
+## 本章学习目标
+
+- 理解Redux的核心概念：Store、Action、Reducer
+- 掌握Redux Toolkit的现代用法
+- 学会使用Redux进行状态管理
+- 理解不可变数据更新的重要性
+- 掌握Redux DevTools的使用
+- 学会使用Redux中间件处理副作用
+- 理解Redux的异步数据流
+- 掌握Redux最佳实践和常见模式
+- 理解Redux与其他状态管理方案的对比
+- 学会在大型项目中组织Redux代码
+
+---
+
+## 1. Redux核心概念
+
+Redux基于三个基本原则：单一数据源、状态是只读的、使用纯函数修改状态。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心理念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>单一数据源</strong> - 整个应用的状态存储在一个JavaScript对象中<br />
+    <strong>状态是只读的</strong> - 只能通过Action来改变状态<br />
+    <strong>使用纯函数修改</strong> - Reducer必须是纯函数
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// Redux核心概念示例
+// 1. Action - 描述发生了什么的对象
+const increment = {
+  type: 'counter/increment',
+  payload: 1
+};
+
+const addTodo = {
+  type: 'todos/addTodo',
+  payload: {
+    id: 1,
+    text: 'Learn Redux',
+    completed: false
+  }
+};
+
+// 2. Reducer - 根据Action更新状态的纯函数
+function counterReducer(state = 0, action) {
+  switch (action.type) {
+    case 'counter/increment':
+      return state + action.payload;
+    default:
+      return state;
+  }
+}
+
+function todosReducer(state = [], action) {
+  switch (action.type) {
+    case 'todos/addTodo':
+      return [...state, action.payload];
+    default:
+      return state;
+  }
+}
+
+// 3. Store - 存储状态的地方
+import { createStore } from 'redux';
+
+const store = createStore(counterReducer);
+
+// 4. 获取状态
+console.log(store.getState()); // 0
+
+// 5. 监听状态变化
+store.subscribe(() => {
+  console.log('State changed:', store.getState());
+});
+
+// 6. 派发Action
+store.dispatch(increment); // State: 1
+store.dispatch(increment); // State: 2
+```
+
+</CodeBlock>
+
+### 1.1 Redux工作流程
+
+<Grid>
+
+<div>
+  <h4>数据流向</h4>
+  <ol>
+    <li>1. 用户与UI交互</li>
+    <li>2. 组件调用 store.dispatch(action)</li>
+    <li>3. Redux调用 reducer(oldState, action)</li>
+    <li>4. reducer返回新状态</li>
+    <li>5. 通知所有订阅者</li>
+    <li>6. UI根据新状态重新渲染</li>
+  </ol>
+</div>
+
+<div>
+  <h4>关键组件</h4>
+  <ul>
+    <li><strong>Action</strong> - 事件对象</li>
+    <li><strong>Action Creator</strong> - 创建Action的函数</li>
+    <li><strong>Reducer</strong> - 状态更新函数</li>
+    <li><strong>Store</strong> - 状态容器</li>
+    <li><strong>Dispatch</strong> - 派发Action的方法</li>
+    <li><strong>Subscribe</strong> - 监听状态变化</li>
+  </ul>
+</div>
+
+</Grid>
+
+<CodeBlock>
+
+```jsx
+// Action Creator示例
+// 传统的Action Creator
+function addTodo(text) {
+  return {
+    type: 'todos/addTodo',
+    payload: {
+      id: Date.now(),
+      text,
+      completed: false
+    }
+  };
+}
+
+// 使用
+store.dispatch(addTodo('Learn Redux'));
+
+// Redux Toolkit的createAction（更现代的方式）
+import { createAction } from '@reduxjs/toolkit';
+
+const addTodo = createAction('todos/addTodo', (text) => {
+  return {
+    payload: {
+      id: Date.now(),
+      text,
+      completed: false
+    }
+  };
+});
+
+// 使用方式相同，但更强大
+store.dispatch(addTodo('Learn Redux Toolkit'));
+```
+
+</CodeBlock>
+
+---
+
+## 2. Redux Toolkit - 现代Redux
+
+Redux Toolkit是官方推荐的使用Redux的方式，它简化了配置，减少了样板代码。
+
+<CodeBlock>
+
+```jsx
+// 使用Redux Toolkit创建Store
+import { configureStore } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+
+// 1. 创建Slice
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: {
+    value: 0
+  },
+  reducers: {
+    increment: (state) => {
+      state.value += 1;
+    },
+    decrement: (state) => {
+      state.value -= 1;
+    },
+    incrementByAmount: (state, action) => {
+      state.value += action.payload;
+    }
+  }
+});
+
+const { actions, reducer } = counterSlice;
+const { increment, decrement, incrementByAmount } = actions;
+
+// 2. 创建Store
+const store = configureStore({
+  reducer: {
+    counter: reducer
+  }
+});
+
+// 3. 使用
+store.dispatch(increment()); // { value: 1 }
+store.dispatch(incrementByAmount(5)); // { value: 6 }
+store.dispatch(decrement()); // { value: 5 }
+```
+
+</CodeBlock>
+
+### 2.1 多个Slice组合
+
+<CodeBlock>
+
+```jsx
+// 完整的Redux Toolkit示例
+import { configureStore } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+
+// 1. Counter Slice
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { value: 0 },
+  reducers: {
+    increment: (state) => { state.value += 1; },
+    decrement: (state) => { state.value -= 1; },
+    incrementByAmount: (state, action) => {
+      state.value += action.payload;
+    }
+  }
+});
+
+// 2. Todos Slice
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: (state, action) => {
+      state.push({
+        id: Date.now(),
+        text: action.payload,
+        completed: false
+      });
+    },
+    toggleTodo: (state, action) => {
+      const todo = state.find(t => t.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed;
+      }
+    },
+    removeTodo: (state, action) => {
+      return state.filter(t => t.id !== action.payload);
+    }
+  }
+});
+
+// 3. User Slice
+const userSlice = createSlice({
+  name: 'user',
+  initialState: { name: '', age: 0 },
+  reducers: {
+    setUser: (state, action) => {
+      state.name = action.payload.name;
+      state.age = action.payload.age;
+    },
+    clearUser: (state) => {
+      state.name = '';
+      state.age = 0;
+    }
+  }
+});
+
+// 4. 组合所有Slice
+const store = configureStore({
+  reducer: {
+    counter: counterSlice.reducer,
+    todos: todosSlice.reducer,
+    user: userSlice.reducer
+  }
+});
+
+// 5. 导出actions
+export const { increment, decrement, incrementByAmount } = counterSlice.actions;
+export const { addTodo, toggleTodo, removeTodo } = todosSlice.actions;
+export const { setUser, clearUser } = userSlice.actions;
+
+// 6. 导出store
+export default store;
+
+// 7. 在组件中使用
+import { useDispatch, useSelector } from 'react-redux';
+import { increment, addTodo } from './store';
+
+function Counter() {
+  const count = useSelector(state => state.counter.value);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => dispatch(increment())}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 异步操作 - createAsyncThunk
+
+<CodeBlock>
+
+```jsx
+// 使用createAsyncThunk处理异步操作
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
+// 1. 创建异步Action
+export const fetchUsers = createAsyncThunk(
+  'users/fetchUsers',
+  async () => {
+    const response = await fetch('https://jsonplaceholder.typicode.com/users');
+    return await response.json();
+  }
+);
+
+// 2. 创建Slice
+const usersSlice = createSlice({
+  name: 'users',
+  initialState: {
+    items: [],
+    loading: false,
+    error: null
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchUsers.fulfilled, (state, action) => {
+        state.loading = false;
+        state.items = action.payload;
+      })
+      .addCase(fetchUsers.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
+  }
+});
+
+// 3. 在组件中使用
+function UsersList() {
+  const dispatch = useDispatch();
+  const { items, loading, error } = useSelector(state => state.users);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, [dispatch]);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+
+  return (
+    <ul>
+      {items.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 在React中使用Redux
+
+### 3.1 Provider设置
+
+<CodeBlock>
+
+```jsx
+// index.js - 应用入口
+import React from 'react';
+import ReactDOM from 'react-dom';
+import { Provider } from 'react-redux';
+import store from './store';
+import App from './App';
+
+ReactDOM.render(
+  <Provider store={store}>
+    <App />
+  </Provider>,
+  document.getElementById('root')
+);
+```
+
+</CodeBlock>
+
+### 3.2 useSelector和useDispatch
+
+<CodeBlock>
+
+```jsx
+// 使用React-Redux Hooks
+import { useSelector, useDispatch } from 'react-redux';
+import { increment, decrement } from './store';
+
+function Counter() {
+  // useSelector - 从Store读取数据
+  const count = useSelector(state => state.counter.value);
+  const todos = useSelector(state => state.todos);
+
+  // useDispatch - 派发Actions
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      <h1>Count: {count}</h1>
+      <button onClick={() => dispatch(increment())}>
+        +
+      </button>
+      <button onClick={() => dispatch(decrement())}>
+        -
+      </button>
+
+      <h2>Todos ({todos.length})</h2>
+      {todos.map(todo => (
+        <div key={todo.id}>
+          {todo.text} - {todo.completed ? 'Done' : 'Pending'}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 多个选择器
+
+<CodeBlock>
+
+```jsx
+// 选择器的高级用法
+import { useSelector } from 'react-redux';
+
+// 1. 基础选择器
+const count = useSelector(state => state.counter.value);
+
+// 2. 计算型选择器
+const totalTodos = useSelector(state => state.todos.length);
+const completedTodos = useSelector(state =>
+  state.todos.filter(t => t.completed).length
+);
+
+// 3. 选择器函数
+const selectUserById = (state, userId) =>
+  state.users.items.find(user => user.id === userId);
+
+function UserProfile({ userId }) {
+  const user = useSelector(state => selectUserById(state, userId));
+
+  if (!user) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>Email: {user.email}</p>
+    </div>
+  );
+}
+
+// 4. 使用reselect创建记忆化选择器
+import { createSelector } from '@reduxjs/toolkit';
+
+const selectTodos = state => state.todos;
+const selectFilter = state => state.filter;
+
+const selectFilteredTodos = createSelector(
+  [selectTodos, selectFilter],
+  (todos, filter) => {
+    switch (filter) {
+      case 'active':
+        return todos.filter(t => !t.completed);
+      case 'completed':
+        return todos.filter(t => t.completed);
+      default:
+        return todos;
+    }
+  }
+);
+
+function TodoList() {
+  const todos = useSelector(selectFilteredTodos);
+
+  return (
+    <ul>
+      {todos.map(todo => (
+        <li key={todo.id}>{todo.text}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 不可变数据更新
+
+Redux要求状态更新必须是不可变的，这意味着不能直接修改现有状态。
+
+<Compare>
+
+```jsx
+// ❌ 错误 - 直接修改状态
+function todosReducer(state = [], action) {
+  switch (action.type) {
+    case 'addTodo':
+      state.push({
+        id: Date.now(),
+        text: action.payload,
+        completed: false
+      });
+      return state; // 返回同一个数组引用！
+
+    case 'toggleTodo':
+      const todo = state.find(t => t.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed; // 直接修改
+      }
+      return state;
+
+    default:
+      return state;
+  }
+}
+
+// ✅ 正确 - 使用不可变更新
+function todosReducer(state = [], action) {
+  switch (action.type) {
+    case 'addTodo':
+      return [
+        ...state,
+        {
+          id: Date.now(),
+          text: action.payload,
+          completed: false
+        }
+      ];
+
+    case 'toggleTodo':
+      return state.map(todo =>
+        todo.id === action.payload
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      );
+
+    case 'removeTodo':
+      return state.filter(todo => todo.id !== action.payload);
+
+    default:
+      return state;
+  }
+}
+```
+
+</Compare>
+
+### 4.1 嵌套对象更新
+
+<CodeBlock>
+
+```jsx
+// 更新嵌套对象的模式
+function userReducer(state = { profile: { name: '', settings: {} } }, action) {
+  switch (action.type) {
+    case 'updateProfile':
+      return {
+        ...state,
+        profile: {
+          ...state.profile,
+          name: action.payload.name
+        }
+      };
+
+    case 'updateSettings':
+      return {
+        ...state,
+        profile: {
+          ...state.profile,
+          settings: {
+            ...state.profile.settings,
+            ...action.payload
+          }
+        }
+      };
+
+    case 'updateNestedSetting':
+      return {
+        ...state,
+        profile: {
+          ...state.profile,
+          settings: {
+            ...state.profile.settings,
+            theme: {
+              ...state.profile.settings.theme,
+              [action.payload.key]: action.payload.value
+            }
+          }
+        }
+      };
+
+    default:
+      return state;
+  }
+}
+```
+
+</CodeBlock>
+
+### 4.2 使用Immer简化不可变更新
+
+<CodeBlock>
+
+```jsx
+// Redux Toolkit内置Immer，可以直接"修改"状态
+import { createSlice } from '@reduxjs/toolkit';
+
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: (state, action) => {
+      // 看起来像在修改，但Immer会处理不可变更新
+      state.push({
+        id: Date.now(),
+        text: action.payload,
+        completed: false
+      });
+    },
+
+    toggleTodo: (state, action) => {
+      const todo = state.find(t => t.id === action.payload);
+      if (todo) {
+        todo.completed = !todo.completed;
+      }
+    },
+
+    removeTodo: (state, action) => {
+      // Immer的filter也支持
+      return state.filter(t => t.id !== action.payload);
+    }
+  }
+});
+
+// Immer会自动将"修改"转换为不可变更新
+// 等价于：
+// return [...state, newTodo];
+// return state.map(t => ...);
+// return state.filter(t => ...);
+```
+
+</CodeBlock>
+
+---
+
+## 5. 中间件
+
+中间件提供扩展Redux功能的能力，最常用的是处理异步操作。
+
+<CodeBlock>
+
+```jsx
+// 自定义中间件
+import { configureStore } from '@reduxjs/toolkit';
+
+// 日志中间件
+const loggerMiddleware = store => next => action => {
+  console.log('Dispatching:', action);
+  const result = next(action);
+  console.log('Next state:', store.getState());
+  return result;
+};
+
+// 异步中间件
+const asyncActionMiddleware = store => next => action => {
+  if (typeof action === 'function') {
+    return action(store.dispatch, store.getState);
+  }
+  return next(action);
+};
+
+// 创建Store时应用中间件
+const store = configureStore({
+  reducer: {
+    counter: counterReducer,
+    todos: todosReducer
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(
+      loggerMiddleware,
+      asyncActionMiddleware
+    )
+});
+
+// 使用
+store.dispatch((dispatch, getState) => {
+  dispatch({ type: 'fetch/start' });
+
+  fetch('/api/data')
+    .then(response => response.json())
+    .then(data => dispatch({ type: 'fetch/success', payload: data }))
+    .catch(error => dispatch({ type: 'fetch/error', error }));
+});
+```
+
+</CodeBlock>
+
+### 5.1 Redux Thunk - 最流行的中间件
+
+<CodeBlock>
+
+```jsx
+// 使用Redux Thunk处理异步
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
+
+// 方式1：使用createAsyncThunk
+export const fetchUser = createAsyncThunk(
+  'user/fetchUser',
+  async (userId) => {
+    const response = await axios.get(`/api/users/${userId}`);
+    return response.data;
+  }
+);
+
+const userSlice = createSlice({
+  name: 'user',
+  initialState: { data: null, status: 'idle', error: null },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUser.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(fetchUser.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.data = action.payload;
+      })
+      .addCase(fetchUser.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message;
+      });
+  }
+});
+
+// 方式2：使用Thunk手动处理
+export const fetchUserManual = (userId) => {
+  return async (dispatch, getState) => {
+    dispatch({ type: 'user/fetchUser/pending' });
+
+    try {
+      const response = await axios.get(`/api/users/${userId}`);
+      dispatch({
+        type: 'user/fetchUser/fulfilled',
+        payload: response.data
+      });
+    } catch (error) {
+      dispatch({
+        type: 'user/fetchUser/rejected',
+        error: error.message
+      });
+    }
+  };
+};
+
+// 在组件中使用
+function UserProfile({ userId }) {
+  const dispatch = useDispatch();
+  const { data, status, error } = useSelector(state => state.user);
+
+  useEffect(() => {
+    dispatch(fetchUser(userId));
+  }, [userId, dispatch]);
+
+  if (status === 'loading') return <Spinner />;
+  if (status === 'failed') return <Error>{error}</Error>;
+
+  return <div>{data.name}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. Redux DevTools
+
+Redux DevTools提供了强大的调试功能，包括时间旅行和状态检查。
+
+<CodeBlock>
+
+```jsx
+// 配置Redux DevTools
+import { configureStore } from '@reduxjs/toolkit';
+
+const store = configureStore({
+  reducer: {
+    counter: counterReducer,
+    todos: todosReducer
+  },
+  // DevTools配置
+  devTools: process.env.NODE_ENV !== 'production'
+});
+
+// 或者更高级的配置
+const store = configureStore({
+  reducer: {
+    counter: counterReducer,
+    todos: todosReducer
+  },
+  devTools: {
+    name: 'My App',
+    trace: true,
+    traceLimit: 25
+  }
+});
+
+// 在浏览器中安装Redux DevTools扩展
+// 然后可以：
+// 1. 查看所有派发的action
+// 2. 查看每个action后的状态变化
+// 3. 时间旅行 - 撤销和重做action
+// 4. 手动派发action
+// 5. 导出和导入状态
+```
+
+</CodeBlock>
+
+---
+
+## 7. 文件结构组织
+
+### 7.1 传统方式（按类型组织）
+
+<CodeBlock>
+
+```jsx
+// 文件结构
+src/
+├── store/
+│   ├── index.js          // Store配置
+│   ├── counter/
+│   │   ├── actions.js
+│   │   ├── reducer.js
+│   │   └── selectors.js
+│   ├── todos/
+│   │   ├── actions.js
+│   │   ├── reducer.js
+│   │   └── selectors.js
+│   └── user/
+│       ├── actions.js
+│       ├── reducer.js
+│       └── selectors.js
+└── components/
+    ├── Counter.js
+    ├── TodoList.js
+    └── UserProfile.js
+
+// store/counter/actions.js
+const increment = () => ({ type: 'counter/increment' });
+const decrement = () => ({ type: 'counter/decrement' });
+
+// store/counter/reducer.js
+const counterReducer = (state = 0, action) => {
+  switch (action.type) {
+    case 'counter/increment':
+      return state + 1;
+    case 'counter/decrement':
+      return state - 1;
+    default:
+      return state;
+  }
+};
+
+// store/counter/selectors.js
+const selectCount = state => state.counter;
+
+// store/index.js
+import { createStore } from 'redux';
+import counterReducer from './counter/reducer';
+import todosReducer from './todos/reducer';
+
+const store = createStore({
+  counter: counterReducer,
+  todos: todosReducer
+});
+
+export default store;
+```
+
+</CodeBlock>
+
+### 7.2 现代方式（按特性组织 - 推荐）
+
+<CodeBlock>
+
+```jsx
+// 文件结构 - Redux Toolkit
+src/
+├── store/
+│   ├── index.js              // Store配置
+│   ├── counter/
+│   │   └── counterSlice.js   // 包含actions和reducer
+│   ├── todos/
+│   │   └── todosSlice.js
+│   └── user/
+│       └── userSlice.js
+└── components/
+    ├── Counter.js
+    ├── TodoList.js
+    └── UserProfile.js
+
+// store/counter/counterSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { value: 0 },
+  reducers: {
+    increment: (state) => { state.value += 1; },
+    decrement: (state) => { state.value -= 1; }
+  }
+});
+
+export const { increment, decrement } = counterSlice.actions;
+export default counterSlice.reducer;
+
+// store/todos/todosSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: (state, action) => {
+      state.push({
+        id: Date.now(),
+        text: action.payload,
+        completed: false
+      });
+    }
+  }
+});
+
+export const { addTodo } = todosSlice.actions;
+export default todosSlice.reducer;
+
+// store/index.js
+import { configureStore } from '@reduxjs/toolkit';
+import counterReducer from './counter/counterSlice';
+import todosReducer from './todos/todosSlice';
+
+const store = configureStore({
+  reducer: {
+    counter: counterReducer,
+    todos: todosReducer
+  }
+});
+
+export default store;
+```
+
+</CodeBlock>
+
+---
+
+## 8. 实际应用案例
+
+### 8.1 购物车
+
+<CodeBlock>
+
+```jsx
+// 购物车功能实现
+import { createSlice, createSelector } from '@reduxjs/toolkit';
+import { createAsyncThunk } from '@reduxjs/toolkit';
+
+const initialState = {
+  items: [],
+  total: 0,
+  loading: false,
+  error: null
+};
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState,
+  reducers: {
+    addItem: (state, action) => {
+      const existingItem = state.items.find(
+        item => item.id === action.payload.id
+      );
+
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        state.items.push({ ...action.payload, quantity: 1 });
+      }
+    },
+
+    removeItem: (state, action) => {
+      state.items = state.items.filter(
+        item => item.id !== action.payload
+      );
+    },
+
+    updateQuantity: (state, action) => {
+      const { id, quantity } = action.payload;
+      const item = state.items.find(item => item.id === id);
+      if (item) {
+        item.quantity = quantity;
+      }
+    },
+
+    clearCart: (state) => {
+      state.items = [];
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(checkout.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(checkout.fulfilled, (state) => {
+        state.loading = false;
+        state.items = [];
+      })
+      .addCase(checkout.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      });
+  }
+});
+
+// 异步操作
+export const checkout = createAsyncThunk(
+  'cart/checkout',
+  async (_, { getState }) => {
+    const cart = getState().cart;
+    const response = await api.checkout(cart.items);
+    return response.data;
+  }
+);
+
+// 选择器
+const selectCartItems = state => state.cart.items;
+const selectCartTotal = createSelector(
+  [selectCartItems],
+  (items) => items.reduce((total, item) =>
+    total + (item.price * item.quantity), 0
+  )
+);
+
+export const { addItem, removeItem, updateQuantity, clearCart } =
+  cartSlice.actions;
+
+export { selectCartItems, selectCartTotal };
+
+// 在组件中使用
+function Cart() {
+  const items = useSelector(selectCartItems);
+  const total = useSelector(selectCartTotal);
+  const dispatch = useDispatch();
+
+  const handleRemove = (id) => {
+    dispatch(removeItem(id));
+  };
+
+  return (
+    <div>
+      <h2>Cart ({items.length} items)</h2>
+      {items.map(item => (
+        <div key={item.id}>
+          {item.name} - ${item.price} x {item.quantity}
+          <button onClick={() => handleRemove(item.id)}>
+            Remove
+          </button>
+        </div>
+      ))}
+      <div>Total: ${total.toFixed(2)}</div>
+      <button onClick={() => dispatch(clearCart())}>
+        Clear Cart
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.2 用户认证状态
+
+<CodeBlock>
+
+```jsx
+// 用户认证实现
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+
+const initialState = {
+  user: null,
+  token: localStorage.getItem('token'),
+  isAuthenticated: false,
+  loading: false,
+  error: null
+};
+
+export const login = createAsyncThunk(
+  'auth/login',
+  async (credentials, { rejectWithValue }) => {
+    try {
+      const response = await api.login(credentials);
+      localStorage.setItem('token', response.token);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.response.data);
+    }
+  }
+);
+
+export const logout = createAsyncThunk('auth/logout', async () => {
+  localStorage.removeItem('token');
+});
+
+const authSlice = createSlice({
+  name: 'auth',
+  initialState,
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(login.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(login.fulfilled, (state, action) => {
+        state.loading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload?.message;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        state.isAuthenticated = false;
+        state.user = null;
+        state.token = null;
+      });
+  }
+});
+
+// Protected Route示例
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading } = useSelector(state => state.auth);
+
+  if (loading) return <Spinner />;
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+}
+
+export const { clearError } = authSlice.actions;
+export default authSlice.reducer;
+```
+
+</CodeBlock>
+
+---
+
+## 9. 性能优化
+
+### 9.1 使用Reselect创建记忆化选择器
+
+<CodeBlock>
+
+```jsx
+// 记忆化选择器 - 避免不必要的重渲染
+import { createSelector } from '@reduxjs/toolkit';
+
+const selectTodos = state => state.todos;
+const selectFilter = state => state.filter;
+
+// 基础选择器
+const selectFilteredTodos = createSelector(
+  [selectTodos, selectFilter],
+  (todos, filter) => {
+    console.log('Computing filtered todos');
+    switch (filter) {
+      case 'completed':
+        return todos.filter(t => t.completed);
+      case 'active':
+        return todos.filter(t => !t.completed);
+      default:
+        return todos;
+    }
+  }
+);
+
+// 复杂计算
+const selectStats = createSelector(
+  [selectTodos],
+  (todos) => {
+    const total = todos.length;
+    const completed = todos.filter(t => t.completed).length;
+    const active = total - completed;
+
+    return { total, completed, active, percent: total ? (completed / total) * 100 : 0 };
+  }
+);
+
+function TodoStats() {
+  const todos = useSelector(selectFilteredTodos);
+  const stats = useSelector(selectStats);
+
+  // 只在todos或filter变化时重新渲染
+  return (
+    <div>
+      <p>Total: {stats.total}</p>
+      <p>Completed: {stats.completed}</p>
+      <p>Active: {stats.active}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.2 组件优化
+
+<CodeBlock>
+
+```jsx
+// 使用React.memo优化组件
+import { memo, useCallback } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { toggleTodo } from './store';
+
+// 组件本身不优化 - 每次父组件重渲染都会重新渲染
+function TodoItem({ todo, onToggle }) {
+  return (
+    <li>
+      <span
+        style={{
+          textDecoration: todo.completed ? 'line-through' : 'none'
+        }}
+        onClick={() => onToggle(todo.id)}
+      >
+        {todo.text}
+      </span>
+    </li>
+  );
+}
+
+// 使用React.memo优化
+const MemoizedTodoItem = memo(TodoItem);
+
+function TodoList() {
+  const todos = useSelector(state => state.todos);
+  const dispatch = useDispatch();
+
+  // 使用useCallback避免函数重新创建
+  const handleToggle = useCallback((id) => {
+    dispatch(toggleTodo(id));
+  }, [dispatch]);
+
+  return (
+    <ul>
+      {todos.map(todo => (
+        <MemoizedTodoItem
+          key={todo.id}
+          todo={todo}
+          onToggle={handleToggle}
+        />
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 10. 最佳实践
+
+<BestPractices>
+
+```jsx
+// Redux最佳实践
+
+// 1. 保持State扁平化
+// ❌ 不好的结构
+const state = {
+  user: {
+    profile: {
+      personal: {
+        name: '',
+        email: ''
+      }
+    }
+  }
+};
+
+// ✅ 好的结构
+const state = {
+  user: {
+    name: '',
+    email: ''
+  }
+};
+
+// 2. 使用Symbol作为Type常量
+const REdux = require('redux');
+const { createSlice } = require('@reduxjs/toolkit');
+
+const actionTypes = {
+  increment: Symbol('counter/increment'),
+  decrement: Symbol('counter/decrement')
+};
+
+// 3. 保持Action简单
+// ❌ 复杂Action
+const action = {
+  type: 'todos/update',
+  payload: {
+    updateType: 'toggle',
+    todoId: 1,
+    newData: { completed: true }
+  }
+};
+
+// ✅ 简单Action
+const toggleTodo = createAction('todos/toggle', (id) => ({
+  payload: id
+}));
+
+// 4. 使用Redux Toolkit
+// ❌ 传统Redux（样板代码多）
+const INCREMENT = 'counter/increment';
+function counterReducer(state = 0, action) {
+  if (action.type === INCREMENT) return state + 1;
+  return state;
+}
+
+// ✅ Redux Toolkit（简洁）
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: 0,
+  reducers: {
+    increment: (state) => state + 1
+  }
+});
+
+// 5. 适当拆分State
+// ❌ 所有State在一个Slice
+const appSlice = createSlice({
+  name: 'app',
+  initialState: {
+    counter: 0,
+    todos: [],
+    user: null
+  },
+  reducers: {
+    increment: (state) => { state.counter += 1; }
+    // 混合的reducer难以维护
+  }
+});
+
+// ✅ 每个特性一个Slice
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: 0,
+  reducers: { increment: (state) => state + 1 }
+});
+
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: (state, action) => { state.push(action.payload); }
+  }
+});
+
+// 6. 使用异步Thunk
+// ❌ 在组件中处理异步
+function Component() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch('/api/data')
+      .then(res => res.json())
+      .then(setData);
+  }, []);
+}
+
+// ✅ 在Redux中处理异步
+const fetchData = createAsyncThunk('data/fetch', async () => {
+  const response = await fetch('/api/data');
+  return response.json();
+});
+```
+
+</BestPractices>
+
+---
+
+## 11. Redux vs Context vs 其他方案
+
+<Table>
+
+| 方案 | 适用场景 | 优点 | 缺点 | 性能 |
+|------|----------|------|------|------|
+| **Redux** | 复杂应用、团队协作、时间旅行调试 | 成熟的生态系统、强大的DevTools、中间件支持、可预测的状态管理 | 学习曲线陡峭、样板代码多（虽然RTK改善了） | 高（需要正确优化） |
+| **Context** | 简单到中等复杂度全局状态 | React内置、无需额外依赖、使用简单 | 性能需要手动优化、频繁更新有性能问题 | 中等 |
+| **Zustand** | 轻量级应用、简单状态管理 | API简洁、样板代码少、性能好 | 生态系统小、社区支持少 | 高 |
+| **MobX** | 响应式编程、复杂状态依赖 | 自动追踪、响应式更新、代码简洁 | 需要理解响应式概念、调试困难 | 高 |
+| **Recoil** | Facebook内部使用、原子化状态 | 原子化、依赖追踪、灵活 | 不稳定、文档少 | 中等 |
+| **Jotai** | 细粒度状态、复杂依赖 | 原子化、TypeScript友好、依赖追踪精细 | 概念新颖、调试困难 | 高 |
+
+</Table>
+
+<CodeBlock>
+
+```jsx
+// 选择决策指南
+function chooseStateManagement(requirements) {
+  const {
+    teamSize,
+    complexity,
+    needTimeTravel,
+    needMiddleware,
+    learningCurve
+  } = requirements;
+
+  // 小团队，简单应用
+  if (teamSize <= 3 && complexity === 'low') {
+    if (requirements.preference === 'simple') {
+      return 'Context API';
+    }
+    return 'Zustand';
+  }
+
+  // 大团队，复杂应用
+  if (teamSize > 5 || complexity === 'high') {
+    if (needTimeTravel || needMiddleware) {
+      return 'Redux Toolkit';
+    }
+    return 'Zustand or Redux Toolkit';
+  }
+
+  // 需要高级功能
+  if (needTimeTravel || needDevTools) {
+    return 'Redux Toolkit';
+  }
+
+  if (needMiddleware) {
+    return 'Zustand';
+  }
+
+  // 默认推荐
+  return 'Context API';
+}
+```
+
+</CodeBlock>
+
+---
+
+## 12. 实践练习
+
+### 练习1：实现待办事项应用
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 添加、删除、切换待办事项
+- 过滤待办事项（全部、活跃、已完成）
+- 统计信息（总数、已完成数、活跃数）
+- 本地存储持久化
+
+**实现要求**：
+```javascript
+// store配置
+import { configureStore } from '@reduxjs/toolkit';
+
+// 创建todos slice
+const todosSlice = createSlice({
+  name: 'todos',
+  initialState: [],
+  reducers: {
+    addTodo: (state, action) => { /* ... */ },
+    toggleTodo: (state, action) => { /* ... */ },
+    removeTodo: (state, action) => { /* ... */ },
+    updateTodo: (state, action) => { /* ... */ }
+  }
+});
+
+// 创建filters slice
+const filtersSlice = createSlice({
+  name: 'filter',
+  initialState: 'all',
+  reducers: {
+    setFilter: (state, action) => { /* ... */ }
+  }
+});
+
+// 组合store
+const store = configureStore({
+  reducer: {
+    todos: todosSlice.reducer,
+    filter: filtersSlice.reducer
+  }
+});
+```
+
+**提示**：
+- 使用createSlice简化代码
+- 考虑使用createSelector优化选择器
+- 添加localStorage持久化
+- 使用React.memo优化组件
+
+</Expandable>
+
+### 练习2：实现购物车
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 添加商品到购物车
+- 修改商品数量
+- 删除商品
+- 计算总价和数量
+- 清空购物车
+
+**实现要求**：
+```javascript
+// 购物车Slice
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState: {
+    items: [],
+    total: 0
+  },
+  reducers: {
+    addItem: (state, action) => { /* 添加商品 */ },
+    removeItem: (state, action) => { /* 删除商品 */ },
+    updateQuantity: (state, action) => { /* 更新数量 */ },
+    clearCart: (state) => { /* 清空购物车 */ }
+  }
+});
+
+// 异步操作 - 结算
+export const checkout = createAsyncThunk(
+  'cart/checkout',
+  async (cartItems) => {
+    const response = await api.checkout(cartItems);
+    return response.data;
+  }
+);
+```
+
+**提示**：
+- 处理商品重复添加
+- 使用createSelector计算总价
+- 购物车数据持久化到localStorage
+
+</Expandable>
+
+### 练习3：实现用户认证系统
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 用户登录/注册
+- 用户信息显示
+- 登录状态持久化
+- 受保护的路由
+- 登出功能
+
+**实现要求**：
+```javascript
+// 认证Slice
+const authSlice = createSlice({
+  name: 'auth',
+  initialState: {
+    user: null,
+    token: localStorage.getItem('token'),
+    isAuthenticated: false,
+    loading: false,
+    error: null
+  },
+  reducers: {
+    // 同步actions
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(login.pending, (state) => { /* ... */ })
+      .addCase(login.fulfilled, (state, action) => { /* ... */ })
+      .addCase(login.rejected, (state, action) => { /* ... */ });
+  }
+});
+
+// 异步thunk
+export const login = createAsyncThunk(
+  'auth/login',
+  async (credentials) => {
+    const response = await api.login(credentials);
+    localStorage.setItem('token', response.token);
+    return response;
+  }
+);
+
+// ProtectedRoute组件
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useSelector(state => state.auth);
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+}
+```
+
+**提示**：
+- 使用axios拦截器自动添加token
+- 处理token过期
+- 错误处理和用户提示
+
+</Expandable>
+
+### 练习4：实现数据获取和缓存
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 异步获取数据
+- 加载状态
+- 错误处理
+- 缓存数据
+- 手动刷新
+
+**实现要求**：
+```javascript
+// 数据Slice
+const dataSlice = createSlice({
+  name: 'data',
+  initialState: {
+    items: [],
+    loading: false,
+    error: null,
+    lastFetched: null
+  },
+  reducers: {},
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchData.pending, (state) => { /* ... */ })
+      .addCase(fetchData.fulfilled, (state, action) => { /* ... */ })
+      .addCase(fetchData.rejected, (state, action) => { /* ... */ });
+  }
+});
+
+// 异步thunk with cache
+export const fetchData = createAsyncThunk(
+  'data/fetch',
+  async (force = false, { getState }) => {
+    const { lastFetched } = getState().data;
+
+    // 如果缓存存在且未过期，且不强制刷新
+    if (lastFetched && !force) {
+      const timeElapsed = Date.now() - lastFetched;
+      if (timeElapsed < 5 * 60 * 1000) { // 5分钟
+        return null; // 不重新获取
+      }
+    }
+
+    const response = await api.getData();
+    return response;
+  }
+);
+```
+
+**提示**：
+- 实现缓存策略
+- 添加刷新按钮
+- 处理网络错误
+
+</Expandable>
+
+---
+
+## 13. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Redux基于三个原则：单一数据源、状态是只读的、使用纯函数修改
+- ✅ Redux Toolkit是现代Redux开发的标准方式
+- ✅ createSlice简化了Action和Reducer的创建
+- ✅ 不可变性是Redux的核心要求
+- ✅ 中间件扩展了Redux的功能，特别是处理异步操作
+- ✅ Redux DevTools提供了强大的调试功能
+- ✅ 选择器帮助优化性能和代码复用
+- ✅ 按特性组织文件结构是最好的实践
+- ✅ Reselect提供记忆化选择器，避免不必要的计算
+- ✅ Redux适用于复杂应用和大型团队
+
+</Checklist>
+
+### Redux最佳实践
+
+<BestPractices>
+
+1. **使用Redux Toolkit** - 简化代码，减少样板
+2. **保持State扁平** - 避免深层嵌套
+3. **使用Action Creator** - 避免重复和错误
+4. **适当拆分Slice** - 按功能模块组织
+5. **使用异步Thunk** - 集中处理副作用
+6. **使用选择器** - 优化性能和代码复用
+7. **使用Reselect** - 记忆化复杂计算
+8. **配置DevTools** - 提高调试效率
+9. **文件结构清晰** - 按特性组织而不是按类型
+10. **测试覆盖率** - 测试reducers、actions和选择器
+
+</BestPractices>
+
+###何时使用Redux
+
+<BestPractices>
+
+**推荐使用Redux的场景**：
+- 复杂的大型应用
+- 需要时间旅行调试
+- 团队协作开发
+- 需要中间件处理副作用
+- 状态更新逻辑复杂
+- 需要强大的开发者工具
+- 需要状态历史记录
+- 应用需要严格的架构
+
+**可以考虑其他方案的场景**：
+- 简单的个人项目
+- 快速原型开发
+- 状态管理需求简单
+- 团队不熟悉Redux
+- 性能要求极高
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了Redux基础，接下来可以学习：
+
+1. **[Zustand轻量方案](../zustand)** - 现代轻量级状态管理
+2. **[Jotai原子化状态](../jotai)** - 原子化状态管理
+3. **[Redux中间件深入]** - 高级Redux技巧
+4. **[状态管理性能优化]** - 性能优化最佳实践
+
+---
+
+## 14. 延伸阅读
+
+### 官方资源
+
+- [Redux官方文档](https://redux.js.org/) - Redux核心概念
+- [Redux Toolkit文档](https://redux-toolkit.js.org/) - 现代Redux开发
+- [React-Redux文档](https://react-redux.js.org/) - React集成指南
+
+### 推荐阅读
+
+- [Redux最佳实践](https://redux.js.org/style-guide/style-guide) - 官方风格指南
+- [Redux异步数据流](https://redux.js.org/tutorials/fundamentals/part-6-async-logic) - 深入异步
+- [Redux性能优化](https://redux.js.org/faq/performance) - 性能优化指南
+
+### 相关话题
+
+- [Context API](../context-api) - React内置状态管理
+- [Zustand](../zustand) - 轻量级替代方案
+- [状态管理对比] - 各方案对比分析
+- [Redux中间件] - 深入中间件开发
+
+---
+
+[← 上一章：Context API深度解析](../context-api) | [下一章：Zustand轻量方案 →](../zustand)

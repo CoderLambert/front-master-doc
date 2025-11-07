@@ -1,0 +1,2527 @@
+# 受控与非受控 - 表单状态管理模式
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+受控与非受控是React中处理表单数据的两种主要模式。受控组件将表单数据交由React组件的state管理，而非受控组件则让DOM自己维护表单数据。在本章中，我们将深入探讨这两种模式的概念、实现方式、最佳实践和实际应用场景。
+
+## 本章学习目标
+
+- 理解受控组件的概念和实现方式
+- 理解非受控组件的概念和实现方式
+- 掌握两种模式的优缺点对比
+- 学会在不同场景下选择合适的模式
+- 掌握混合模式的实现
+- 理解表单验证的两种处理方式
+- 掌握文件输入的特殊处理
+- 理解受控模式与状态管理库的关系
+
+---
+
+## 1. 什么是受控组件？
+
+受控组件是指由React组件的state完全控制其value和状态的表单元素。组件通过props接收数据，通过回调函数处理用户输入，数据流清晰可见。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>受控组件</strong>的值由React state管理。<strong>value</strong>属性从state获取，<strong>onChange</strong>事件更新state，形成单向数据流。React完全控制组件的显示值。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础受控组件
+function ControlledInput() {
+  // 1. state管理value
+  const [value, setValue] = useState('');
+
+  // 2. value从state获取
+  // 3. onChange更新state
+  return (
+    <input
+      value={value}                          // 受控：值来自state
+      onChange={(e) => setValue(e.target.value)}  // 受控：更新state
+      placeholder="Enter text"
+    />
+  );
+}
+
+// 使用受控组件
+function MyForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Form data:', formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        placeholder="Name"
+      />
+      <input
+        name="email"
+        type="email"
+        value={formData.email}
+        onChange={handleChange}
+        placeholder="Email"
+      />
+      <textarea
+        name="message"
+        value={formData.message}
+        onChange={handleChange}
+        placeholder="Message"
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 1.1 受控组件的特点
+
+<Grid>
+
+<div>
+  <h4>核心特征</h4>
+  <ul>
+    <li>✅ value从props传入</li>
+    <li>✅ 通过onChange事件更新</li>
+    <li>✅ React完全控制</li>
+    <li>✅ 状态统一管理</li>
+    <li>✅ 数据流清晰</li>
+  </ul>
+</div>
+
+<div>
+  <h4>适用场景</h4>
+  <ul>
+    <li>需要即时验证</li>
+    <li>需要条件禁用/启用</li>
+    <li>需要动态格式化</li>
+    <li>需要与其他组件同步</li>
+    <li>复杂表单逻辑</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 受控组件示例
+
+<CodeBlock>
+
+```jsx
+// 受控输入框
+function ControlledTextInput() {
+  const [text, setText] = useState('');
+
+  return (
+    <div>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+      <p>Current value: {text}</p>
+    </div>
+  );
+}
+
+// 受控复选框
+function ControlledCheckbox() {
+  const [isChecked, setIsChecked] = useState(false);
+
+  return (
+    <label>
+      <input
+        type="checkbox"
+        checked={isChecked}
+        onChange={(e) => setIsChecked(e.target.checked)}
+      />
+      I agree to the terms
+    </label>
+  );
+}
+
+// 受控选择框
+function ControlledSelect() {
+  const [selectedOption, setSelectedOption] = useState('option1');
+
+  return (
+    <select
+      value={selectedOption}
+      onChange={(e) => setSelectedOption(e.target.value)}
+    >
+      <option value="option1">Option 1</option>
+      <option value="option2">Option 2</option>
+      <option value="option3">Option 3</option>
+    </select>
+  );
+}
+
+// 受控单选按钮
+function ControlledRadio() {
+  const [gender, setGender] = useState('male');
+
+  return (
+    <div>
+      <label>
+        <input
+          type="radio"
+          name="gender"
+          value="male"
+          checked={gender === 'male'}
+          onChange={(e) => setGender(e.target.value)}
+        />
+        Male
+      </label>
+      <label>
+        <input
+          type="radio"
+          name="gender"
+          value="female"
+          checked={gender === 'female'}
+          onChange={(e) => setGender(e.target.value)}
+        />
+        Female
+      </label>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 1.3 受控组件的优势
+
+<CodeBlock>
+
+```jsx
+// 优势1：即时验证
+function ValidatedInput() {
+  const [value, setValue] = useState('');
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setValue(newValue);
+
+    // 即时验证
+    if (newValue.length < 3) {
+      setError('Must be at least 3 characters');
+    } else {
+      setError('');
+    }
+  };
+
+  return (
+    <div>
+      <input
+        value={value}
+        onChange={handleChange}
+        className={error ? 'error' : ''}
+      />
+      {error && <span className="error">{error}</span>}
+    </div>
+  );
+}
+
+// 优势2：条件控制
+function ConditionalInput() {
+  const [hasDiscountCode, setHasDiscountCode] = useState(false);
+  const [discountCode, setDiscountCode] = useState('');
+
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={hasDiscountCode}
+          onChange={(e) => {
+            setHasDiscountCode(e.target.checked);
+            if (!e.target.checked) {
+              setDiscountCode(''); // 清空代码
+            }
+          }}
+        />
+        I have a discount code
+      </label>
+
+      {/* 条件渲染：仅在有折扣码时显示 */}
+      {hasDiscountCode && (
+        <input
+          value={discountCode}
+          onChange={(e) => setDiscountCode(e.target.value)}
+          placeholder="Enter discount code"
+        />
+      )}
+    </div>
+  );
+}
+
+// 优势3：格式化
+function FormattedInput() {
+  const [phone, setPhone] = useState('');
+
+  const formatPhone = (value) => {
+    // 移除所有非数字字符
+    const numbers = value.replace(/\D/g, '');
+    // 格式化为 (XXX) XXX-XXXX
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) {
+      return `(${numbers.slice(0, 3)}) ${numbers.slice(3)}`;
+    }
+    return `(${numbers.slice(0, 3)}) ${numbers.slice(3, 6)}-${numbers.slice(6, 10)}`;
+  };
+
+  const handleChange = (e) => {
+    const formatted = formatPhone(e.target.value);
+    setPhone(formatted);
+  };
+
+  return (
+    <input
+      value={phone}
+      onChange={handleChange}
+      placeholder="(555) 123-4567"
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. 什么是非受控组件？
+
+非受控组件让DOM自己维护表单数据，React不控制其value值。通过ref获取DOM节点的value值，通常在表单提交时读取。
+
+<Box style={{ padding: '20px', background: '#f3e5f5', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#7b1fa2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>非受控组件</strong>的value由DOM自己管理。通过<strong>useRef</strong>获取DOM节点，在需要时从<strong>ref.current.value</strong>读取数据。React不跟踪组件的内部状态。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础非受控组件
+function UncontrolledInput() {
+  // 使用ref获取DOM节点
+  const inputRef = useRef(null);
+
+  // 在提交时读取值
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Input value:', inputRef.current.value);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={inputRef}              // 非受控：使用ref
+        defaultValue="Initial value"  // 非受控：使用defaultValue
+        placeholder="Enter text"
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 多个非受控组件
+function UncontrolledForm() {
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      name: nameRef.current.value,
+      email: emailRef.current.value
+    };
+    console.log('Form data:', data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={nameRef}
+        defaultValue=""
+        placeholder="Name"
+      />
+      <input
+        ref={emailRef}
+        type="email"
+        defaultValue=""
+        placeholder="Email"
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.1 非受控组件的特点
+
+<Grid>
+
+<div>
+  <h4>核心特征</h4>
+  <ul>
+    <li>✅ 使用defaultValue设置初始值</li>
+    <li>✅ 通过ref获取value</li>
+    <li>✅ React不管理内部状态</li>
+    <li>✅ DOM维护实际值</li>
+    <li>✅ 代码更简洁</li>
+  </ul>
+</div>
+
+<div>
+  <h4>适用场景</h4>
+  <ul>
+    <li>简单表单</li>
+    <li>一次性数据读取</li>
+    <li>集成第三方库</li>
+    <li>性能敏感场景</li>
+    <li>遗留代码迁移</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 2.2 非受控组件示例
+
+<CodeBlock>
+
+```jsx
+// 非受控输入框
+function UncontrolledTextInput() {
+  const inputRef = useRef(null);
+
+  const handleClick = () => {
+    alert(`Input value: ${inputRef.current.value}`);
+  };
+
+  return (
+    <div>
+      <input ref={inputRef} defaultValue="Hello" />
+      <button onClick={handleClick}>Show Value</button>
+    </div>
+  );
+}
+
+// 非受控复选框
+function UncontrolledCheckbox() {
+  const checkboxRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert(`Checked: ${checkboxRef.current.checked}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        <input
+          ref={checkboxRef}
+          type="checkbox"
+          defaultChecked={false}
+        />
+        I agree
+      </label>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 非受控选择框
+function UncontrolledSelect() {
+  const selectRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert(`Selected: ${selectRef.current.value}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <select ref={selectRef} defaultValue="option2">
+        <option value="option1">Option 1</option>
+        <option value="option2">Option 2</option>
+        <option value="option3">Option 3</option>
+      </select>
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 非受控文件输入
+function UncontrolledFileInput() {
+  const fileInputRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const files = fileInputRef.current.files;
+    if (files.length > 0) {
+      alert(`Selected file: ${files[0].name}`);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+      />
+      <button type="submit">Upload</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 非受控组件的优势
+
+<CodeBlock>
+
+```jsx
+// 优势1：代码简洁
+// 受控：需要更多代码
+function ControlledForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      console.log({ name, email });
+    }}>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <input
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 非受控：更简洁
+function UncontrolledForm() {
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+
+  return (
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      console.log({
+        name: nameRef.current.value,
+        email: emailRef.current.value
+      });
+    }}>
+      <input ref={nameRef} />
+      <input ref={emailRef} />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 优势2：性能（减少不必要的重渲染）
+function UncontrolledList() {
+  // 大量数据表单
+  const inputsRef = useRef([]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = inputsRef.current.map(input => input.value);
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {Array.from({ length: 100 }).map((_, i) => (
+        <input
+          key={i}
+          ref={(el) => (inputsRef.current[i] = el)}
+          defaultValue={`Item ${i + 1}`}
+        />
+      ))}
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 优势3：便于集成第三方库
+function IntegratedComponent() {
+  const thirdPartyInputRef = useRef(null);
+
+  // 第三方库直接操作DOM
+  useEffect(() => {
+    if (thirdPartyInputRef.current) {
+      // 初始化第三方组件
+      ThirdPartyLib.init(thirdPartyInputRef.current);
+    }
+  }, []);
+
+  return <input ref={thirdPartyInputRef} />;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 受控 vs 非受控对比
+
+<Compare>
+
+```jsx
+// 受控组件
+// ✅ 优点
+1. 数据流清晰 - 单一数据源
+2. 易于验证 - 可在onChange中即时验证
+3. 易于测试 - 可直接测试state变化
+4. 可以格式化 - 动态格式化输入
+5. 条件控制 - 可根据其他字段动态启用/禁用
+6. 状态同步 - 多个字段可轻松同步
+
+// ❌ 缺点
+1. 代码量大 - 每个字段都需要state和handler
+2. 性能开销 - 每次输入都触发重渲染
+3. 复杂性 - 复杂表单需要管理大量state
+4. 重复工作 - 类似的逻辑需要重复编写
+
+// 非受控组件
+// ✅ 优点
+1. 代码简洁 - 无需为每个字段写state
+2. 性能较好 - 减少不必要的重渲染
+3. 易于集成 - 便于集成第三方库
+4. 迁移友好 - 更容易从jQuery迁移
+
+// ❌ 缺点
+1. 数据流不清晰 - 数据分散在多个ref中
+2. 难以验证 - 验证逻辑复杂
+3. 难以测试 - 需要操作DOM
+4. 难以格式化 - 难以实现动态格式化
+5. 条件控制困难 - 依赖DOM状态
+6. 状态同步困难 - 需要手动同步
+```
+
+</Compare>
+
+### 3.1 使用场景对比
+
+<CodeBlock>
+
+```jsx
+// 适合受控组件的场景
+function ControlledUseCases() {
+  return (
+    <>
+      {/* 1. 需要即时验证 */}
+      <ValidatedInput />
+
+      {/* 2. 需要条件禁用 */}
+      <ConditionalForm />
+
+      {/* 3. 需要动态格式化 */}
+      <FormattedInput />
+
+      {/* 4. 需要与父组件同步 */}
+      <SynchronizedInput />
+
+      {/* 5. 复杂表单逻辑 */}
+      <ComplexForm />
+    </>
+  );
+}
+
+// 适合非受控组件的场景
+function UncontrolledUseCases() {
+  return (
+    <>
+      {/* 1. 简单一次性表单 */}
+      <SimpleContactForm />
+
+      {/* 2. 遗留系统集成 */}
+      <LegacySystemIntegration />
+
+      {/* 3. 性能敏感场景 */}
+      <LargeDataForm />
+
+      {/* 4. 第三方组件库 */}
+      <ThirdPartyComponents />
+
+      {/* 5. 文件上传 */}
+      <FileUpload />
+    </>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 性能对比
+
+<CodeBlock>
+
+```jsx
+// 受控组件性能问题
+function ControlledPerformance() {
+  const [formData, setFormData] = useState({
+    field1: '',
+    field2: '',
+    field3: '',
+    // ... 100个字段
+  });
+
+  // ❌ 每次输入都导致整个表单重渲染
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  return (
+    <form>
+      {/* 每次输入，所有字段都重渲染 */}
+      {Object.keys(formData).map((key) => (
+        <input
+          key={key}
+          name={key}
+          value={formData[key]}
+          onChange={handleChange}
+        />
+      ))}
+    </form>
+  );
+}
+
+// 优化：使用useRef存储
+function OptimizedControlledForm() {
+  const [formData, setFormData] = useState({
+    field1: '',
+    field2: '',
+    // ...
+  });
+
+  // 缓存更新函数
+  const updateField = useCallback((name, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
+
+  return (
+    <form>
+      <input
+        value={formData.field1}
+        onChange={(e) => updateField('field1', e.target.value)}
+      />
+    </form>
+  );
+}
+
+// 非受控组件性能
+function UncontrolledPerformance() {
+  const inputsRef = useRef({});
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(
+      Object.entries(inputsRef.current).map(([key, el]) => [key, el.value])
+    );
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* ✅ 只在提交时读取值，无重渲染 */}
+      {Array.from({ length: 100 }).map((_, i) => (
+        <input
+          key={i}
+          ref={(el) => (inputsRef.current[`field${i}`] = el)}
+          defaultValue=""
+        />
+      ))}
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 混合模式
+
+实际项目中，受控和非受控模式常常混合使用，根据具体需求选择最合适的模式。
+
+<CodeBlock>
+
+```jsx
+// 混合模式：部分受控
+function MixedForm() {
+  const [name, setName] = useState('');           // 受控
+  const emailRef = useRef(null);                  // 非受控
+  const [age, setAge] = useState(0);              // 受控
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      name,                        // 从state获取
+      email: emailRef.current.value,  // 从ref获取
+      age                          // 从state获取
+    };
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Name (Controlled)</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label>Email (Uncontrolled)</label>
+        <input ref={emailRef} defaultValue="" />
+      </div>
+
+      <div>
+        <label>Age (Controlled)</label>
+        <input
+          type="number"
+          value={age}
+          onChange={(e) => setAge(Number(e.target.value))}
+        />
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 高级混合模式：可切换的受控性
+function ToggleableControl() {
+  const [isManual, setIsManual] = useState(false);
+  const [controlledValue, setControlledValue] = useState('');
+  const uncontrolledRef = useRef(null);
+
+  const value = isManual
+    ? controlledValue
+    : uncontrolledRef.current?.value || '';
+
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={isManual}
+          onChange={(e) => setIsManual(e.target.checked)}
+        />
+        Enable manual control
+      </label>
+
+      {isManual ? (
+        <input
+          value={controlledValue}
+          onChange={(e) => setControlledValue(e.target.value)}
+        />
+      ) : (
+        <input ref={uncontrolledRef} defaultValue="" />
+      )}
+
+      <p>Current value: {value}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.1 实际应用示例
+
+<CodeBlock>
+
+```jsx
+// 登录表单 - 混合模式
+function LoginForm() {
+  // password使用非受控（提交时读取）
+  const passwordRef = useRef(null);
+
+  // email使用受控（需要验证）
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+
+  // 记住我使用非受控（默认值由DOM管理）
+  const rememberRef = useRef(null);
+
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    setEmail(value);
+
+    if (value && !validateEmail(value)) {
+      setEmailError('Invalid email format');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      email,
+      password: passwordRef.current.value,
+      remember: rememberRef.current.checked
+    };
+    console.log('Login data:', data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Email (Controlled + Validation)</label>
+        <input
+          type="email"
+          value={email}
+          onChange={handleEmailChange}
+          className={emailError ? 'error' : ''}
+        />
+        {emailError && <span className="error">{emailError}</span>}
+      </div>
+
+      <div>
+        <label>Password (Uncontrolled)</label>
+        <input
+          ref={passwordRef}
+          type="password"
+          defaultValue=""
+        />
+      </div>
+
+      <div>
+        <label>
+          <input
+            ref={rememberRef}
+            type="checkbox"
+            defaultChecked={false}
+          />
+          Remember me
+        </label>
+      </div>
+
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+// 搜索表单 - 混合模式
+function SearchForm() {
+  // 搜索词受控（需要实时更新UI）
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+
+  // 排序方式非受控（提交时读取）
+  const sortRef = useRef(null);
+
+  // 过滤器受控（需要条件禁用）
+  const [filters, setFilters] = useState({
+    category: 'all',
+    priceRange: 'all'
+  });
+
+  const handleSearch = useCallback(async () => {
+    if (!query.trim()) return;
+
+    const sortBy = sortRef.current?.value || 'relevance';
+    // 搜索逻辑...
+    console.log('Searching:', { query, sortBy, filters });
+  }, [query, filters]);
+
+  useEffect(() => {
+    const debounce = setTimeout(handleSearch, 300);
+    return () => clearTimeout(debounce);
+  }, [query, handleSearch]);
+
+  return (
+    <div>
+      <div>
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search..."
+        />
+      </div>
+
+      <div>
+        <select
+          value={filters.category}
+          onChange={(e) => setFilters(prev => ({
+            ...prev,
+            category: e.target.value
+          }))}
+        >
+          <option value="all">All Categories</option>
+          <option value="books">Books</option>
+          <option value="movies">Movies</option>
+        </select>
+
+        <select
+          value={filters.priceRange}
+          onChange={(e) => setFilters(prev => ({
+            ...prev,
+            priceRange: e.target.value
+          }))}
+        >
+          <option value="all">All Prices</option>
+          <option value="0-50">$0 - $50</option>
+          <option value="50-100">$50 - $100</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Sort by (Uncontrolled)</label>
+        <select ref={sortRef} defaultValue="relevance">
+          <option value="relevance">Relevance</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+        </select>
+      </div>
+
+      <div>
+        {results.map(result => (
+          <div key={result.id}>{result.title}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 表单验证模式
+
+### 5.1 受控模式验证
+
+<CodeBlock>
+
+```jsx
+// 即时验证 - 受控组件
+function ControlledValidation() {
+  const [values, setValues] = useState({
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const validate = (field, value) => {
+    const newErrors = { ...errors };
+
+    if (field === 'email') {
+      if (!value) {
+        newErrors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+        newErrors.email = 'Invalid email format';
+      } else {
+        delete newErrors.email;
+      }
+    }
+
+    if (field === 'password') {
+      if (!value) {
+        newErrors.password = 'Password is required';
+      } else if (value.length < 8) {
+        newErrors.password = 'Password must be at least 8 characters';
+      } else {
+        delete newErrors.password;
+      }
+    }
+
+    if (field === 'confirmPassword') {
+      if (!value) {
+        newErrors.confirmPassword = 'Please confirm password';
+      } else if (value !== values.password) {
+        newErrors.confirmPassword = 'Passwords do not match';
+      } else {
+        delete newErrors.confirmPassword;
+      }
+    }
+
+    setErrors(newErrors);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setValues(prev => ({ ...prev, [name]: value }));
+
+    // 即时验证
+    validate(name, value);
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched(prev => ({ ...prev, [name]: true }));
+  };
+
+  return (
+    <form>
+      <div>
+        <input
+          name="email"
+          value={values.email}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={errors.email ? 'error' : ''}
+        />
+        {touched.email && errors.email && (
+          <span className="error">{errors.email}</span>
+        )}
+      </div>
+
+      <div>
+        <input
+          name="password"
+          type="password"
+          value={values.password}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={errors.password ? 'error' : ''}
+        />
+        {touched.password && errors.password && (
+          <span className="error">{errors.password}</span>
+        )}
+      </div>
+
+      <div>
+        <input
+          name="confirmPassword"
+          type="password"
+          value={values.confirmPassword}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className={errors.confirmPassword ? 'error' : ''}
+        />
+        {touched.confirmPassword && errors.confirmPassword && (
+          <span className="error">{errors.confirmPassword}</span>
+        )}
+      </div>
+
+      <button
+        type="submit"
+        disabled={Object.keys(errors).length > 0}
+      >
+        Sign Up
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 非受控模式验证
+
+<CodeBlock>
+
+```jsx
+// 提交时验证 - 非受控组件
+function UncontrolledValidation() {
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+
+  const validate = () => {
+    const email = emailRef.current.value;
+    const password = passwordRef.current.value;
+    const errors = {};
+
+    if (!email) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Invalid email format';
+    }
+
+    if (!password) {
+      errors.password = 'Password is required';
+    } else if (password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+
+    return errors;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const errors = validate();
+
+    // 显示错误
+    if (errors.email) {
+      alert(errors.email);
+      emailRef.current.focus();
+      return;
+    }
+
+    if (errors.password) {
+      alert(errors.password);
+      passwordRef.current.focus();
+      return;
+    }
+
+    // 验证通过
+    console.log('Submitting:', {
+      email: emailRef.current.value,
+      password: passwordRef.current.value
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <input ref={emailRef} defaultValue="" />
+      </div>
+
+      <div>
+        <input ref={passwordRef} type="password" defaultValue="" />
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+
+// 自定义验证Hook - 非受控
+function useFormValidation(refs) {
+  const validateAll = () => {
+    const errors = {};
+
+    refs.forEach(ref => {
+      const { name, ref: inputRef, rules } = ref;
+      const value = inputRef.current?.value || '';
+
+      rules.forEach(rule => {
+        if (rule.test && !rule.test(value)) {
+          errors[name] = rule.message;
+        }
+      });
+    });
+
+    return errors;
+  };
+
+  return { validateAll };
+}
+
+function ValidatedForm() {
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+
+  const { validateAll } = useFormValidation([
+    {
+      name: 'email',
+      ref: emailRef,
+      rules: [
+        {
+          test: (v) => v,
+          message: 'Email is required'
+        },
+        {
+          test: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
+          message: 'Invalid email format'
+        }
+      ]
+    },
+    {
+      name: 'password',
+      ref: passwordRef,
+      rules: [
+        {
+          test: (v) => v,
+          message: 'Password is required'
+        },
+        {
+          test: (v) => v.length >= 8,
+          message: 'Password must be at least 8 characters'
+        }
+      ]
+    }
+  ]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const errors = validateAll();
+
+    if (Object.keys(errors).length > 0) {
+      console.log('Validation errors:', errors);
+      return;
+    }
+
+    console.log('Form submitted successfully');
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input ref={emailRef} defaultValue="" />
+      <input ref={passwordRef} type="password" defaultValue="" />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 文件输入处理
+
+文件输入是特例，它总是非受控的，因为文件只能由用户选择，不能通过JavaScript程序设置。
+
+<CodeBlock>
+
+```jsx
+// 基础文件输入
+function FileInput() {
+  const fileRef = useRef(null);
+  const [preview, setPreview] = useState(null);
+
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // 创建预览URL
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const file = fileRef.current.files[0];
+    if (file) {
+      console.log('Selected file:', file);
+      // 可以发送到服务器
+      // const formData = new FormData();
+      // formData.append('file', file);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*,video/*"
+        onChange={handleChange}
+      />
+
+      {preview && (
+        <div>
+          <img src={preview} alt="Preview" style={{ maxWidth: '200px' }} />
+        </div>
+      )}
+
+      <button type="submit">Upload</button>
+    </form>
+  );
+}
+
+// 多个文件输入
+function MultipleFileInput() {
+  const filesRef = useRef(null);
+  const [fileList, setFileList] = useState([]);
+
+  const handleChange = (e) => {
+    const files = Array.from(e.target.files);
+    setFileList(files);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const files = filesRef.current.files;
+    console.log('Selected files:', Array.from(files));
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={filesRef}
+        type="file"
+        multiple
+        accept="image/*"
+        onChange={handleChange}
+      />
+
+      {fileList.length > 0 && (
+        <div>
+          <h4>Selected Files:</h4>
+          <ul>
+            {fileList.map((file, index) => (
+              <li key={index}>
+                {file.name} - {(file.size / 1024).toFixed(2)} KB
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <button type="submit">Upload All</button>
+    </form>
+  );
+}
+
+// 拖拽上传
+function DragAndDropUpload() {
+  const [isDragging, setIsDragging] = useState(false);
+  const [files, setFiles] = useState([]);
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    setFiles(droppedFiles);
+  };
+
+  const handleFileSelect = (e) => {
+    const selectedFiles = Array.from(e.target.files);
+    setFiles(selectedFiles);
+  };
+
+  return (
+    <div>
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        style={{
+          border: '2px dashed #ccc',
+          padding: '40px',
+          textAlign: 'center',
+          backgroundColor: isDragging ? '#f0f0f0' : 'transparent'
+        }}
+      >
+        {isDragging ? (
+          <p>Drop files here...</p>
+        ) : (
+          <>
+            <p>Drag and drop files here</p>
+            <p>or</p>
+            <input
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+            />
+          </>
+        )}
+      </div>
+
+      {files.length > 0 && (
+        <div>
+          <h4>Files to upload:</h4>
+          <ul>
+            {files.map((file, index) => (
+              <li key={index}>{file.name}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 与状态管理库集成
+
+### 7.1 Redux集成
+
+<CodeBlock>
+
+```jsx
+// 受控组件 + Redux
+import { useSelector, useDispatch } from 'react-redux';
+
+function ReduxControlledForm() {
+  const dispatch = useDispatch();
+  const { email, password } = useSelector(state => state.auth.form);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    dispatch(updateFormField({ field: name, value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    dispatch(submitForm());
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="email"
+        value={email}
+        onChange={handleChange}
+      />
+      <input
+        name="password"
+        type="password"
+        value={password}
+        onChange={handleChange}
+      />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+// 非受控组件 + Redux
+function ReduxUncontrolledForm() {
+  const dispatch = useDispatch();
+  const formRef = useRef({});
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = {
+      email: formRef.current.email.value,
+      password: formRef.current.password.value
+    };
+    dispatch(submitForm(formData));
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="email"
+        ref={el => formRef.current.email = el}
+        defaultValue=""
+      />
+      <input
+        name="password"
+        type="password"
+        ref={el => formRef.current.password = el}
+        defaultValue=""
+      />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 Zustand集成
+
+<CodeBlock>
+
+```jsx
+// Zustand - 受控组件
+import { useFormStore } from './store/formStore';
+
+function ZustandControlledForm() {
+  const { email, password, updateField, submitForm } = useFormStore();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    updateField(name, value);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    submitForm();
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        name="email"
+        value={email}
+        onChange={handleChange}
+      />
+      <input
+        name="password"
+        type="password"
+        value={password}
+        onChange={handleChange}
+      />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+
+// Zustand - 非受控组件
+function ZustandUncontrolledForm() {
+  const formRef = useRef({});
+  const { submitForm } = useFormStore();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = {
+      email: formRef.current.email.value,
+      password: formRef.current.password.value
+    };
+    submitForm(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        ref={el => formRef.current.email = el}
+        defaultValue=""
+      />
+      <input
+        ref={el => formRef.current.password = el}
+        type="password"
+        defaultValue=""
+      />
+      <button type="submit">Login</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 实际应用案例
+
+### 8.1 动态表单构建器
+
+<CodeBlock>
+
+```jsx
+// 动态表单构建器 - 混合模式
+function DynamicFormBuilder() {
+  const [fields, setFields] = useState([
+    { type: 'text', name: 'name', label: 'Name', required: true },
+    { type: 'email', name: 'email', label: 'Email', required: true },
+    { type: 'select', name: 'role', label: 'Role', options: ['user', 'admin'] }
+  ]);
+
+  // 受控：需要验证和条件逻辑的字段
+  const controlledData = useRef({});
+  // 非受控：简单字段
+  const uncontrolledRefs = useRef({});
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const formData = {};
+
+    fields.forEach(field => {
+      if (field.required) {
+        // 混合：部分受控
+        const value = controlledData.current[field.name] ||
+                     uncontrolledRefs.current[field.name]?.value || '';
+        formData[field.name] = value;
+      }
+    });
+
+    console.log('Form data:', formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {fields.map((field, index) => (
+        <div key={index}>
+          <label>{field.label}</label>
+
+          {field.type === 'text' || field.type === 'email' ? (
+            <input
+              ref={el => uncontrolledRefs.current[field.name] = el}
+              type={field.type}
+              defaultValue=""
+            />
+          ) : field.type === 'select' ? (
+            <select
+              ref={el => uncontrolledRefs.current[field.name] = el}
+              defaultValue={field.options[0]}
+            >
+              {field.options.map(option => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          ) : null}
+        </div>
+      ))}
+
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.2 多步骤表单
+
+<CodeBlock>
+
+```jsx
+// 多步骤表单 - 受控模式
+function MultiStepForm() {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    // Step 1
+    firstName: '',
+    lastName: '',
+    // Step 2
+    email: '',
+    phone: '',
+    // Step 3
+    address: '',
+    city: '',
+    zipCode: ''
+  });
+
+  const [errors, setErrors] = useState({});
+
+  const validateStep = (stepNumber) => {
+    const newErrors = {};
+
+    if (stepNumber === 1) {
+      if (!formData.firstName) newErrors.firstName = 'Required';
+      if (!formData.lastName) newErrors.lastName = 'Required';
+    }
+
+    if (stepNumber === 2) {
+      if (!formData.email) newErrors.email = 'Required';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        newErrors.email = 'Invalid email';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateStep(step)) {
+      setStep(prev => prev + 1);
+    }
+  };
+
+  const prevStep = () => {
+    setStep(prev => prev - 1);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (validateStep(step)) {
+      console.log('Form submitted:', formData);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="step-indicator">
+        Step {step} of 3
+      </div>
+
+      {step === 1 && (
+        <div>
+          <h2>Personal Information</h2>
+          <input
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            placeholder="First Name"
+            className={errors.firstName ? 'error' : ''}
+          />
+          <input
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            placeholder="Last Name"
+            className={errors.lastName ? 'error' : ''}
+          />
+        </div>
+      )}
+
+      {step === 2 && (
+        <div>
+          <h2>Contact Information</h2>
+          <input
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Email"
+            className={errors.email ? 'error' : ''}
+          />
+          <input
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Phone"
+          />
+        </div>
+      )}
+
+      {step === 3 && (
+        <div>
+          <h2>Address</h2>
+          <input
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            placeholder="Address"
+          />
+          <input
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            placeholder="City"
+          />
+          <input
+            name="zipCode"
+            value={formData.zipCode}
+            onChange={handleChange}
+            placeholder="Zip Code"
+          />
+        </div>
+      )}
+
+      <div className="navigation">
+        {step > 1 && (
+          <button type="button" onClick={prevStep}>
+            Previous
+          </button>
+        )}
+
+        {step < 3 ? (
+          <button type="button" onClick={nextStep}>
+            Next
+          </button>
+        ) : (
+          <button type="submit">Submit</button>
+        )}
+      </div>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 最佳实践
+
+### 9.1 选择指南
+
+<CodeBlock>
+
+```jsx
+// 决策树：选择受控还是非受控
+
+function DecisionTree() {
+  return (
+    <div>
+      <h2>Form Control Selection Guide</h2>
+
+      {/* 使用受控组件 */}
+      {[
+        '需要即时验证',
+        '需要条件禁用/启用',
+        '需要动态格式化',
+        '需要与其他组件同步',
+        '需要条件渲染其他字段',
+        '需要基于值的复杂逻辑',
+        '使用TypeScript需要类型安全'
+      ].map((item, i) => (
+        <ChecklistItem key={i} text={item} useControlled={true} />
+      ))}
+
+      {/* 使用非受控组件 */}
+      {[
+        '简单一次性表单',
+        '性能敏感场景（大量字段）',
+        '集成第三方组件',
+        '文件上传输入',
+        '遗留系统迁移',
+        '不需要即时验证',
+        '提交时读取数据即可'
+      ].map((item, i) => (
+        <ChecklistItem key={i} text={item} useControlled={false} />
+      ))}
+    </div>
+  );
+}
+
+function ChecklistItem({ text, useControlled }) {
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      margin: '8px 0'
+    }}>
+      <span style={{
+        color: useControlled ? '#4caf50' : '#ff9800',
+        fontWeight: 'bold',
+        marginRight: '8px'
+      }}>
+        {useControlled ? '✅' : '⚡'}
+      </span>
+      <span>{text}</span>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.2 性能优化
+
+<CodeBlock>
+
+```jsx
+// 性能优化1：分片state
+function OptimizedForm() {
+  // ❌ 不好：所有字段在一个state对象中
+  const [formData, setFormData] = useState({
+    field1: '',
+    field2: '',
+    field3: '',
+    // ...
+  });
+
+  // ✅ 好：每个字段独立state
+  const [field1, setField1] = useState('');
+  const [field2, setField2] = useState('');
+  const [field3, setField3] = useState('');
+}
+
+// 性能优化2：使用useRef存储临时值
+function RefOptimizedForm() {
+  const [value, setValue] = useState('');
+  const valueRef = useRef(value);
+
+  // 更新ref但不触发重渲染
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setValue(newValue);
+    valueRef.current = newValue; // 同步ref
+  };
+
+  // 在其他函数中使用ref的值
+  const handleClick = () => {
+    console.log(valueRef.current); // 最新的值，不触发重渲染
+  };
+}
+
+// 性能优化3：虚拟化大量字段
+function VirtualizedForm() {
+  const fieldCount = 1000;
+  const inputsRef = useRef({});
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(
+      Object.entries(inputsRef.current)
+        .filter(([key]) => key.startsWith('field'))
+        .map(([key, el]) => [key, el.value])
+    );
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {Array.from({ length: fieldCount }).map((_, i) => (
+        <div key={i}>
+          <input
+            ref={el => (inputsRef.current[`field${i}`] = el)}
+            defaultValue=""
+          />
+        </div>
+      ))}
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.3 类型安全
+
+<CodeBlock>
+
+```tsx
+// TypeScript - 受控组件
+interface FormData {
+  name: string;
+  email: string;
+  age: number;
+}
+
+function TypedControlledForm() {
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    email: '',
+    age: 0
+  });
+
+  const handleChange = <T extends keyof FormData>(
+    field: T,
+    value: FormData[T]
+  ) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <form>
+      <input
+        value={formData.name}
+        onChange={(e) => handleChange('name', e.target.value)}
+      />
+      <input
+        value={formData.email}
+        onChange={(e) => handleChange('email', e.target.value)}
+      />
+      <input
+        type="number"
+        value={formData.age}
+        onChange={(e) => handleChange('age', Number(e.target.value))}
+      />
+    </form>
+  );
+}
+
+// TypeScript - 非受控组件
+function TypedUncontrolledForm() {
+  const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const data = {
+      name: nameRef.current?.value || '',
+      email: emailRef.current?.value || ''
+    };
+
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input ref={nameRef} />
+      <input ref={emailRef} />
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 10. 常见陷阱
+
+### 陷阱1：忘记defaultValue
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 缺少defaultValue
+function BadUncontrolledInput() {
+  const inputRef = useRef(null);
+
+  return (
+    <form>
+      <input ref={inputRef} /> {/* ❌ 缺少defaultValue */}
+      <button onClick={() => alert(inputRef.current.value)}>
+        Show Value
+      </button>
+    </form>
+  );
+}
+
+// ✅ 正确 - 提供defaultValue
+function GoodUncontrolledInput() {
+  const inputRef = useRef(null);
+
+  return (
+    <form>
+      <input ref={inputRef} defaultValue="Initial value" />
+      <button onClick={() => alert(inputRef.current.value)}>
+        Show Value
+      </button>
+    </form>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：混合受控和非受控导致不一致
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 混用value和defaultValue
+function BadMixedInput() {
+  const [value, setValue] = useState('');
+
+  return (
+    <input
+      value={value}              // 受控
+      defaultValue="default"     // ❌ 不应该同时使用
+      onChange={(e) => setValue(e.target.value)}
+    />
+  );
+}
+
+// ✅ 正确 - 选择一种方式
+function GoodControlledInput() {
+  const [value, setValue] = useState('');
+
+  return (
+    <input
+      value={value}              // 受控
+      onChange={(e) => setValue(e.target.value)}
+    />
+  );
+}
+
+function GoodUncontrolledInput() {
+  const inputRef = useRef(null);
+
+  return (
+    <input
+      ref={inputRef}
+      defaultValue="default"     // 非受控
+    />
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：在受控组件中使用ref
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 受控组件不需要ref
+function BadControlledInputWithRef() {
+  const [value, setValue] = useState('');
+  const inputRef = useRef(null);
+
+  // ref在受控组件中是不必要的
+  return (
+    <input
+      ref={inputRef}  // ❌ 受控组件不应该使用ref读取值
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+    />
+  );
+}
+
+// ✅ 正确 - 只在需要时使用ref
+function GoodControlledInput() {
+  const [value, setValue] = useState('');
+  const inputRef = useRef(null);
+
+  const focusInput = () => {
+    inputRef.current?.focus(); // ✅ 聚焦是ref的合理使用
+  };
+
+  return (
+    <div>
+      <input
+        ref={inputRef}  // 用于聚焦，而不是读取值
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <button onClick={focusInput}>Focus</button>
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：不理解文件输入的特殊性
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 尝试控制文件输入
+function BadFileInput() {
+  const [files, setFiles] = useState(null);
+
+  return (
+    <input
+      type="file"
+      value={files}  // ❌ 文件输入不能设置value
+      onChange={(e) => setFiles(e.target.files)}
+    />
+  );
+}
+
+// ✅ 正确 - 文件输入总是非受控
+function GoodFileInput() {
+  const fileRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const files = fileRef.current.files;
+    console.log(files);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="file"
+        ref={fileRef}  // ✅ 使用ref
+        // 不设置value或defaultValue
+      />
+      <button type="submit">Upload</button>
+    </form>
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 11. 实践练习
+
+### 练习1：创建登录表单
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- email字段：受控，即时验证
+- password字段：非受控，提交时验证
+- 记住我：非受控复选框
+- 提交时检查所有字段
+
+**实现要求**：
+```javascript
+function LoginForm() {
+  const emailRef = useRef(null);
+  const passwordRef = useRef(null);
+  const rememberRef = useRef(null);
+
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
+
+  const handleSubmit = (e) => {
+    // 验证所有字段
+    // 受控字段：email
+    // 非受控字段：password, remember
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* 受控的email输入 */}
+      {/* 非受控的password输入 */}
+      {/* 非受控的remember复选框 */}
+    </form>
+  );
+}
+```
+
+**提示**：
+- email使用useState管理，onChange验证
+- password和remember使用useRef
+- 提交时读取所有值进行验证
+
+</Expandable>
+
+### 练习2：创建动态表单
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 动态添加/删除输入字段
+- 字段类型可选择：text, number, select
+- 提交时收集所有数据
+- 可以保存表单配置
+
+**实现要求**：
+```javascript
+function DynamicFormBuilder() {
+  const [fields, setFields] = useState([
+    { type: 'text', name: 'field1' }
+  ]);
+
+  const fieldRefs = useRef({});
+
+  const addField = () => {
+    // 添加新字段
+  };
+
+  const removeField = (index) => {
+    // 删除字段
+  };
+
+  const handleSubmit = (e) => {
+    // 收集所有字段数据
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* 动态渲染字段 */}
+      {/* 添加/删除按钮 */}
+    </form>
+  );
+}
+```
+
+**提示**：
+- 字段列表使用useState管理
+- 每个字段的ref存储在对象中
+- 动态渲染，ref回调
+
+</Expandable>
+
+### 练习3：创建多步骤向导
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 3个步骤的表单
+- 每步验证后才能进入下一步
+- 上一步保留数据
+- 最后一步提交所有数据
+
+**实现要求**：
+```javascript
+function MultiStepWizard() {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    step1: {},
+    step2: {},
+    step3: {}
+  });
+
+  const nextStep = () => {
+    // 验证当前步骤
+  };
+
+  const prevStep = () => {
+    // 返回上一步
+  };
+
+  return (
+    <div>
+      <div className="step-indicator">Step {step}/3</div>
+
+      {step === 1 && <Step1 />}
+      {step === 2 && <Step2 />}
+      {step === 3 && <Step3 />}
+
+      {/* 导航按钮 */}
+    </div>
+  );
+}
+```
+
+**提示**：
+- 步骤状态独立管理
+- 数据可以统一在formData中
+- 验证每个步骤的必填字段
+
+</Expandable>
+
+### 练习4：创建受控与非受控对比组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 同一个表单的两种实现方式
+- 受控版本和非受控版本
+- 展示各自的优缺点
+- 对比性能
+
+**实现要求**：
+```javascript
+function FormComparison() {
+  return (
+    <div>
+      <h2>Controlled vs Uncontrolled</h2>
+
+      <div style={{ display: 'flex', gap: '40px' }}>
+        <div style={{ flex: 1 }}>
+          <h3>Controlled</h3>
+          <ControlledForm />
+          {/* 特点说明 */}
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <h3>Uncontrolled</h3>
+          <UncontrolledForm />
+          {/* 特点说明 */}
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+**提示**：
+- 实现两个版本的相同表单
+- 添加性能测试代码
+- 展示代码量对比
+- 说明适用场景
+
+</Expandable>
+
+---
+
+## 12. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 受控组件由React state管理value值
+- ✅ 非受控组件由DOM自己管理value值
+- ✅ 受控组件提供更好的控制和灵活性
+- ✅ 非受控组件代码更简洁，性能更好
+- ✅ 文件输入总是非受控的
+- ✅ 实际项目中常用混合模式
+- ✅ 根据需求选择合适的模式
+- ✅ 注意避免混用value和defaultValue
+- ✅ 性能敏感场景考虑使用非受控
+- ✅ 复杂验证逻辑适合受控模式
+
+</Checklist>
+
+### 选择指南
+
+<BestPractices>
+
+**使用受控组件**：
+1. 需要即时验证
+2. 需要条件控制
+3. 需要动态格式化
+4. 需要状态同步
+5. 复杂业务逻辑
+6. 需要TypeScript类型安全
+
+**使用非受控组件**：
+1. 简单表单
+2. 性能优化
+3. 大量字段
+4. 第三方集成
+5. 文件上传
+6. 遗留系统迁移
+
+**混合使用**：
+1. 根据字段特性选择
+2. 平衡代码复杂度和性能
+3. 优化用户体验
+
+</BestPractices>
+
+### 最佳实践
+
+1. **明确场景** - 提前规划表单需求
+2. **避免混用** - 不要同时使用value和defaultValue
+3. **性能考虑** - 大量字段时考虑非受控
+4. **类型安全** - TypeScript提供完整类型
+5. **测试覆盖** - 测试各种输入场景
+6. **用户体验** - 优先使用受控模式
+7. **代码清晰** - 保持数据流清晰
+8. **文档说明** - 记录组件的控制方式
+
+### 下一步学习
+
+现在你已经掌握了受控与非受控模式，接下来可以学习：
+
+1. **[组合 vs 继承](../advanced/composition-vs-inheritance)** - React设计哲学
+2. **[Children模式](../advanced/children-patterns)** - 灵活的内容传递
+3. **[Props Getters模式](../advanced/props-getters)** - 高级Props处理
+4. **[表单库实战](../libraries/)** - 真实世界的表单解决方案
+
+---
+
+## 13. 延伸阅读
+
+### 官方资源
+
+- [表单和受控组件](https://react.dev/reference/react) - React官方文档
+- [非受控组件](https://react.dev/reference/react) - 非受控组件指南
+- [Refs和DOM](https://react.dev/reference/react) - refs使用指南
+
+### 推荐阅读
+
+- [React表单最佳实践](https://kentcdodds.com/blog/) - 表单设计指南
+- [受控 vs 非受控](https://goshacmd.com/blog/) - 模式对比
+- [React表单验证](https://react-hook-form.com/) - 表单库介绍
+
+### 相关话题
+
+- [状态管理](../state-management/) - 全局状态处理
+- [Context模式](../advanced/context-patterns) - 状态共享
+- [Hooks模式](../advanced/hooks-patterns) - 逻辑复用
+
+---
+
+[← 上一章：Props Getters模式](props-getters) | [下一章：组合 vs 继承 →](composition-vs-inheritance)

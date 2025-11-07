@@ -1,0 +1,2567 @@
+# 错误边界 (Error Boundaries) - 优雅的错误处理
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+错误边界是React中用于捕获JavaScript错误并优雅地展示降级UI的组件模式。它们能够捕获子组件树中的错误，记录错误信息，并显示一个降级的UI而不是整个应用崩溃。在本章中，我们将深入探讨错误边界的概念、实现方式、最佳实践和使用场景。
+
+## 本章学习目标
+
+- 理解错误边界的概念和作用
+- 掌握错误边界的实现方式
+- 学会创建可复用的错误边界组件
+- 理解错误边界的生命周期方法
+- 掌握错误边界与错误处理的关系
+- 学会记录和上报错误信息
+- 理解错误边界的局限性和注意事项
+- 掌握错误边界的实际应用场景
+
+---
+
+## 1. 什么是错误边界？
+
+错误边界是React组件，它能够捕获子组件树中发生的JavaScript错误，记录这些错误，并显示一个降级的UI而不是整个组件树崩溃。错误边界能够捕获渲染过程中、生命周期方法中以及整个组件树的构造函数中发生的错误。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>错误边界</strong>是React类组件特有的模式，使用<strong>getDerivedStateFromError</strong>或<strong>componentDidCatch</strong>生命周期方法捕获子组件错误。函数组件需要使用<strong>ErrorBoundary</strong>类组件包装。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础错误边界
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // 更新state使下一次渲染显示降级UI
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // 记录错误信息
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // 降级UI
+      return (
+        <div>
+          <h2>Something went wrong.</h2>
+          <p>{this.state.error?.message}</p>
+          <button onClick={() => window.location.reload()}>
+            Reload page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 使用
+<ErrorBoundary>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+</CodeBlock>
+
+### 1.1 错误边界解决的问题
+
+<Grid>
+
+<div>
+  <h4>没有错误边界的问题</h4>
+  <ul>
+    <li>❌ 子组件错误导致整个应用崩溃</li>
+    <li>❌ 空白页面，用户体验差</li>
+    <li>❌ 难以调试和定位错误</li>
+    <li>❌ 无法恢复，需要刷新页面</li>
+    <li>❌ 生产环境错误不可见</li>
+  </ul>
+</div>
+
+<div>
+  <h4>错误边界的解决方案</h4>
+  <ul>
+    <li>✅ 局部错误不影响整个应用</li>
+    <li>✅ 显示友好的错误提示</li>
+    <li>✅ 记录错误信息用于调试</li>
+    <li>✅ 提供恢复或重试选项</li>
+    <li>✅ 错误上报和分析</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 错误边界的组成
+
+<CodeBlock>
+
+```jsx
+// 错误边界的核心要素
+1. 状态管理
+   - hasError: 布尔值，表示是否发生错误
+   - error: 错误对象
+   - errorInfo: 错误堆栈信息
+
+2. 静态方法
+   - getDerivedStateFromError(error)
+     * 接收错误对象
+     * 返回新的state状态
+     * 用于更新state显示降级UI
+
+3. 生命周期方法
+   - componentDidCatch(error, errorInfo)
+     * 接收错误和错误信息
+     * 记录错误日志
+     * 发送错误上报
+     * 清理资源
+
+4. 渲染方法
+   - render()
+     * 检查hasError状态
+     * 返回降级UI或正常子组件
+```
+
+</CodeBlock>
+
+---
+
+## 2. 错误边界实现基础
+
+### 2.1 基础错误边界
+
+<CodeBlock>
+
+```jsx
+// 基础错误边界组件
+import React from 'react';
+
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    // 更新state以显示降级UI
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // 记录错误详情
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
+    });
+
+    // 可选：发送错误到错误上报服务
+    // logErrorToService(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const { fallback: Fallback } = this.props;
+
+      // 使用自定义降级组件或默认UI
+      if (Fallback) {
+        return (
+          <Fallback
+            error={this.state.error}
+            retry={this.handleRetry}
+          />
+        );
+      }
+
+      return (
+        <div style={{
+          padding: '20px',
+          border: '1px solid #e0e0e0',
+          borderRadius: '8px',
+          margin: '20px 0'
+        }}>
+          <h2>出错了</h2>
+          <p>抱歉，页面遇到了错误。请尝试刷新页面。</p>
+          <button onClick={this.handleRetry}>
+            重试
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+
+  handleRetry = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null
+    });
+  };
+}
+
+// 使用
+<ErrorBoundary>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+</CodeBlock>
+
+### 2.2 使用Props自定义降级UI
+
+<CodeBlock>
+
+```jsx
+// 支持自定义降级组件
+class ErrorBoundary extends React.Component {
+  // ... 相同的错误处理逻辑
+
+  render() {
+    const {
+      hasError,
+      error,
+      errorInfo
+    } = this.state;
+    const {
+      fallback: Fallback,
+      onError,
+      showDetails = false
+    } = this.props;
+
+    if (hasError) {
+      // 使用自定义降级组件
+      if (Fallback) {
+        return (
+          <Fallback
+            error={error}
+            errorInfo={errorInfo}
+            retry={this.handleRetry}
+          />
+        );
+      }
+
+      // 默认降级UI
+      return (
+        <div className="error-boundary">
+          <h2>Something went wrong</h2>
+          <p>我们遇到了一个错误，请稍后重试。</p>
+
+          {showDetails && error && (
+            <details style={{ marginTop: '20px' }}>
+              <summary>错误详情</summary>
+              <pre style={{
+                whiteSpace: 'pre-wrap',
+                fontSize: '12px',
+                marginTop: '10px'
+              }}>
+                {error.toString()}
+              </pre>
+            </details>
+          )}
+
+          <div style={{ marginTop: '20px' }}>
+            <button onClick={this.handleRetry}>
+              重新尝试
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              style={{ marginLeft: '10px' }}
+            >
+              刷新页面
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 自定义降级组件
+const MyCustomFallback = ({ error, retry }) => (
+  <div style={{
+    padding: '40px',
+    textAlign: 'center',
+    background: '#fff3e0',
+    borderRadius: '8px'
+  }}>
+    <h3>页面暂时无法访问</h3>
+    <p>请检查网络连接后重试</p>
+    <button onClick={retry}>
+      重试
+    </button>
+  </div>
+);
+
+// 使用
+<ErrorBoundary
+  fallback={MyCustomFallback}
+  onError={(error, errorInfo) => {
+    // 错误上报
+    console.log('Error reported:', error);
+  }}
+  showDetails={true}
+>
+  <MyComponent />
+</ErrorBoundary>
+```
+
+</CodeBlock>
+
+### 2.3 错误上报集成
+
+<CodeBlock>
+
+```jsx
+// 带错误上报的错误边界
+class ErrorBoundaryWithLogging extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorId: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return {
+      hasError: true,
+      error: error,
+      errorId: Date.now().toString() // 生成错误ID
+    };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    const { onError, onErrorReport } = this.props;
+    const errorDetails = {
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
+      errorId: this.state.errorId,
+      userAgent: navigator.userAgent,
+      url: window.location.href
+    };
+
+    // 记录到控制台
+    console.error('Error caught by boundary:', errorDetails);
+
+    // 调用错误回调
+    onError?.(error, errorInfo);
+
+    // 发送错误上报
+    if (onErrorReport) {
+      onErrorReport(errorDetails);
+    } else {
+      // 默认上报逻辑
+      this.reportError(errorDetails);
+    }
+  }
+
+  reportError = async (errorDetails) => {
+    try {
+      // 发送到错误监控服务
+      await fetch('/api/errors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(errorDetails)
+      });
+    } catch (reportingError) {
+      console.error('Failed to report error:', reportingError);
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      const { fallback: Fallback } = this.props;
+      const { errorId } = this.state;
+
+      return (
+        <div className="error-boundary">
+          <h2>出错了</h2>
+          <p>
+            抱歉，页面遇到错误。错误ID:
+            <code>{errorId}</code>
+          </p>
+          <p>请将此错误ID提供给技术支持团队。</p>
+          <button onClick={this.handleRetry}>
+            重试
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+
+  handleRetry = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorId: null
+    });
+  };
+}
+
+// 使用
+<ErrorBoundaryWithLogging
+  fallback={CustomFallback}
+  onError={(error, errorInfo) => {
+    // 本地错误处理
+    console.log('Local error handling');
+  }}
+  onErrorReport={(errorDetails) => {
+    // 自定义错误上报
+    console.log('Custom error reporting:', errorDetails);
+  }}
+>
+  <MyComponent />
+</ErrorBoundaryWithLogging>
+```
+
+</CodeBlock>
+
+---
+
+## 3. 高级错误边界模式
+
+### 3.1 多级错误边界
+
+<CodeBlock>
+
+```jsx
+// 页面级错误边界
+class PageErrorBoundary extends React.Component {
+  render() {
+    return (
+      <ErrorBoundary
+        fallback={({ error, retry }) => (
+          <div style={{ padding: '40px' }}>
+            <h1>页面加载失败</h1>
+            <p>此页面遇到了问题</p>
+            <button onClick={retry}>重试</button>
+          </div>
+        )}
+      >
+        {this.props.children}
+      </ErrorBoundary>
+    );
+  }
+}
+
+// 组件级错误边界
+class ComponentErrorBoundary extends React.Component {
+  render() {
+    return (
+      <ErrorBoundary
+        fallback={({ error }) => (
+          <div style={{ padding: '20px', background: '#ffebee' }}>
+            <p>组件加载失败</p>
+          </div>
+        )}
+      >
+        {this.props.children}
+      </ErrorBoundary>
+    );
+  }
+}
+
+// 区域级错误边界
+class SectionErrorBoundary extends React.Component {
+  render() {
+    return (
+      <ErrorBoundary
+        fallback={() => (
+          <div style={{ padding: '10px' }}>
+            <p>此部分暂时不可用</p>
+          </div>
+        )}
+      >
+        {this.props.children}
+      </ErrorBoundary>
+    );
+  }
+}
+
+// 使用多层错误边界
+function App() {
+  return (
+    <PageErrorBoundary>
+      <Header />
+      <ComponentErrorBoundary>
+        <MainContent />
+      </ComponentErrorBoundary>
+      <SectionErrorBoundary>
+        <Sidebar />
+      </SectionErrorBoundary>
+      <Footer />
+    </PageErrorBoundary>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 条件错误边界
+
+<CodeBlock>
+
+```jsx
+// 根据条件启用错误边界
+class ConditionalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // 只在启用时记录错误
+    if (this.props.enableLogging) {
+      console.error('ErrorBoundary:', error, errorInfo);
+    }
+  }
+
+  render() {
+    const {
+      enableErrorBoundary = true,
+      children,
+      fallback
+    } = this.props;
+
+    if (!enableErrorBoundary) {
+      return children;
+    }
+
+    if (this.state.hasError) {
+      if (fallback) {
+        return <>{fallback}</>;
+      }
+
+      return <div>出错了</div>;
+    }
+
+    return children;
+  }
+}
+
+// 开发和生产环境使用不同策略
+const App = () => {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  return (
+    <ConditionalErrorBoundary
+      enableErrorBoundary={isDevelopment}
+      fallback={<div>Something went wrong</div>}
+    >
+      <MyComponent />
+    </ConditionalErrorBoundary>
+  );
+};
+
+// 基于用户类型启用错误边界
+const UserApp = ({ userType }) => {
+  const isPremiumUser = userType === 'premium';
+
+  return (
+    <ConditionalErrorBoundary
+      enableErrorBoundary={!isPremiumUser} // 免费用户看到错误边界，付费用户不看到
+      fallback={
+        <div>
+          <h3>功能暂时不可用</h3>
+          <p>升级到付费版本以获得更好的体验</p>
+        </div>
+      }
+    >
+      <AdvancedFeature />
+    </ConditionalErrorBoundary>
+  );
+};
+```
+
+</CodeBlock>
+
+### 3.3 错误边界组合
+
+<CodeBlock>
+
+```jsx
+// 错误边界组合器
+function withErrorBoundary(
+  WrappedComponent,
+  errorBoundaryProps = {}
+) {
+  return function EnhancedComponent(props) {
+    return (
+      <ErrorBoundary {...errorBoundaryProps}>
+        <WrappedComponent {...props} />
+      </ErrorBoundary>
+    );
+  };
+}
+
+// 使用高阶组件方式
+const EnhancedUserList = withErrorBoundary(UserList, {
+  fallback: ({ error, retry }) => (
+    <div>
+      <p>用户列表加载失败</p>
+      <button onClick={retry}>重试</button>
+    </div>
+  ),
+  onErrorReport: (error) => {
+    console.log('UserList error:', error);
+  }
+});
+
+// 错误边界 Hook（仅用于类组件包装）
+function useErrorHandler() {
+  return {
+    captureError: (error, context) => {
+      console.error('Manual error capture:', error, context);
+      // 可以发送到错误监控服务
+    }
+  };
+}
+
+// 在类组件中使用错误处理 Hook
+class MyComponent extends React.Component {
+  componentDidMount() {
+    this.errorHandler = useErrorHandler();
+  }
+
+  handleDataFetch = async () => {
+    try {
+      await fetchData();
+    } catch (error) {
+      this.errorHandler.captureError(error, {
+        component: 'MyComponent',
+        action: 'handleDataFetch'
+      });
+    }
+  };
+
+  render() {
+    return <div>My Component</div>;
+  }
+}
+```
+
+</CodeBlock>
+
+### 3.4 错误恢复机制
+
+<CodeBlock>
+
+```jsx
+// 支持错误恢复的错误边界
+class RecoverableErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      retryCount: 0
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    const { onError, maxRetries = 3 } = this.props;
+    const { retryCount } = this.state;
+
+    this.setState({
+      error,
+      errorInfo
+    });
+
+    // 记录错误
+    onError?.(error, errorInfo, retryCount);
+
+    // 自动重试逻辑
+    if (retryCount < maxRetries) {
+      setTimeout(() => {
+        this.handleRetry();
+      }, 1000 * (retryCount + 1)); // 递增延迟
+    }
+  }
+
+  handleRetry = () => {
+    this.setState(prevState => ({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      retryCount: prevState.retryCount + 1
+    }));
+  };
+
+  handleReset = () => {
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+      retryCount: 0
+    });
+  };
+
+  render() {
+    const {
+      hasError,
+      error,
+      errorInfo,
+      retryCount
+    } = this.state;
+    const {
+      fallback: Fallback,
+      maxRetries = 3,
+      autoRetry = false
+    } = this.props;
+
+    if (hasError) {
+      // 达到最大重试次数
+      if (retryCount >= maxRetries) {
+        return (
+          <div>
+            <h2>多次重试后仍失败</h2>
+            <p>请尝试刷新页面或联系技术支持</p>
+            <div>
+              <button onClick={this.handleRetry}>
+                手动重试
+              </button>
+              <button onClick={() => window.location.reload()}>
+                刷新页面
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // 自动重试中
+      if (autoRetry) {
+        return (
+          <div style={{ textAlign: 'center', padding: '20px' }}>
+            <p>重试中... ({retryCount + 1}/{maxRetries})</p>
+            <div>⏳</div>
+          </div>
+        );
+      }
+
+      // 使用自定义降级组件
+      if (Fallback) {
+        return (
+          <Fallback
+            error={error}
+            retryCount={retryCount}
+            maxRetries={maxRetries}
+            onRetry={this.handleRetry}
+            onReset={this.handleReset}
+          />
+        );
+      }
+
+      // 默认降级UI
+      return (
+        <div>
+          <h2>出错了</h2>
+          <p>尝试了 {retryCount} 次</p>
+          <button onClick={this.handleRetry}>
+            重试
+          </button>
+          <button onClick={this.handleReset}>
+            重置
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 自定义降级组件
+const CustomErrorFallback = ({
+  error,
+  retryCount,
+  maxRetries,
+  onRetry,
+  onReset
+}) => (
+  <div style={{
+    padding: '40px',
+    background: '#fff',
+    border: '2px solid #e74c3c',
+    borderRadius: '8px',
+    textAlign: 'center'
+  }}>
+    <h2 style={{ color: '#e74c3c' }}>😔 出错了</h2>
+    <p>我们正在努力修复这个问题</p>
+    <p>重试次数: {retryCount}/{maxRetries}</p>
+    <div style={{ marginTop: '20px' }}>
+      <button onClick={onRetry} style={{ marginRight: '10px' }}>
+        🔄 重试
+      </button>
+      <button onClick={onReset}>
+        🏠 返回首页
+      </button>
+    </div>
+  </div>
+);
+
+// 使用
+<RecoverableErrorBoundary
+  fallback={CustomErrorFallback}
+  maxRetries={5}
+  autoRetry={true}
+  onError={(error, errorInfo, retryCount) => {
+    console.log(`Attempt ${retryCount}:`, error);
+  }}
+>
+  <UnreliableComponent />
+</RecoverableErrorBoundary>
+```
+
+</CodeBlock>
+
+---
+
+## 4. 错误边界实际应用
+
+### 4.1 路由级错误边界
+
+<CodeBlock>
+
+```jsx
+// 路由错误边界
+class RouteErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    const { history, location } = this.props;
+
+    // 记录路由错误
+    console.error('Route error:', {
+      error: error.message,
+      path: location.pathname,
+      stack: error.stack
+    });
+
+    // 可选：跳转到错误页面
+    // history.push('/error');
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <h1>页面加载失败</h1>
+          <p>抱歉，此页面遇到问题</p>
+          <button onClick={() => window.location.href = '/'}>
+            返回首页
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// React Router 集成
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <RouteErrorBoundary>
+              <HomePage />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <RouteErrorBoundary>
+              <Dashboard />
+            </RouteErrorBoundary>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+// 或者为所有路由添加错误边界
+function ProtectedRoute({ children }) {
+  return (
+    <ErrorBoundary
+      fallback={({ error, retry }) => (
+        <div>
+          <h1>需要认证</h1>
+          <p>请先登录</p>
+        </div>
+      )}
+    >
+      <RouteErrorBoundary>
+        {children}
+      </RouteErrorBoundary>
+    </ErrorBoundary>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 异步组件错误处理
+
+<CodeBlock>
+
+```jsx
+// 错误边界与Suspense结合
+class SuspenseErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    // 将错误设置为状态，以便Suspense可以处理
+    if (error.name === 'ChunkLoadError') {
+      window.location.reload(); // 重新加载页面
+      return null;
+    }
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    if (error.name !== 'ChunkLoadError') {
+      console.error('Suspense error:', error, errorInfo);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div>
+          <h2>组件加载失败</h2>
+          <button onClick={() => window.location.reload()}>
+            重新加载
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 懒加载组件与错误边界
+const LazyComponent = React.lazy(() => import('./LazyComponent'));
+
+function App() {
+  return (
+    <SuspenseErrorBoundary>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent />
+      </Suspense>
+    </SuspenseErrorBoundary>
+  );
+}
+
+// 错误边界包装的懒加载
+const LazyWithErrorBoundary = (props) => (
+  <ErrorBoundary
+    fallback={({ retry }) => (
+      <div>
+        <h3>组件加载失败</h3>
+        <button onClick={retry}>重试</button>
+      </div>
+    )}
+  >
+    <React.lazy(() => import(props.component)) />
+  </ErrorBoundary>
+);
+
+// 使用
+<LazyWithErrorBoundary component="ExpensiveComponent" />
+```
+
+</CodeBlock>
+
+### 4.3 表单错误处理
+
+<CodeBlock>
+
+```jsx
+// 表单错误边界
+class FormErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Form error:', error);
+    // 发送表单错误到监控服务
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', border: '1px solid #e74c3c' }}>
+          <h3>表单提交失败</h3>
+          <p>请检查输入并重试</p>
+          <button onClick={this.handleReset}>
+            重置表单
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+
+  handleReset = () => {
+    this.setState({
+      hasError: false,
+      error: null
+    });
+    this.props.onReset?.();
+  };
+}
+
+// 表单组件
+function MyForm({ onSubmit, onReset }) {
+  return (
+    <FormErrorBoundary onReset={onReset}>
+      <form onSubmit={onSubmit}>
+        <input name="email" type="email" required />
+        <button type="submit">提交</button>
+      </form>
+    </FormErrorBoundary>
+  );
+}
+
+// 带有错误边界的表单包装器
+function FormWithErrorHandling({ formConfig }) {
+  return (
+    <ErrorBoundary
+      fallback={({ error }) => (
+        <div>
+          <h3>表单配置错误</h3>
+          <p>请检查表单配置</p>
+        </div>
+      )}
+    >
+      <FormConfigProvider config={formConfig}>
+        <MyForm />
+      </FormConfigProvider>
+    </ErrorBoundary>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.4 数据获取错误处理
+
+<CodeBlock>
+
+```jsx
+// 数据获取错误边界
+class DataFetchErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      data: null
+    };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    const { onError } = this.props;
+
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      // 网络错误
+      console.error('Network error:', error);
+    }
+
+    onError?.(error, errorInfo);
+  }
+
+  render() {
+    const { hasError, error } = this.state;
+    const {
+      children,
+      fallback: Fallback,
+      showDataOnError = false
+    } = this.props;
+
+    if (hasError) {
+      // 尝试使用缓存数据
+      if (showDataOnError && this.state.data) {
+        return (
+          <div>
+            <div style={{
+              background: '#fff3cd',
+              padding: '10px',
+              marginBottom: '10px'
+            }}>
+              <p>⚠️ 使用缓存数据，可能不是最新的</p>
+            </div>
+            {children}
+          </div>
+        );
+      }
+
+      if (Fallback) {
+        return <Fallback error={error} retry={this.handleRetry} />;
+      }
+
+      return (
+        <div>
+          <h3>数据加载失败</h3>
+          <p>请检查网络连接</p>
+          <button onClick={this.handleRetry}>重试</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+
+  handleRetry = () => {
+    this.setState({
+      hasError: false,
+      error: null
+    });
+    this.props.onRetry?.();
+  };
+}
+
+// 与数据获取逻辑结合
+class DataComponent extends React.Component {
+  state = {
+    data: null,
+    loading: true,
+    error: null
+  };
+
+  componentDidMount() {
+    this.fetchData();
+  }
+
+  fetchData = async () => {
+    try {
+      this.setState({ loading: true, error: null });
+      const data = await fetchData();
+      this.setState({ data, loading: false });
+    } catch (error) {
+      this.setState({ error, loading: false });
+    }
+  };
+
+  render() {
+    const { data, loading, error } = this.state;
+
+    return (
+      <DataFetchErrorBoundary
+        onError={this.logError}
+        onRetry={this.fetchData}
+        showDataOnError={true}
+      >
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error.message}</div>}
+        {data && <div>{data}</div>}
+      </DataFetchErrorBoundary>
+    );
+  }
+
+  logError = (error, errorInfo) => {
+    console.error('Data fetch error:', error);
+  };
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 错误边界最佳实践
+
+### 5.1 错误边界粒度
+
+<CodeBlock>
+
+```jsx
+// ✅ 好的实践 - 合理划分错误边界粒度
+
+// 1. 页面级错误边界
+class PageBoundary extends React.Component {
+  // 捕获整个页面的错误
+  render() {
+    return <ErrorBoundary>{this.props.children}</ErrorBoundary>;
+  }
+}
+
+// 2. 功能模块级错误边界
+class FeatureBoundary extends React.Component {
+  // 捕获特定功能的错误
+  render() {
+    return <ErrorBoundary>{this.props.children}</ErrorBoundary>;
+  }
+}
+
+// 3. 组件级错误边界
+class ComponentBoundary extends React.Component {
+  // 捕获单个组件的错误
+  render() {
+    return <ErrorBoundary>{this.props.children}</ErrorBoundary>;
+  }
+}
+
+// ❌ 避免的实践
+// 1. 在错误边界中渲染其他可能出错的组件
+class BadErrorBoundary extends React.Component {
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div>
+          <ComplexComponent /> {/* 错误边界内部不应有复杂组件 */}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// 2. 错误边界粒度太细
+function App() {
+  return (
+    <div>
+      <ErrorBoundary><Header /></ErrorBoundary> {/* 太细 */}
+      <ErrorBoundary><Nav /></ErrorBoundary>
+      <ErrorBoundary><Main /></ErrorBoundary>
+      <ErrorBoundary><Sidebar /></ErrorBoundary>
+      <ErrorBoundary><Footer /></ErrorBoundary>
+    </div>
+  );
+}
+
+// ✅ 推荐的实践
+function App() {
+  return (
+    <ErrorBoundary> {/* 页面级 */}
+      <ErrorBoundary> {/* 功能模块级 */}
+        <Header />
+        <Main />
+        <Sidebar />
+      </ErrorBoundary>
+      <Footer />
+    </ErrorBoundary>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 错误边界命名和文档
+
+<CodeBlock>
+
+```jsx
+// ✅ 清晰的命名和文档
+/**
+ * 页面错误边界
+ * 用于捕获整个页面的错误，显示降级UI
+ *
+ * @example
+ * <PageErrorBoundary fallback={CustomFallback}>
+ *   <MyPage />
+ * </PageErrorBoundary>
+ */
+class PageErrorBoundary extends React.Component {
+  // 实现
+}
+
+/**
+ * 组件错误边界
+ * 用于单个组件的错误处理
+ */
+class ComponentErrorBoundary extends React.Component {
+  // 实现
+}
+
+// 使用JSDoc记录Props
+/**
+ * @param {Object} props
+ * @param {React.Component} props.children - 子组件
+ * @param {Function} [props.fallback] - 错误降级组件
+ * @param {Function} [props.onError] - 错误回调
+ * @param {number} [props.maxRetries=3] - 最大重试次数
+ */
+class ErrorBoundary extends React.Component {
+  // 实现
+}
+
+// ✅ 提供使用示例
+/**
+ * 使用示例：
+ *
+ * ```jsx
+ * // 1. 使用默认降级UI
+ * <ErrorBoundary>
+ *   <MyComponent />
+ * </ErrorBoundary>
+ *
+ * // 2. 使用自定义降级UI
+ * <ErrorBoundary
+ *   fallback={({ error, retry }) => (
+ *     <div>出错了: {error.message}</div>
+ *   )}
+ * >
+ *   <MyComponent />
+ * </ErrorBoundary>
+ *
+ * // 3. 带错误上报
+ * <ErrorBoundary
+ *   onError={(error, errorInfo) => {
+ *     logErrorToService(error);
+ *   }}
+ * >
+ *   <MyComponent />
+ * </ErrorBoundary>
+ * ```
+ */
+class ErrorBoundary extends React.Component {
+  // 实现
+}
+```
+
+</CodeBlock>
+
+### 5.3 错误监控集成
+
+<CodeBlock>
+
+```jsx
+// 错误监控服务
+class ErrorMonitoringService {
+  static report(error, errorInfo) {
+    // 发送到监控服务
+    console.log('Reporting error:', { error, errorInfo });
+  }
+
+  static captureException(error, context = {}) {
+    this.report(error, { context });
+  }
+}
+
+// 错误边界与监控服务集成
+class MonitoredErrorBoundary extends React.Component {
+  componentDidCatch(error, errorInfo) {
+    // 错误分类
+    const errorType = this.classifyError(error);
+
+    // 添加上下文信息
+    const context = {
+      ...this.props.context,
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    };
+
+    // 上报错误
+    this.reportError(error, errorInfo, context);
+
+    // 调用用户回调
+    this.props.onError?.(error, errorInfo);
+  }
+
+  classifyError(error) {
+    if (error.name === 'ChunkLoadError') {
+      return 'lazy-loading';
+    }
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      return 'network';
+    }
+    if (error.message.includes('render')) {
+      return 'rendering';
+    }
+    return 'unknown';
+  }
+
+  reportError(error, errorInfo, context) {
+    const errorReport = {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      context
+    };
+
+    ErrorMonitoringService.captureException(error, errorReport);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const { fallback } = this.props;
+      return fallback || <DefaultErrorFallback />;
+    }
+    return this.props.children;
+  }
+}
+
+// 使用
+<MonitoredErrorBoundary
+  context={{
+    userId: '123',
+    feature: 'user-dashboard'
+  }}
+  onError={(error, errorInfo) => {
+    // 本地处理
+    console.error('Local error handling');
+  }}
+>
+  <MyComponent />
+</MonitoredErrorBoundary>
+```
+
+</CodeBlock>
+
+### 5.4 错误边界测试
+
+<CodeBlock>
+
+```jsx
+// 错误边界测试
+import { render, screen, fireEvent } from '@testing-library/react';
+
+// 测试错误边界是否正确渲染降级UI
+test('ErrorBoundary renders fallback when child throws', () => {
+  const ThrowError = () => {
+    throw new Error('Test error');
+  };
+
+  render(
+    <ErrorBoundary>
+      <ThrowError />
+    </ErrorBoundary>
+  );
+
+  expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+});
+
+// 测试错误边界可以恢复
+test('ErrorBoundary can recover after error', () => {
+  let shouldThrow = true;
+
+  const ConditionalComponent = () => {
+    if (shouldThrow) {
+      throw new Error('Test error');
+    }
+    return <div>No error</div>;
+  };
+
+  const { rerender } = render(
+    <ErrorBoundary>
+      <ConditionalComponent />
+    </ErrorBoundary>
+  );
+
+  expect(screen.getByText(/something went wrong/i)).toBeInTheDocument();
+
+  // 重置错误状态
+  shouldThrow = false;
+  rerender(
+    <ErrorBoundary>
+      <ConditionalComponent />
+    </ErrorBoundary>
+  );
+
+  expect(screen.getByText(/no error/i)).toBeInTheDocument();
+});
+
+// 测试错误上报
+test('ErrorBoundary calls onError when error occurs', () => {
+  const onError = jest.fn();
+
+  const ThrowError = () => {
+    throw new Error('Test error');
+  };
+
+  render(
+    <ErrorBoundary onError={onError}>
+      <ThrowError />
+    </ErrorBoundary>
+  );
+
+  expect(onError).toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.any(Object)
+  );
+});
+
+// 测试自定义降级UI
+test('ErrorBoundary renders custom fallback', () => {
+  const CustomFallback = ({ error }) => (
+    <div>Custom error: {error.message}</div>
+  );
+
+  const ThrowError = () => {
+    throw new Error('Test error');
+  };
+
+  render(
+    <ErrorBoundary fallback={CustomFallback}>
+      <ThrowError />
+    </ErrorBoundary>
+  );
+
+  expect(screen.getByText(/custom error: test error/i)).toBeInTheDocument();
+});
+```
+
+</CodeBlock>
+
+---
+
+## 6. 错误边界的局限性和注意事项
+
+### 6.1 错误边界无法捕获的错误
+
+<CodeBlock>
+
+```jsx
+// ❌ 错误边界无法捕获以下错误：
+
+// 1. 事件处理器中的错误
+function MyComponent() {
+  const handleClick = () => {
+    throw new Error('Event handler error'); // 错误边界无法捕获
+  };
+
+  return <button onClick={handleClick}>Click me</button>;
+}
+
+// 正确处理方式：使用try-catch
+function MyComponent() {
+  const handleClick = () => {
+    try {
+      // 可能有错误的代码
+      throw new Error('Event handler error');
+    } catch (error) {
+      console.error(error);
+      // 显示用户友好的错误
+    }
+  };
+
+  return <button onClick={handleClick}>Click me</button>;
+}
+
+// 2. 异步代码中的错误
+function MyComponent() {
+  useEffect(() => {
+    fetch('/api/data')
+      .then(data => {
+        throw new Error('Async error'); // 错误边界无法捕获
+      });
+  }, []);
+
+  return <div>My Component</div>;
+}
+
+// 正确处理方式：添加.catch()
+function MyComponent() {
+  useEffect(() => {
+    fetch('/api/data')
+      .then(data => {
+        // 处理数据
+      })
+      .catch(error => {
+        console.error(error);
+        // 设置错误状态
+      });
+  }, []);
+
+  return <div>My Component</div>;
+}
+
+// 3. 服务端渲染(SSR)错误
+// 错误边界在服务端不工作
+
+// 4. 错误边界自身的错误
+class BadErrorBoundary extends React.Component {
+  render() {
+    if (this.state.hasError) {
+      this.props.fallback(); // 如果fallback是函数，错误边界会出错
+      return <div>Error</div>;
+    }
+    return this.props.children;
+  }
+}
+
+// ✅ 正确处理
+class GoodErrorBoundary extends React.Component {
+  render() {
+    if (this.state.hasError) {
+      if (typeof this.props.fallback === 'function') {
+        return this.props.fallback({ error: this.state.error });
+      }
+      return <div>Error</div>;
+    }
+    return this.props.children;
+  }
+}
+```
+
+</CodeBlock>
+
+### 6.2 性能注意事项
+
+<CodeBlock>
+
+```jsx
+// ✅ 性能优化
+
+// 1. 避免在错误边界中创建对象
+class OptimizedErrorBoundary extends React.Component {
+  // 避免每次渲染都创建新对象
+  defaultFallback = () => (
+    <div>出错了</div>
+  );
+
+  render() {
+    if (this.state.hasError) {
+      // 使用实例属性而不是在render中创建
+      return this.props.fallback || this.defaultFallback;
+    }
+    return this.props.children;
+  }
+}
+
+// 2. 正确使用React.memo
+const ComponentWithErrorBoundary = React.memo(({ data }) => {
+  return <div>{data}</div>;
+});
+
+<ErrorBoundary>
+  <ComponentWithErrorBoundary />
+</ErrorBoundary>
+
+// 3. 避免深层嵌套
+// ❌ 不好
+<ErrorBoundary>
+  <ErrorBoundary>
+    <ErrorBoundary>
+      <ErrorBoundary>
+        <MyComponent />
+      </ErrorBoundary>
+    </ErrorBoundary>
+  </ErrorBoundary>
+</ErrorBoundary>
+
+// ✅ 好
+<ErrorBoundary>
+  <MyComponent />
+</ErrorBoundary>
+
+// 4. 条件渲染错误边界
+function App({ enableErrorBoundary }) {
+  return (
+    <div>
+      {enableErrorBoundary && (
+        <ErrorBoundary>
+          <MyComponent />
+        </ErrorBoundary>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 调试和开发体验
+
+<CodeBlock>
+
+```jsx
+// 开发环境增强错误边界
+class DevelopmentErrorBoundary extends React.Component {
+  componentDidCatch(error, errorInfo) {
+    // 开发环境下详细错误信息
+    if (process.env.NODE_ENV === 'development') {
+      console.group('🚨 ErrorBoundary Caught an Error');
+      console.error('Error:', error);
+      console.error('Error Info:', errorInfo);
+      console.error('Component Stack:', errorInfo.componentStack);
+      console.groupEnd();
+    }
+
+    // 生产环境只记录必要信息
+    this.reportError(error, errorInfo);
+  }
+
+  reportError(error, errorInfo) {
+    if (process.env.NODE_ENV === 'production') {
+      // 生产环境错误上报
+      console.error('Error reported:', error.message);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // 开发环境显示详细错误
+      if (process.env.NODE_ENV === 'development') {
+        return (
+          <div style={{ padding: '20px', background: '#ffebee' }}>
+            <h2>Development Mode - Error Details</h2>
+            <details>
+              <summary>Error Stack</summary>
+              <pre>{this.state.error?.stack}</pre>
+            </details>
+            <details>
+              <summary>Component Stack</summary>
+              <pre>{this.state.errorInfo?.componentStack}</pre>
+            </details>
+          </div>
+        );
+      }
+
+      // 生产环境显示用户友好错误
+      return (
+        <div>
+          <h2>出错了</h2>
+          <p>请稍后重试</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// React DevTools支持
+class DevToolsErrorBoundary extends React.Component {
+  componentDidCatch(error, errorInfo) {
+    // 设置组件名称便于调试
+    this.componentName = this.props.name || 'UnknownComponent';
+
+    console.error(
+      `Error in component: ${this.componentName}`,
+      error,
+      errorInfo
+    );
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div>Error in {this.componentName}</div>;
+    }
+    return this.props.children;
+  }
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实际应用案例
+
+### 7.1 完整错误边界系统
+
+<CodeBlock>
+
+```jsx
+// 错误边界系统
+const ErrorBoundaryContext = React.createContext();
+
+function ErrorBoundaryProvider({ children, onError }) {
+  const [errors, setErrors] = React.useState([]);
+
+  const handleError = React.useCallback((error, errorInfo) => {
+    const errorEntry = {
+      id: Date.now(),
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString()
+    };
+
+    setErrors(prev => [errorEntry, ...prev]);
+
+    // 触发错误回调
+    onError?.(error, errorInfo);
+  }, [onError]);
+
+  return (
+    <ErrorBoundaryContext.Provider value={{ errors, handleError }}>
+      {children}
+    </ErrorBoundaryContext.Provider>
+  );
+}
+
+// 全局错误边界
+class GlobalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    this.props.onError?.(error, errorInfo);
+    console.error('Global error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column'
+        }}>
+          <h1>😔 抱歉，页面出现了问题</h1>
+          <p>我们的工程师已经收到错误报告</p>
+          <button onClick={() => window.location.reload()}>
+            刷新页面
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 页面错误边界
+class PageErrorBoundary extends React.Component {
+  render() {
+    return (
+      <ErrorBoundary
+        fallback={({ error, retry }) => (
+          <div style={{ padding: '40px' }}>
+            <h2>页面加载失败</h2>
+            <p>此页面遇到了问题</p>
+            <div>
+              <button onClick={retry}>重试</button>
+              <button onClick={() => window.location.href = '/'}>
+                返回首页
+              </button>
+            </div>
+            {process.env.NODE_ENV === 'development' && (
+              <details>
+                <summary>错误详情</summary>
+                <pre>{error?.stack}</pre>
+              </details>
+            )}
+          </div>
+        )}
+      >
+        {this.props.children}
+      </ErrorBoundary>
+    );
+  }
+}
+
+// 使用错误边界系统
+function App() {
+  return (
+    <ErrorBoundaryProvider
+      onError={(error, errorInfo) => {
+        // 发送到监控服务
+        console.log('Error reported:', error);
+      }}
+    >
+      <GlobalErrorBoundary>
+        <Router>
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <PageErrorBoundary>
+                  <HomePage />
+                </PageErrorBoundary>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <PageErrorBoundary>
+                  <Dashboard />
+                </PageErrorBoundary>
+              }
+            />
+          </Routes>
+        </Router>
+      </GlobalErrorBoundary>
+    </ErrorBoundaryProvider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 错误边界Hook
+
+<CodeBlock>
+
+```jsx
+// 错误边界Hook（仅适用于类组件包装）
+function useErrorHandler() {
+  return {
+    // 手动捕获错误
+    captureError: (error, context = {}) => {
+      console.error('Captured error:', { error, context });
+      // 可以发送到错误监控
+    },
+    // 创建错误回调
+    createErrorHandler: (errorCallback) => (error, errorInfo) => {
+      console.error('Component error:', error);
+      errorCallback?.(error, errorInfo);
+    }
+  };
+}
+
+// 在类组件中使用
+class MyComponent extends React.Component {
+  componentDidMount() {
+    const errorHandler = useErrorHandler();
+
+    // 手动错误处理
+    try {
+      // 可能出错的代码
+    } catch (error) {
+      errorHandler.captureError(error, {
+        component: 'MyComponent',
+        action: 'componentDidMount'
+      });
+    }
+  }
+
+  render() {
+    return <div>My Component</div>;
+  }
+}
+
+// 错误状态Hook（用于函数组件）
+function useErrorState() {
+  const [error, setError] = React.useState(null);
+
+  const resetError = React.useCallback(() => {
+    setError(null);
+  }, []);
+
+  const throwError = React.useCallback((error) => {
+    setError(error);
+  }, []);
+
+  React.useEffect(() => {
+    if (error) {
+      throw error;
+    }
+  }, [error]);
+
+  return { error, resetError, throwError };
+}
+
+// 使用
+function MyFunctionalComponent() {
+  const { error, resetError } = useErrorState();
+
+  if (error) {
+    return (
+      <div>
+        <p>出错了: {error.message}</p>
+        <button onClick={resetError}>重试</button>
+      </div>
+    );
+  }
+
+  return <div>Normal state</div>;
+}
+```
+
+</CodeBlock>
+
+### 7.3 错误边界与日志系统
+
+<CodeBlock>
+
+```jsx
+// 日志系统
+class Logger {
+  static logs = [];
+
+  static log(level, message, data) {
+    const logEntry = {
+      id: Date.now(),
+      level,
+      message,
+      data,
+      timestamp: new Date().toISOString()
+    };
+
+    this.logs.unshift(logEntry);
+
+    // 保持日志数量限制
+    if (this.logs.length > 100) {
+      this.logs = this.logs.slice(0, 100);
+    }
+
+    return logEntry;
+  }
+
+  static error(message, error, context) {
+    return this.log('error', message, { error, context });
+  }
+
+  static getLogs() {
+    return this.logs;
+  }
+}
+
+// 带日志的错误边界
+class LoggingErrorBoundary extends React.Component {
+  componentDidCatch(error, errorInfo) {
+    const { context, onError } = this.props;
+
+    // 记录错误
+    Logger.error('Component error', error, {
+      context,
+      componentStack: errorInfo.componentStack,
+      errorBoundary: this.constructor.name
+    });
+
+    // 触发回调
+    onError?.(error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || <DefaultErrorFallback />;
+    }
+    return this.props.children;
+  }
+}
+
+// 日志查看器组件
+function LogViewer() {
+  const [logs, setLogs] = React.useState(Logger.getLogs());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setLogs(Logger.getLogs());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '20px',
+      right: '20px',
+      background: 'white',
+      border: '1px solid #ccc',
+      padding: '10px',
+      maxHeight: '300px',
+      overflow: 'auto'
+    }}>
+      <h4>Error Logs</h4>
+      {logs.map(log => (
+        <div key={log.id} style={{
+          borderBottom: '1px solid #eee',
+          padding: '5px 0'
+        }}>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            {log.timestamp}
+          </div>
+          <div style={{
+            color: log.level === 'error' ? 'red' : 'black',
+            fontSize: '12px'
+          }}>
+            {log.message}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// 使用
+<LoggingErrorBoundary
+  context={{ userId: '123', page: 'dashboard' }}
+  onError={(error, errorInfo) => {
+    // 可以添加额外处理
+  }}
+>
+  <MyComponent />
+</LoggingErrorBoundary>
+
+<LogViewer />
+```
+
+</CodeBlock>
+
+### 7.4 错误边界配置系统
+
+<CodeBlock>
+
+```jsx
+// 错误边界配置
+const ERROR_BOUNDARY_CONFIG = {
+  // 全局配置
+  global: {
+    enableErrorReporting: true,
+    enableAutoRetry: true,
+    maxRetries: 3
+  },
+
+  // 按路由配置
+  routes: {
+    '/': {
+      enableErrorBoundary: true,
+      showDetails: false
+    },
+    '/dashboard': {
+      enableErrorBoundary: true,
+      showDetails: true,
+      customFallback: DashboardErrorFallback
+    }
+  },
+
+  // 按组件配置
+  components: {
+    'Header': {
+      enableErrorBoundary: false
+    },
+    'Footer': {
+      enableErrorBoundary: false
+    },
+    'ExpensiveComponent': {
+      enableErrorBoundary: true,
+      maxRetries: 5,
+      autoRetry: true
+    }
+  }
+};
+
+// 错误边界工厂
+function createErrorBoundary(config = {}) {
+  return class extends React.Component {
+    static getDerivedStateFromError(error) {
+      return { hasError: true, error };
+    }
+
+    componentDidCatch(error, errorInfo) {
+      const { onError, enableErrorReporting = true } = this.props;
+
+      if (enableErrorReporting) {
+        console.error('ErrorBoundary:', error, errorInfo);
+      }
+
+      onError?.(error, errorInfo);
+    }
+
+    render() {
+      const {
+        fallback,
+        children,
+        showDetails = false
+      } = this.props;
+
+      if (this.state.hasError) {
+        if (fallback) {
+          return <>{fallback}</>;
+        }
+
+        return (
+          <div>
+            <h2>出错了</h2>
+            {showDetails && (
+              <pre>{this.state.error?.stack}</pre>
+            )}
+          </div>
+        );
+      }
+
+      return children;
+    }
+  };
+}
+
+// 配置感知的错误边界组件
+function ConfigurableErrorBoundary({
+  componentName,
+  routePath,
+  children
+}) {
+  const config = React.useMemo(() => {
+    const routeConfig = ERROR_BOUNDARY_CONFIG.routes[routePath] || {};
+    const componentConfig = ERROR_BOUNDARY_CONFIG.components[componentName] || {};
+
+    return {
+      ...ERROR_BOUNDARY_CONFIG.global,
+      ...routeConfig,
+      ...componentConfig
+    };
+  }, [componentName, routePath]);
+
+  if (!config.enableErrorBoundary) {
+    return children;
+  }
+
+  const ErrorBoundary = createErrorBoundary(config);
+
+  return (
+    <ErrorBoundary
+      enableErrorReporting={config.enableErrorReporting}
+      fallback={config.customFallback}
+      maxRetries={config.maxRetries}
+    >
+      {children}
+    </ErrorBoundary>
+  );
+}
+
+// 使用配置化错误边界
+function App() {
+  return (
+    <Router>
+      <ConfigurableErrorBoundary
+        componentName="App"
+        routePath="/"
+      >
+        <Routes>
+          <Route path="/" element={
+            <ConfigurableErrorBoundary
+              componentName="HomePage"
+              routePath="/"
+            >
+              <HomePage />
+            </ConfigurableErrorBoundary>
+          } />
+          <Route path="/dashboard" element={
+            <ConfigurableErrorBoundary
+              componentName="Dashboard"
+              routePath="/dashboard"
+            >
+              <Dashboard />
+            </ConfigurableErrorBoundary>
+          } />
+        </Routes>
+      </ConfigurableErrorBoundary>
+    </Router>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 实践练习
+
+### 练习1：创建基础错误边界组件
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 实现基础错误边界类组件
+- 使用getDerivedStateFromError和componentDidCatch
+- 支持自定义降级UI
+- 错误恢复功能
+
+**实现要求**：
+```javascript
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // 更新state显示降级UI
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // 记录错误
+  }
+
+  render() {
+    // 返回降级UI或正常子组件
+  }
+}
+```
+
+**提示**：
+- 正确设置hasError状态
+- 在componentDidCatch中记录错误
+- 提供重试功能
+- 使用React.Component
+
+</Expandable>
+
+### 练习2：创建带错误上报的错误边界
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 错误边界集成错误监控服务
+- 发送错误详情到服务器
+- 生成错误ID用于追踪
+- 支持离线错误缓存
+
+**实现要求**：
+```javascript
+class ErrorBoundaryWithReporting extends React.Component {
+  reportError(error, errorInfo) {
+    // 发送到错误监控服务
+    // 错误应包含: message, stack, componentStack, timestamp, userAgent
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // 记录和上报
+  }
+}
+```
+
+**提示**：
+- 使用fetch发送POST请求
+- 生成唯一错误ID
+- 处理网络错误
+- 离线时缓存错误
+
+</Expandable>
+
+### 练习3：创建多级错误边界系统
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 实现页面级、组件级、区域级错误边界
+- 不同级别使用不同降级UI
+- 支持错误边界嵌套
+- 错误隔离
+
+**实现要求**：
+```javascript
+// 页面级
+class PageErrorBoundary { ... }
+
+// 组件级
+class ComponentErrorBoundary { ... }
+
+// 区域级
+class SectionErrorBoundary { ... }
+
+// 使用示例
+<PageErrorBoundary>
+  <ComponentErrorBoundary>
+    <SectionErrorBoundary>
+      <MyComponent />
+    </SectionErrorBoundary>
+  </ComponentErrorBoundary>
+</PageErrorBoundary>
+```
+
+**提示**：
+- 合理划分错误边界粒度
+- 避免过度嵌套
+- 不同级别不同策略
+- 错误不会向上传播
+
+</Expandable>
+
+### 练习4：创建错误恢复机制
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 错误边界支持自动重试
+- 手动重试功能
+- 最大重试次数限制
+- 重试状态显示
+
+**实现要求**：
+```javascript
+class RecoverableErrorBoundary extends React.Component {
+  maxRetries = 3;
+
+  componentDidCatch(error, errorInfo) {
+    // 自动重试逻辑
+  }
+
+  handleRetry = () => {
+    // 重置错误状态
+  }
+
+  handleReset = () => {
+    // 完全重置
+  }
+}
+```
+
+**提示**：
+- 使用setTimeout实现延迟重试
+- 递增延迟时间
+- 追踪重试次数
+- 显示重试状态
+
+</Expandable>
+
+---
+
+## 9. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 错误边界是React类组件特有的模式
+- ✅ 使用getDerivedStateFromError更新状态
+- ✅ 使用componentDidCatch记录错误
+- ✅ 错误边界无法捕获事件处理器错误
+- ✅ 错误边界无法捕获异步代码错误
+- ✅ 合理划分错误边界粒度
+- ✅ 提供用户友好的降级UI
+- ✅ 集成错误监控和上报
+- ✅ 支持错误恢复和重试
+- ✅ 在开发和生产环境使用不同策略
+
+</Checklist>
+
+### 错误边界最佳实践
+
+<BestPractices>
+
+1. **合理粒度** - 页面级或功能模块级，不要过细
+2. **用户友好** - 显示清晰的错误信息，避免技术细节
+3. **错误上报** - 集成错误监控服务，追踪生产环境错误
+4. **性能优化** - 避免在错误边界中创建新对象
+5. **开发体验** - 开发环境显示详细错误，生产环境隐藏
+6. **测试覆盖** - 测试错误边界在各种场景下的行为
+7. **文档完整** - 记录错误边界的使用方法和配置
+8. **恢复机制** - 提供重试或恢复选项
+
+</BestPractices>
+
+### 错误边界适用场景
+
+<BestPractices>
+
+**适合使用**：
+- 页面级错误隔离
+- 复杂组件容错
+- 第三方组件包装
+- 数据获取错误处理
+- 懒加载组件错误
+
+**不适合使用**：
+- 事件处理器
+- 异步代码
+- 服务端渲染
+- 简单组件
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了错误边界，接下来可以学习：
+
+1. **[Children模式](../advanced/children-patterns)** - 深入React children
+2. **[Props Getters模式](../advanced/props-getters)** - 灵活的Props传递
+3. **[受控与非受控](../advanced/controlled-uncontrolled)** - 表单组件模式
+4. **[组合 vs 继承](../advanced/composition-vs-inheritance)** - React设计哲学
+
+---
+
+## 10. 延伸阅读
+
+### 官方资源
+
+- [错误边界](https://react.dev/reference/react) - React官方文档
+- [getDerivedStateFromError](https://react.dev/reference/react) - 生命周期方法
+- [组件错误处理](https://react.dev/reference/react) - 错误处理指南
+
+### 推荐阅读
+
+- [错误边界最佳实践](https://kentcdodds.com/blog/) - 错误处理模式
+- [React错误监控](https://blog.logrocket.com/) - 错误监控指南
+- [错误边界vs错误处理](https://reactpatterns.com/) - 模式对比
+
+### 相关话题
+
+- [错误处理](https://react.dev/learn/thinking-in-react) - React错误思维
+- [调试React](https://react.dev/learn/) - 调试技巧
+- [错误恢复](https://react.dev/reference/react) - 错误恢复模式
+
+---
+
+[← 上一章：Hooks模式](../advanced/hooks-patterns) | [下一章：Children模式 →](../advanced/children-patterns)

@@ -1,0 +1,1899 @@
+# Jotai原子化状态 - 细粒度状态管理方案
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+Jotai是React生态系统中一个独特的轻量级状态管理库，它采用**原子化状态**（Atomic State）的创新理念。与传统的集中式状态管理不同，Jotai将状态拆分为最小不可分的原子（Atoms），每个原子独立管理自己的状态。本章将深入探讨Jotai的核心概念、原子化状态模式、高级用法和实际应用场景。
+
+## 本章学习目标
+
+- 理解Jotai的原子化状态理念
+- 掌握Jotai的基础用法和核心概念
+- 学会创建和管理原子状态
+- 理解原子依赖和自动更新机制
+- 掌握Jotai的高级模式：衍生原子、异步原子
+- 学会使用Jotai进行性能优化
+- 掌握Jotai与React的集成
+- 理解Jotai的最佳实践
+- 掌握Jotai与其他状态管理方案的对比
+- 学会在大型项目中使用Jotai
+
+---
+
+## 1. Jotai是什么？
+
+Jotai的理念是将状态拆分为最小不可分的单元（原子），每个原子可以独立存在，也可以组合成更复杂的状态。这种设计提供了细粒度的控制和高性能的更新。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心理念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>原子化状态</strong> - 最小不可分的状态单元<br />
+    <strong>组合思维</strong> - 多个原子可以组合成复杂状态<br />
+    <strong>自动追踪</strong> - 自动追踪原子间的依赖关系<br />
+    <strong>细粒度更新</strong> - 只更新真正需要更新的组件
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// Jotai示例 - 原子化状态
+import { atom, useAtom } from 'jotai';
+
+// 1. 创建原子（基础原子）
+const countAtom = atom(0);
+
+// 2. 创建衍生原子（从其他原子派生）
+const doubleAtom = atom((get) => get(countAtom) * 2);
+
+// 3. 创建异步原子
+const userAtom = atom(async () => {
+  const response = await fetch('/api/user');
+  return response.json();
+});
+
+// 4. 在组件中使用
+function Counter() {
+  const [count, setCount] = useAtom(countAtom);
+  const [double] = useAtom(doubleAtom);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Double: {double}</p>
+      <button onClick={() => setCount(c => c + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 1.1 原子化状态的核心优势
+
+<Grid>
+
+<div>
+  <h4>🎯 细粒度控制</h4>
+  <ul>
+    <li>每个原子独立管理</li>
+    <li>最小化重渲染</li>
+    <li>精确的状态更新</li>
+    <li>组合式设计</li>
+  </ul>
+</div>
+
+<div>
+  <h4>⚡ 高性能</h4>
+  <ul>
+    <li>自动依赖追踪</li>
+    <li>只更新相关组件</li>
+    <li>无过度渲染</li>
+    <li>优化更新路径</li>
+  </ul>
+</div>
+
+<div>
+  <h4>🔧 灵活性</h4>
+  <ul>
+    <li>自由组合原子</li>
+    <li>动态原子创建</li>
+    <li>类型安全</li>
+    <li>简单API</li>
+  </ul>
+</div>
+
+<div>
+  <h4>📦 轻量</h4>
+  <ul>
+    <li>极小Bundle</li>
+    <li>零依赖</li>
+    <li>TypeScript友好</li>
+    <li>学习曲线平缓</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 与其他状态管理方案对比
+
+<CodeBlock>
+
+```jsx
+// 对比：状态结构
+
+// ❌ 传统方案 - 集中式
+const state = {
+  user: { name: '', email: '' },
+  theme: 'light',
+  todos: [],
+  // 任何变化都影响整个state
+};
+
+// ✅ Jotai - 原子化
+const userAtom = atom({ name: '', email: '' });
+const themeAtom = atom('light');
+const todosAtom = atom([]);
+// 每个原子独立存在
+```
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// 对比：状态更新
+
+// ❌ Context - 所有消费者重渲染
+const StateContext = createContext();
+const [state, setState] = useState({ count: 0, text: 'hello' });
+// text变化时，订阅count的组件也会重渲染
+
+// ✅ Jotai - 只订阅需要的原子
+const countAtom = atom(0);
+const textAtom = atom('hello');
+// countAtom变化时，只重渲染订阅countAtom的组件
+```
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// 对比：派生状态
+
+// ❌ useMemo - 手动管理依赖
+const double = useMemo(() => {
+  return count * 2;
+}, [count]); // 需要手动指定依赖
+
+// ✅ Jotai - 自动追踪依赖
+const doubleAtom = atom((get) => get(countAtom) * 2);
+// 自动追踪countAtom依赖
+```
+
+</CodeBlock>
+
+---
+
+## 2. 快速开始
+
+### 2.1 安装Jotai
+
+<CodeBlock>
+
+```bash
+# 使用npm
+npm install jotai
+
+# 使用yarn
+yarn add jotai
+
+# 使用pnpm
+pnpm add jotai
+```
+
+</CodeBlock>
+
+### 2.2 基础用法
+
+<CodeBlock>
+
+```jsx
+// 基础计数器示例
+import { atom, useAtom } from 'jotai';
+
+// 1. 创建原子
+const countAtom = atom(0);
+
+// 2. 在组件中使用
+function Counter() {
+  const [count, setCount] = useAtom(countAtom);
+
+  return (
+    <div>
+      <h2>Count: {count}</h2>
+      <button onClick={() => setCount(c => c + 1)}>
+        Increment
+      </button>
+      <button onClick={() => setCount(c => c - 1)}>
+        Decrement
+      </button>
+      <button onClick={() => setCount(0)}>
+        Reset
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 原子类型详解
+
+<CodeBlock>
+
+```jsx
+import { atom } from 'jotai';
+
+// 1. 基础原子 - 原始值
+const countAtom = atom(0);
+const textAtom = atom('hello');
+const isActiveAtom = atom(true);
+
+// 2. 初始值函数
+const randomAtom = atom(() => Math.random());
+
+// 3. 读取器函数（衍生原子）
+const doubleAtom = atom((get) => {
+  const count = get(countAtom);
+  return count * 2;
+});
+
+// 4. 写原子（带setter）
+const uppercaseAtom = atom(
+  (get) => get(textAtom).toUpperCase(),
+  (get, set, newText) => {
+    set(textAtom, newText);
+  }
+);
+
+// 5. 异步原子
+const dataAtom = atom(async () => {
+  const response = await fetch('/api/data');
+  return response.json();
+});
+
+// 6. 带参数的原子（使用函数返回原子）
+const createCounterAtom = (initial) => atom(initial);
+
+// 7. 对象原子
+const userAtom = atom({
+  name: 'John',
+  age: 30,
+  email: 'john@example.com'
+});
+```
+
+</CodeBlock>
+
+---
+
+## 3. 核心概念深入
+
+### 3.1 基础原子
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 基础原子
+const countAtom = atom(0);
+const textAtom = atom('hello');
+const boolAtom = atom(true);
+
+// 使用
+function Component() {
+  const [count, setCount] = useAtom(countAtom);
+  const [text, setText] = useAtom(textAtom);
+  const [isVisible, setVisible] = useAtom(boolAtom);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Text: {text}</p>
+      <p>Visible: {isVisible}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 衍生原子
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 基础原子
+const countAtom = atom(0);
+
+// 衍生原子 - 只读
+const doubleAtom = atom((get) => {
+  const count = get(countAtom);
+  return count * 2;
+});
+
+const tripleAtom = atom((get) => {
+  const count = get(countAtom);
+  return count * 3;
+});
+
+// 复合衍生
+const totalAtom = atom((get) => {
+  const double = get(doubleAtom);
+  const triple = get(tripleAtom);
+  return double + triple;
+});
+
+// 使用
+function DerivedCounter() {
+  const [count, setCount] = useAtom(countAtom);
+  const [double] = useAtom(doubleAtom);
+  const [triple] = useAtom(tripleAtom);
+  const [total] = useAtom(totalAtom);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Double: {double}</p>
+      <p>Triple: {triple}</p>
+      <p>Total: {total}</p>
+      <button onClick={() => setCount(c => c + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 可写原子
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 可写原子 - 自定义getter和setter
+const counterAtom = atom(
+  // getter
+  (get) => {
+    const count = get(countAtom);
+    return count;
+  },
+  // setter
+  (get, set, newValue) => {
+    set(countAtom, newValue);
+  }
+);
+
+// 更复杂的可写原子
+const uppercaseTextAtom = atom(
+  (get) => get(textAtom).toUpperCase(),
+  (get, set, newText) => {
+    set(textAtom, newText.toLowerCase());
+  }
+);
+
+// 使用回调的可写原子
+const incrementAtom = atom(null, (get, set) => {
+  set(countAtom, get(countAtom) + 1);
+});
+
+function WritableCounter() {
+  const [count, setCount] = useAtom(counterAtom);
+  const [uppercaseText, setUppercaseText] = useAtom(uppercaseTextAtom);
+  const [, increment] = useAtom(incrementAtom);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <p>Uppercase: {uppercaseText}</p>
+      <button onClick={() => increment()}>
+        Increment via Action
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.4 异步原子
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 异步基础原子
+const userAtom = atom(async () => {
+  const response = await fetch('/api/user');
+  return response.json();
+});
+
+// 带初始值的异步原子
+const userWithIdAtom = atom(async (get) => {
+  const id = get(idAtom);
+  const response = await fetch(`/api/users/${id}`);
+  return response.json();
+});
+
+// 异步可写原子
+const createUserAtom = atom(
+  null,
+  async (get, set, userData) => {
+    const response = await fetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+    const newUser = await response.json();
+    set(userAtom, newUser);
+  }
+);
+
+function UserProfile() {
+  const [user, { refetch }] = useAtom(userAtom);
+  const [, createUser] = useAtom(createUserAtom);
+
+  if (user === undefined) {
+    return <div>Loading...</div>;
+  }
+
+  if (user === null) {
+    return <div>No user found</div>;
+  }
+
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+      <button onClick={() => refetch()}>
+        Refresh
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 原子组合与依赖
+
+### 4.1 自动依赖追踪
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 基础原子
+const aAtom = atom(1);
+const bAtom = atom(2);
+const cAtom = atom(3);
+
+// 衍生原子自动追踪依赖
+const sumABAtom = atom((get) => {
+  console.log('Computing sumAB');
+  return get(aAtom) + get(bAtom);
+});
+
+const totalAtom = atom((get) => {
+  console.log('Computing total');
+  const sumAB = get(sumABAtom);
+  return sumAB + get(cAtom);
+});
+
+function Component() {
+  // 只订阅totalAtom
+  const [total] = useAtom(totalAtom);
+
+  // 当aAtom变化时：
+  // 1. sumABAtom重新计算
+  // 2. totalAtom重新计算
+  // 3. Component重新渲染
+
+  return <div>Total: {total}</div>;
+}
+```
+
+</CodeBlock>
+
+### 4.2 条件衍生
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 基础原子
+const countAtom = atom(0);
+const thresholdAtom = atom(10);
+
+// 条件衍生
+const isHighAtom = atom((get) => {
+  const count = get(countAtom);
+  const threshold = get(thresholdAtom);
+  return count > threshold;
+});
+
+const messageAtom = atom((get) => {
+  const count = get(countAtom);
+  const threshold = get(thresholdAtom);
+  const isHigh = get(isHighAtom);
+
+  if (count === 0) return 'Start counting!';
+  if (isHigh) return `Count (${count}) is high!`;
+  return `Current count: ${count}`;
+});
+
+function ConditionalDerived() {
+  const [count, setCount] = useAtom(countAtom);
+  const [threshold] = useAtom(thresholdAtom);
+  const [isHigh] = useAtom(isHighAtom);
+  const [message] = useAtom(messageAtom);
+
+  return (
+    <div>
+      <p>{message}</p>
+      <p>Is High: {isHigh ? 'Yes' : 'No'}</p>
+      <button onClick={() => setCount(c => c + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 组合多个原子
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 用户相关原子
+const firstNameAtom = atom('John');
+const lastNameAtom = atom('Doe');
+const ageAtom = atom(30);
+
+// 组合原子
+const fullNameAtom = atom((get) => {
+  const firstName = get(firstNameAtom);
+  const lastName = get(lastNameAtom);
+  return `${firstName} ${lastName}`;
+});
+
+const isAdultAtom = atom((get) => {
+  const age = get(ageAtom);
+  return age >= 18;
+});
+
+const userSummaryAtom = atom((get) => {
+  const fullName = get(fullNameAtom);
+  const isAdult = get(isAdultAtom);
+  const age = get(ageAtom);
+  return {
+    name: fullName,
+    age,
+    status: isAdult ? 'Adult' : 'Minor'
+  };
+});
+
+function UserInfo() {
+  const [firstName, setFirstName] = useAtom(firstNameAtom);
+  const [lastName, setLastName] = useAtom(lastNameAtom);
+  const [age, setAge] = useAtom(ageAtom);
+  const [summary] = useAtom(userSummaryAtom);
+
+  return (
+    <div>
+      <p>Name: {summary.name}</p>
+      <p>Age: {summary.age}</p>
+      <p>Status: {summary.status}</p>
+
+      <input
+        value={firstName}
+        onChange={(e) => setFirstName(e.target.value)}
+        placeholder="First Name"
+      />
+      <input
+        value={lastName}
+        onChange={(e) => setLastName(e.target.value)}
+        placeholder="Last Name"
+      />
+      <input
+        type="number"
+        value={age}
+        onChange={(e) => setAge(Number(e.target.value))}
+        placeholder="Age"
+      />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. Jotai高级模式
+
+### 5.1 动态原子
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 动态创建原子
+const createTodoAtom = (id) => atom({
+  id,
+  text: `Todo ${id}`,
+  completed: false,
+});
+
+// 索引原子
+const todoIdsAtom = atom([1, 2, 3]);
+
+// 获取动态原子
+function useTodoAtom(id) {
+  const todoAtom = useMemo(() => createTodoAtom(id), [id]);
+  return useAtom(todoAtom);
+}
+
+function TodoItem({ id }) {
+  const [todo, setTodo] = useTodoAtom(id);
+  const [ids] = useAtom(todoIdsAtom);
+
+  return (
+    <div>
+      <input
+        type="checkbox"
+        checked={todo.completed}
+        onChange={(e) =>
+          setTodo({
+            ...todo,
+            completed: e.target.checked,
+          })
+        }
+      />
+      <span>{todo.text}</span>
+    </div>
+  );
+}
+
+function TodoList() {
+  const [ids, setIds] = useAtom(todoIdsAtom);
+
+  const addTodo = () => {
+    const newId = Math.max(...ids) + 1;
+    setIds([...ids, newId]);
+  };
+
+  return (
+    <div>
+      <button onClick={addTodo}>Add Todo</button>
+      {ids.map((id) => (
+        <TodoItem key={id} id={id} />
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 异步依赖
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 异步原子
+const userAtom = atom(async () => {
+  const response = await fetch('/api/user');
+  return response.json();
+});
+
+// 依赖异步原子的衍生原子
+const userNameAtom = atom((get) => {
+  const user = get(userAtom);
+  return user?.name || 'Unknown';
+});
+
+const userEmailAtom = atom((get) => {
+  const user = get(userAtom);
+  return user?.email || '';
+});
+
+// 异步可写原子
+const updateUserAtom = atom(
+  null,
+  async (get, set, updates) => {
+    const currentUser = get(userAtom);
+    const updatedUser = { ...currentUser, ...updates };
+
+    const response = await fetch('/api/user', {
+      method: 'PUT',
+      body: JSON.stringify(updatedUser),
+    });
+
+    set(userAtom, await response.json());
+  }
+);
+
+function UserProfile() {
+  const [user, { refetch }] = useAtom(userAtom);
+  const [userName] = useAtom(userNameAtom);
+  const [userEmail] = useAtom(userEmailAtom);
+  const [, updateUser] = useAtom(updateUserAtom);
+
+  if (user === undefined) {
+    return <div>Loading user...</div>;
+  }
+
+  return (
+    <div>
+      <h2>User Profile</h2>
+      <p>Name: {userName}</p>
+      <p>Email: {userEmail}</p>
+      <button onClick={() => refetch()}>
+        Refresh
+      </button>
+      <button onClick={() => updateUser({ name: 'New Name' })}>
+        Update Name
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 原子中介者模式
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 基础原子
+const actionAtom = atom(null);
+const statusAtom = atom('idle');
+const resultAtom = atom(null);
+
+// 中介者原子（监听action并更新status和result）
+const mediatorAtom = atom(null, (get, set, action) => {
+  set(actionAtom, action);
+  set(statusAtom, 'processing');
+
+  // 模拟异步操作
+  setTimeout(() => {
+    if (action === 'save') {
+      set(resultAtom, 'Saved successfully');
+      set(statusAtom, 'success');
+    } else if (action === 'delete') {
+      set(resultAtom, 'Deleted successfully');
+      set(statusAtom, 'success');
+    } else {
+      set(resultAtom, 'Unknown action');
+      set(statusAtom, 'error');
+    }
+  }, 1000);
+});
+
+function ActionHandler() {
+  const [status, setStatus] = useAtom(statusAtom);
+  const [result, setResult] = useAtom(resultAtom);
+  const [, trigger] = useAtom(mediatorAtom);
+
+  const handleSave = () => trigger('save');
+  const handleDelete = () => trigger('delete');
+  const handleReset = () => {
+    setStatus('idle');
+    setResult(null);
+    set(actionAtom, null);
+  };
+
+  return (
+    <div>
+      <p>Status: {status}</p>
+      <p>Result: {result}</p>
+
+      <button onClick={handleSave} disabled={status === 'processing'}>
+        Save
+      </button>
+      <button onClick={handleDelete} disabled={status === 'processing'}>
+        Delete
+      </button>
+      <button onClick={handleReset} disabled={status === 'processing'}>
+        Reset
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. Jotai最佳实践
+
+### 6.1 原子设计原则
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// ✅ 好的实践1：保持原子简单
+const userNameAtom = atom('John');
+const userAgeAtom = atom(30);
+
+// ❌ 避免：过度复杂化原子
+const userAtom = atom({
+  name: 'John',
+  age: 30,
+  address: {
+    street: '',
+    city: '',
+    country: ''
+  },
+  preferences: {
+    theme: 'light',
+    language: 'en'
+  }
+});
+
+// ✅ 好的实践2：拆分复杂状态
+const userIdAtom = atom('');
+const userProfileAtom = atom(async (get) => {
+  const id = get(userIdAtom);
+  const response = await fetch(`/api/users/${id}`);
+  return response.json();
+});
+
+const themeAtom = atom('light');
+const languageAtom = atom('en');
+```
+
+</CodeBlock>
+
+### 6.2 性能优化
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// ✅ 使用useAtomValue避免不必要的setter
+import { useAtomValue } from 'jotai';
+
+function OptimizedComponent() {
+  // 只读取，不设置
+  const count = useAtomValue(countAtom);
+  const double = useAtomValue(doubleAtom);
+
+  return <div>Count: {count}, Double: {double}</div>;
+}
+
+// ✅ 使用useSetAtom避免读取值
+import { useSetAtom } from 'jotai';
+
+function ActionsComponent() {
+  // 只设置，不读取
+  const setCount = useSetAtom(countAtom);
+
+  return (
+    <button onClick={() => setCount(c => c + 1)}>
+      Increment
+    </button>
+  );
+}
+
+// ✅ 使用useAtom对值进行memo化
+function useOptimizedAtom(atom) {
+  return useAtom(
+    atom,
+    // 自定义比较函数（避免不必要的重渲染）
+    (a, b) => a === b
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 类型安全
+
+<CodeBlock>
+
+```jsx
+import { atom } from 'jotai';
+import type { Atom } from 'jotai';
+
+// 1. 基础类型原子
+const countAtom = atom<number>(0);
+const textAtom = atom<string>('hello');
+const boolAtom = atom<boolean>(true);
+
+// 2. 对象原子
+interface User {
+  name: string;
+  age: number;
+  email: string;
+}
+
+const userAtom = atom<User>({
+  name: 'John',
+  age: 30,
+  email: 'john@example.com'
+});
+
+// 3. 衍生原子类型
+const upperTextAtom = atom<string>((get) => {
+  const text = get(textAtom);
+  return text.toUpperCase();
+});
+
+// 4. 异步原子类型
+const fetchUserAtom = atom<User, void>(async () => {
+  const response = await fetch('/api/user');
+  return response.json();
+});
+
+// 5. 可写原子类型
+const setUserAtom = atom<User, User>(
+  (get) => get(userAtom),
+  (get, set, newUser) => {
+    set(userAtom, newUser);
+  }
+);
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实际应用案例
+
+### 7.1 购物车系统
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 购物车商品原子
+const createCartItemAtom = (id) => atom({
+  id,
+  name: `Product ${id}`,
+  price: 10 * id,
+  quantity: 1,
+});
+
+const cartItemIdsAtom = atom<number[]>([]);
+
+// 购物车操作原子
+const addToCartAtom = atom(null, (get, set, productId: number) => {
+  const currentIds = get(cartItemIdsAtom);
+  if (!currentIds.includes(productId)) {
+    set(cartItemIdsAtom, [...currentIds, productId]);
+  }
+});
+
+const removeFromCartAtom = atom(null, (get, set, productId: number) => {
+  const currentIds = get(cartItemIdsAtom);
+  set(cartItemIdsAtom, currentIds.filter(id => id !== productId));
+});
+
+const updateQuantityAtom = atom(null, (get, set, { productId, quantity }) => {
+  // 通过动态原子更新
+});
+
+// 获取购物车商品
+function useCartItem(productId: number) {
+  const cartItemAtom = useMemo(() => createCartItemAtom(productId), [productId]);
+  return useAtom(cartItemAtom);
+}
+
+function CartItem({ productId }) {
+  const [item, setItem] = useCartItem(productId);
+  const [, remove] = useAtom(removeFromCartAtom);
+
+  return (
+    <div className="cart-item">
+      <h3>{item.name}</h3>
+      <p>Price: ${item.price}</p>
+      <p>Quantity: {item.quantity}</p>
+      <button onClick={() => remove(productId)}>
+        Remove
+      </button>
+    </div>
+  );
+}
+
+function Cart() {
+  const [ids] = useAtom(cartItemIdsAtom);
+  const [, add] = useAtom(addToCartAtom);
+
+  return (
+    <div className="cart">
+      <h2>Shopping Cart</h2>
+
+      <button onClick={() => add(1)}>
+        Add Product 1
+      </button>
+      <button onClick={() => add(2)}>
+        Add Product 2
+      </button>
+
+      <div className="cart-items">
+        {ids.map((id) => (
+          <CartItem key={id} productId={id} />
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 表单管理
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 表单字段原子
+const createFieldAtom = (name: string) => atom<string>('');
+
+const nameAtom = createFieldAtom('name');
+const emailAtom = createFieldAtom('email');
+const passwordAtom = createFieldAtom('password');
+
+// 验证原子
+const nameErrorAtom = atom((get) => {
+  const name = get(nameAtom);
+  if (!name) return 'Name is required';
+  if (name.length < 2) return 'Name must be at least 2 characters';
+  return null;
+});
+
+const emailErrorAtom = atom((get) => {
+  const email = get(emailAtom);
+  if (!email) return 'Email is required';
+  if (!email.includes('@')) return 'Invalid email';
+  return null;
+});
+
+const passwordErrorAtom = atom((get) => {
+  const password = get(passwordAtom);
+  if (!password) return 'Password is required';
+  if (password.length < 8) return 'Password must be at least 8 characters';
+  return null;
+});
+
+// 整体表单验证
+const formErrorAtom = atom((get) => {
+  const nameError = get(nameErrorAtom);
+  const emailError = get(emailErrorAtom);
+  const passwordError = get(passwordErrorAtom);
+  return {
+    name: nameError,
+    email: emailError,
+    password: passwordError,
+  };
+});
+
+// 表单提交原子
+const submitFormAtom = atom(null, async (get, set) => {
+  const errors = get(formErrorAtom);
+  if (errors.name || errors.email || errors.password) {
+    return { success: false, errors };
+  }
+
+  const formData = {
+    name: get(nameAtom),
+    email: get(emailAtom),
+    password: get(passwordAtom),
+  };
+
+  const response = await fetch('/api/submit', {
+    method: 'POST',
+    body: JSON.stringify(formData),
+  });
+
+  return { success: response.ok };
+});
+
+function FormField({ label, atom: fieldAtom, errorAtom }) {
+  const [value, setValue] = useAtom(fieldAtom);
+  const [error] = useAtom(errorAtom);
+
+  return (
+    <div className="form-field">
+      <label>{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      {error && <span className="error">{error}</span>}
+    </div>
+  );
+}
+
+function Form() {
+  const [errors, setErrors] = useAtom(formErrorAtom);
+  const [, submit] = useAtom(submitFormAtom);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await submit();
+    if (result.success) {
+      alert('Form submitted!');
+    } else {
+      console.log('Form errors:', result.errors);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <FormField
+        label="Name"
+        atom={nameAtom}
+        errorAtom={nameErrorAtom}
+      />
+      <FormField
+        label="Email"
+        atom={emailAtom}
+        errorAtom={emailErrorAtom}
+      />
+      <FormField
+        label="Password"
+        atom={passwordAtom}
+        errorAtom={passwordErrorAtom}
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.3 异步数据管理
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 数据获取原子
+const createDataAtom = (key: string) => atom(async () => {
+  const response = await fetch(`/api/data/${key}`);
+  return response.json();
+});
+
+// 缓存管理
+const cacheAtom = atom<Record<string, any>>({});
+
+const fetchWithCacheAtom = atom(null, async (get, set, key: string) => {
+  const cache = get(cacheAtom);
+  const dataAtom = createDataAtom(key);
+
+  // 触发数据获取
+  const data = await new Promise((resolve) => {
+    const unsubscribe = dataAtom.onMount?.((setter) => {
+      dataAtom.read(get).then(resolve);
+    });
+  });
+
+  // 更新缓存
+  set(cacheAtom, { ...cache, [key]: data });
+});
+
+// 状态管理
+const createDataStatusAtom = (key: string) => atom<'idle' | 'loading' | 'error' | 'success'>('idle');
+
+function useAsyncData(key: string) {
+  const dataAtom = useMemo(() => createDataAtom(key), [key]);
+  const statusAtom = useMemo(() => createDataStatusAtom(key), [key]);
+
+  const [data] = useAtom(dataAtom);
+  const [status, setStatus] = useAtom(statusAtom);
+  const [, fetchData] = useAtom(fetchWithCacheAtom);
+
+  const load = async () => {
+    setStatus('loading');
+    try {
+      await fetchData(key);
+      setStatus('success');
+    } catch (error) {
+      setStatus('error');
+    }
+  };
+
+  return { data, status, load };
+}
+
+function DataComponent({ dataKey }) {
+  const { data, status, load } = useAsyncData(dataKey);
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (status === 'error') {
+    return <div>Error loading data</div>;
+  }
+
+  return (
+    <div>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <button onClick={load}>Reload</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. Jotai vs 其他方案
+
+### 8.1 Jotai vs Zustand
+
+<Compare>
+
+| 特性 | Jotai | Zustand |
+|------|-------|---------|
+| **范式** | 原子化状态 | 集中式Store |
+| **粒度** | 极细粒度 | 粗粒度 |
+| **学习成本** | 中等 | 低 |
+| **性能** | 优秀 | 优秀 |
+| **类型安全** | 优秀 | 良好 |
+| **动态性** | 强 | 弱 |
+| **依赖追踪** | 自动 | 手动选择器 |
+
+</Compare>
+
+<CodeBlock>
+
+```jsx
+// 范式对比
+
+// ✅ Jotai - 原子化
+const countAtom = atom(0);
+const doubleAtom = atom((get) => get(countAtom) * 2);
+
+function Component() {
+  const [double] = useAtom(doubleAtom);
+  // countAtom变化时，doubleAtom自动更新
+}
+
+// ✅ Zustand - 集中式
+const useStore = create((set) => ({
+  count: 0,
+  double: 0,
+  increment: () => set((state) => ({
+    count: state.count + 1,
+    double: (state.count + 1) * 2,
+  })),
+}));
+
+function Component() {
+  const { double } = useStore((state) => ({
+    double: state.double,
+  }));
+  // 需要手动更新double
+}
+```
+
+</CodeBlock>
+
+### 8.2 Jotai vs Redux
+
+<Compare>
+
+| 特性 | Jotai | Redux |
+|------|-------|-------|
+| **复杂度** | 简单 | 复杂 |
+| **样板代码** | 极少 | 较多 |
+| **中间件** | 无 | 丰富 |
+| **DevTools** | 基础 | 强大 |
+| **TypeScript** | 优秀 | 良好 |
+| **状态结构** | 分散 | 集中 |
+| **学习曲线** | 平缓 | 陡峭 |
+
+</Compare>
+
+### 8.3 Jotai vs Context
+
+<Compare>
+
+| 特性 | Jotai | Context |
+|------|-------|---------|
+| **更新粒度** | 精确 | 粗粒度 |
+| **性能** | 优秀 | 需优化 |
+| **学习成本** | 低 | 低 |
+| **功能** | 丰富 | 基础 |
+| **类型安全** | 优秀 | 良好 |
+| **使用场景** | 复杂状态 | 简单状态 |
+
+</Compare>
+
+<CodeBlock>
+
+```jsx
+// 性能对比
+
+// ❌ Context - 所有消费者重渲染
+const AppContext = createContext();
+
+function AppProvider({ children }) {
+  const [count, setCount] = useState(0);
+  return (
+    <AppContext.Provider value={{ count, setCount }}>
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+// 任何Context变化，所有Consumer重渲染
+function Consumer() {
+  const { count } = useContext(AppContext);
+  return <div>{count}</div>;
+}
+
+// ✅ Jotai - 只订阅需要的原子
+const countAtom = atom(0);
+
+function OptimizedConsumer() {
+  const [count] = useAtom(countAtom);
+  // 只有countAtom变化时才重渲染
+  return <div>{count}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 性能优化
+
+### 9.1 选择性订阅
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// ❌ 避免：订阅整个大对象
+const largeObjectAtom = atom({
+  data1: {},
+  data2: {},
+  data3: {},
+  // 100个字段
+});
+
+function Component() {
+  // 任何字段变化都会导致重渲染
+  const [obj] = useAtom(largeObjectAtom);
+  return <div>{obj.data1}</div>;
+}
+
+// ✅ 正确：拆分原子
+const data1Atom = atom({});
+const data2Atom = atom({});
+const data3Atom = atom({});
+
+function OptimizedComponent() {
+  // 只订阅需要的原子
+  const [data1] = useAtom(data1Atom);
+  return <div>{data1}</div>;
+}
+```
+
+</CodeBlock>
+
+### 9.2 自定义比较函数
+
+<CodeBlock>
+
+```jsx
+import { atom, useAtom } from 'jotai';
+
+// 基础数组原子
+const itemsAtom = atom<number[]>([1, 2, 3]);
+
+// 自定义比较函数 - 避免不必要的重渲染
+const compareArrays = (a: number[], b: number[]) => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+function OptimizedList() {
+  const [items, setItems] = useAtom(
+    itemsAtom,
+    compareArrays // 自定义比较
+  );
+
+  const addItem = () => {
+    setItems((prev) => [...prev, prev.length + 1]);
+  };
+
+  return (
+    <div>
+      <button onClick={addItem}>Add Item</button>
+      <ul>
+        {items.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.3 懒加载原子
+
+<CodeBlock>
+
+```jsx
+import { atom } from 'jotai';
+
+// 懒加载大型数据
+const createHeavyDataAtom = (id: string) => atom(async () => {
+  // 只在需要时加载
+  const response = await fetch(`/api/heavy-data/${id}`);
+  return response.json();
+});
+
+function HeavyDataComponent({ dataId }) {
+  // 只在组件挂载时创建原子
+  const dataAtom = useMemo(
+    () => createHeavyDataAtom(dataId),
+    [dataId]
+  );
+
+  const [data, { refetch }] = useAtom(dataAtom);
+
+  if (data === undefined) {
+    return <div>Loading heavy data...</div>;
+  }
+
+  return (
+    <div>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <button onClick={() => refetch()}>
+        Reload
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 10. 常见陷阱和解决方案
+
+### 陷阱1：原子过于复杂
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 复杂的大原子
+const complexAtom = atom({
+  user: {
+    profile: {
+      name: '',
+      email: '',
+      address: {
+        street: '',
+        city: '',
+        country: ''
+      }
+    },
+    preferences: {
+      theme: 'light',
+      language: 'en',
+      notifications: {
+        email: true,
+        push: true
+      }
+    }
+  },
+  settings: {
+    privacy: {},
+    security: {}
+  }
+});
+
+// ✅ 正确 - 拆分原子
+const userProfileNameAtom = atom('');
+const userProfileEmailAtom = atom('');
+const userProfileAddressAtom = atom({
+  street: '',
+  city: '',
+  country: ''
+});
+const preferencesThemeAtom = atom('light');
+const preferencesLanguageAtom = atom('en');
+// ... 继续拆分
+```
+
+</ErrorBox>
+
+### 陷阱2：忘记依赖追踪
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 依赖未正确追踪
+const countAtom = atom(0);
+const textAtom = atom('hello');
+
+const mixedAtom = atom((get) => {
+  const count = get(countAtom);
+  // 忘记获取textAtom，但实际需要它
+  const text = get(textAtom); // ❌ 漏掉了这行
+  return `${count}:${text}`;
+});
+
+// ✅ 正确 - 明确所有依赖
+const mixedAtom = atom((get) => {
+  const count = get(countAtom);
+  const text = get(textAtom); // ✅ 明确获取
+  return `${count}:${text}`;
+});
+```
+
+</ErrorBox>
+
+### 陷阱3：异步原子处理错误
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 未处理异步错误
+const userAtom = atom(async () => {
+  const response = await fetch('/api/user');
+  // 未处理错误情况
+  return response.json();
+});
+
+// ✅ 正确 - 处理错误状态
+const userAtom = atom(async () => {
+  try {
+    const response = await fetch('/api/user');
+    if (!response.ok) {
+      throw new Error('Failed to fetch');
+    }
+    return response.json();
+  } catch (error) {
+    throw error; // 重新抛出错误
+  }
+});
+
+function UserProfile() {
+  const [user, { refetch }] = useAtom(userAtom);
+
+  if (user instanceof Error) {
+    return (
+      <div>
+        <p>Error: {user.message}</p>
+        <button onClick={() => refetch()}>
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (user === undefined) {
+    return <div>Loading...</div>;
+  }
+
+  return <div>{user.name}</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：过度使用动态原子
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 每个组件都创建新原子
+function TodoItem({ id }) {
+  // 每次渲染都创建新原子！
+  const todoAtom = atom({
+    id,
+    text: `Todo ${id}`,
+    completed: false,
+  });
+
+  const [todo] = useAtom(todoAtom);
+  return <div>{todo.text}</div>;
+}
+
+// ✅ 正确 - 使用工厂函数
+const createTodoAtom = (id) => atom({
+  id,
+  text: `Todo ${id}`,
+  completed: false,
+});
+
+function TodoItem({ id }) {
+  const todoAtom = useMemo(
+    () => createTodoAtom(id),
+    [id] // 只在id变化时重新创建
+  );
+
+  const [todo] = useAtom(todoAtom);
+  return <div>{todo.text}</div>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 11. 实践练习
+
+### 练习1：实现原子化计数器
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建基础计数器原子
+- 创建衍生原子：double、triple
+- 创建可写原子：increment、decrement
+- 实现条件衍生
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const countAtom = atom(0); // 基础原子
+const doubleAtom = atom((get) => get(countAtom) * 2); // 衍生原子
+const incrementAtom = atom(null, (get, set) => {
+  // 实现increment逻辑
+});
+```
+
+**提示**：
+- 使用get和set函数
+- 理解只读和可写原子
+- 自动依赖追踪
+
+</Expandable>
+
+### 练习2：实现待办事项列表
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建动态待办事项原子
+- 实现添加、删除、切换功能
+- 统计信息衍生原子
+- 过滤功能
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const createTodoAtom = (id) => atom({
+  id,
+  text: `Todo ${id}`,
+  completed: false,
+});
+const todoIdsAtom = atom([]);
+const activeFilterAtom = atom('all'); // 'all', 'active', 'completed'
+
+// 衍生原子
+const filteredTodosAtom = atom((get) => {
+  // 实现过滤逻辑
+});
+```
+
+**提示**：
+- 使用动态原子
+- 理解衍生原生的自动更新
+- 实现复杂条件逻辑
+
+</Expandable>
+
+### 练习3：实现数据获取与缓存
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建异步数据原子
+- 实现数据缓存
+- 处理加载和错误状态
+- 实现刷新功能
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const createDataAtom = (key) => atom(async () => {
+  // 实现数据获取逻辑
+});
+const cacheAtom = atom({});
+const isLoadingAtom = atom(false);
+
+// 异步原子
+const fetchDataAtom = atom(null, async (get, set, key) => {
+  // 实现获取和缓存逻辑
+});
+```
+
+**提示**：
+- 理解异步原子
+- 实现缓存机制
+- 处理错误状态
+
+</Expandable>
+
+### 练习4：实现表单验证系统
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建表单字段原子
+- 实现验证规则
+- 统计验证错误
+- 动态显示错误信息
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const createFieldAtom = (name) => atom('');
+const fieldErrorsAtom = atom({});
+const formErrorsAtom = atom((get) => {
+  // 实现聚合错误逻辑
+});
+
+// 验证规则
+const validateNameAtom = atom((get) => {
+  const name = get(nameAtom);
+  if (!name) return 'Name is required';
+  return null;
+});
+```
+
+**提示**：
+- 使用多个原子
+- 实现验证逻辑
+- 理解衍生原生的自动更新
+
+</Expandable>
+
+---
+
+## 12. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Jotai采用原子化状态理念
+- ✅ 最小不可分的状态单元
+- ✅ 自动追踪依赖关系
+- ✅ 细粒度性能优化
+- ✅ 简单易用的API
+- ✅ 优秀的TypeScript支持
+- ✅ 自由组合原子
+- ✅ 支持异步操作
+- ✅ 类型安全
+- ✅ 灵活的动态原子
+
+</Checklist>
+
+### Jotai最佳实践
+
+<BestPractices>
+
+1. **保持原子简单** - 避免复杂的大原子
+2. **合理拆分** - 将复杂状态拆分为多个原子
+3. **使用衍生原子** - 充分利用自动依赖追踪
+4. **性能优化** - 使用useAtomValue和useSetAtom
+5. **类型安全** - 充分利用TypeScript
+6. **异步处理** - 正确处理异步原子的错误
+7. **动态原子** - 使用工厂函数创建
+8. **避免过度设计** - 不要为所有状态创建原子
+
+</BestPractices>
+
+### 何时使用Jotai
+
+<BestPractices>
+
+**推荐使用Jotai的场景**：
+- 需要细粒度状态控制
+- 性能要求较高的应用
+- TypeScript项目
+- 状态间有复杂依赖
+- 动态创建状态
+- 组件间需要精确共享
+
+**考虑其他方案的场景**：
+- 简单的全局状态（Context足够）
+- 需要丰富的中间件生态（Redux）
+- 团队不熟悉新范式
+- 需要成熟的调试工具
+
+**Jotai不适合的场景**：
+- 极简状态管理
+- 需要时间旅行调试
+- 大量第三方插件需求
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了Jotai的原子化状态管理，接下来可以学习：
+
+1. **[状态管理对比分析]** - 全面对比各种方案
+2. **[性能优化基础](../performance/react-memo)** - 状态更新性能优化
+3. **[自定义Hooks进阶](../hooks/advanced/custom-hooks)** - 逻辑复用模式
+
+---
+
+## 13. 延伸阅读
+
+### 官方资源
+
+- [Jotai官方文档](https://jotai.org/) - 完整的API参考
+- [Jotai Examples](https://github.com/pmndrs/jotai/tree/main/examples) - 实际应用示例
+- [Jotai Middleware](https://jotai.org/guides/extensions) - 扩展列表
+
+### 推荐阅读
+
+- [Jotai设计原理](https://jotai.org/guides/philosophy) - 设计理念
+- [Jotai性能指南](https://jotai.org/guides/performance) - 性能优化
+- [Jotai TypeScript指南](https://jotai.org/guides/types) - 类型系统
+
+### 相关话题
+
+- [Redux基础](./redux-fundamentals) - 传统状态管理
+- [Context API](../context-api) - React内置状态管理
+- [Zustand](./zustand) - 轻量级状态管理
+- [状态管理对比] - 各方案详细对比
+
+---
+
+[← 上一章：Zustand轻量方案](zustand) | [下一章：状态管理对比分析 →](../)

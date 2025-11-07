@@ -1,0 +1,3168 @@
+# 代码分割 - 按需加载优化首屏性能
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+代码分割（Code Splitting）是现代React应用中至关重要的性能优化技术，它通过将代码拆分为多个 bundle 并按需加载，大幅减少初始加载时间，提升用户体验。本章将深入探讨代码分割的原理、实现方式、最佳实践和实际应用场景。
+
+## 本章学习目标
+
+- 理解代码分割的核心原理和性能收益
+- 掌握React.lazy和Suspense的使用方法
+- 学会使用动态import进行代码分割
+- 理解路由级别的代码分割
+- 掌握Bundle分析和优化工具
+- 学会使用Webpac、Vite等构建工具的代码分割
+- 理解预加载和预获取策略
+- 掌握代码分割的最佳实践
+- 学会在真实项目中应用代码分割
+- 理解代码分割的陷阱和解决方案
+
+---
+
+## 1. 代码分割概述
+
+代码分割是一种将大型应用程序代码库拆分为多个小块的技术，这些小块可以在需要时单独加载，而不是在初始加载时一次性加载整个应用程序。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心理念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>按需加载</strong> - 只加载当前页面需要的代码<br />
+    <strong>减少初始包大小</strong> - 缩短首屏加载时间<br />
+    <strong>提升用户体验</strong> - 避免长时间白屏<br />
+    <strong>提高缓存效率</strong> - 稳定代码可长期缓存
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// ❌ 未使用代码分割 - 所有代码在初始加载
+// bundle.js (800KB)
+// - App组件
+// - Dashboard组件
+// - Settings组件
+// - Analytics组件
+// - Reports组件
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/settings" element={<Settings />} />
+      <Route path="/analytics" element={<Analytics />} />
+      <Route path="/reports" element={<Reports />} />
+    </Routes>
+  );
+}
+
+// ✅ 使用代码分割 - 按需加载
+// 初始 bundle.js (200KB) - 只包含App和Home
+// dashboard.js (150KB) - 访问/dashboard时加载
+// settings.js (100KB) - 访问/settings时加载
+// analytics.js (200KB) - 访问/analytics时加载
+// reports.js (180KB) - 访问/reports时加载
+
+import { lazy, Suspense } from 'react';
+
+const Dashboard = lazy(() => import('./Dashboard'));
+const Settings = lazy(() => import('./Settings'));
+const Analytics = lazy(() => import('./Analytics'));
+const Reports = lazy(() => import('./Reports'));
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route
+        path="/dashboard"
+        element={
+          <Suspense fallback={<Loading />}>
+            <Dashboard />
+          </Suspense>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <Suspense fallback={<Loading />}>
+            <Settings />
+          </Suspense>
+        }
+      />
+      {/* ... 其他路由 */}
+    </Routes>
+  );
+}
+```
+
+</CodeBlock>
+
+### 1.1 代码分割的工作原理
+
+<Grid>
+
+<div>
+  <h4>📦 传统打包</h4>
+  <ul>
+    <li>所有代码打包到一个文件</li>
+    <li>用户必须下载完整代码</li>
+    <li>首屏加载时间长</li>
+    <li>缓存更新影响大</li>
+  </ul>
+</div>
+
+<div>
+  <h4>🔀 代码分割</h4>
+  <ul>
+    <li>代码拆分为多个chunk</li>
+    <li>只下载当前需要的chunk</li>
+    <li>首屏加载时间短</li>
+    <li>稳定部分可长期缓存</li>
+  </ul>
+</div>
+
+<div>
+  <h4>⚡ 性能提升</h4>
+  <ul>
+    <li>首屏加载时间减少50%+</li>
+    <li>交互时间明显提前</li>
+    <li>带宽节省显著</li>
+    <li>移动端体验改善</li>
+  </ul>
+</div>
+
+<div>
+  <h4>🎯 适用场景</h4>
+  <ul>
+    <li>多页面应用</li>
+    <li>大型应用</li>
+    <li>功能模块化</li>
+    <li>第三方库隔离</li>
+  </ul>
+</div>
+
+</Grid>
+
+<CodeBlock>
+
+```jsx
+// 代码分割原理详细解析
+const loadComponent = (importFunc) => {
+  // 返回一个React组件
+  return function LazyComponent(props) {
+    const [component, setComponent] = useState(null);
+    const [error, setError] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+      // 开始加载
+      setIsLoading(true);
+
+      // 执行动态导入
+      importFunc()
+        .then((module) => {
+          // 导入成功，提取组件
+          const ExportedComponent = module.default || module;
+          setComponent(() => ExportedComponent);
+          setIsLoading(false);
+        })
+        .catch((err) => {
+          // 导入失败
+          setError(err);
+          setIsLoading(false);
+        });
+    }, []);
+
+    // 渲染状态
+    if (error) {
+      return <ErrorComponent error={error} />;
+    }
+
+    if (isLoading) {
+      return <LoadingComponent />;
+    }
+
+    if (component) {
+      // 渲染加载的组件
+      return React.createElement(component, props);
+    }
+
+    return null;
+  };
+};
+
+// 使用示例
+const LazyDashboard = loadComponent(() => import('./Dashboard'));
+```
+
+</CodeBlock>
+
+### 1.2 代码分割的优势与限制
+
+<Grid>
+
+<div>
+  <h4>✅ 优势</h4>
+  <ul>
+    <li>大幅减少首屏加载时间</li>
+    <li>提升首次内容绘制速度</li>
+    <li>减少初始JavaScript执行时间</li>
+    <li>提高缓存命中率</li>
+    <li>支持渐进式功能加载</li>
+  </ul>
+</div>
+
+<div>
+  <h4>⚠️ 限制</h4>
+  <ul>
+    <li>增加代码复杂度</li>
+    <li>需要处理加载状态</li>
+    <li>可能影响SEO</li>
+    <li>首次访问可能较慢</li>
+    <li>需要合理的分割策略</li>
+  </ul>
+</div>
+
+</Grid>
+
+<CodeBlock>
+
+```jsx
+// 适用场景判断
+const shouldUseCodeSplitting = {
+  // 适合代码分割的场景
+  goodCases: [
+    '多页面应用（MPA）',
+    '大型单页应用（SPA）',
+    '功能模块独立',
+    '第三方库较大',
+    '低频访问功能',
+    '用户定制化功能'
+  ],
+
+  // 不适合的场景
+  badCases: [
+    '简单单页应用',
+    '核心功能必须立即可用',
+    '高度SEO敏感页面',
+    '高频访问功能',
+    '服务端渲染（SSR）',
+    '实时交互应用'
+  ]
+};
+
+// 决策示例
+function shouldSplitCode(route, traffic, isCoreFeature) {
+  if (isCoreFeature && traffic > 0.8) {
+    return false; // 核心高频功能不分割
+  }
+  if (traffic < 0.3) {
+    return true; // 低频访问功能建议分割
+  }
+  if (route.includes('admin') || route.includes('settings')) {
+    return true; // 管理功能建议分割
+  }
+  return true; // 默认建议分割
+}
+```
+
+</CodeBlock>
+
+---
+
+## 2. React.lazy和Suspense
+
+React.lazy和Suspense是React 16.6引入的内置功能，用于实现组件级别的代码分割。
+
+### 2.1 React.lazy基础用法
+
+<CodeBlock>
+
+```jsx
+import { lazy } from 'react';
+
+// 基础用法
+const LazyComponent = lazy(() => import('./Component'));
+
+// 指定导出
+const LazyComponentWithNamedExport = lazy(() =>
+  import('./Component').then(module => ({
+    default: module.NamedComponent
+  }))
+);
+
+// 异步初始化
+const LazyComponentWithInit = lazy(async () => {
+  await initializeApp();
+  return import('./Component');
+});
+
+// 错误处理
+const LazyComponentWithErrorHandling = lazy(() =>
+  import('./Component').catch(() =>
+    import('./ErrorComponent')
+  )
+);
+
+// 使用示例
+import { Suspense } from 'react';
+
+function App() {
+  return (
+    <div>
+      <h1>My App</h1>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LazyComponent />
+      </Suspense>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 Suspense配置
+
+<CodeBlock>
+
+```jsx
+import { Suspense } from 'react';
+
+// 基础Suspense
+<Suspense fallback={<div>Loading...</div>}>
+  <LazyComponent />
+</Suspense>
+
+// 自定义加载组件
+<Suspense fallback={<LoadingSpinner color="primary" />}>
+  <LazyComponent />
+</Suspense>
+
+// 多层Suspense
+<Suspense fallback={<PageLoader />}>
+  <MainContent>
+    <Suspense fallback={<SectionLoader />}>
+      <LazySection />
+    </Suspense>
+  </MainContent>
+</Suspense>
+
+// 完整加载页面
+<Suspense fallback={<FullPageLoader />}>
+  <Routes>
+    <Route path="/" element={<Home />} />
+    <Route
+      path="/dashboard"
+      element={
+        <Suspense fallback={<DashboardSkeleton />}>
+          <Dashboard />
+        </Suspense>
+      }
+    />
+  </Routes>
+</Suspense>
+
+// 条件渲染
+<Suspense fallback={null}>
+  {shouldShow && <LazyHeavyComponent />}
+</Suspense>
+```
+
+</CodeBlock>
+
+### 2.3 动态导入模式
+
+<CodeBlock>
+
+```jsx
+// 1. 基础动态导入
+const loadUserProfile = () => import('./UserProfile');
+
+// 2. 带预取的动态导入
+const loadUserProfileWithPrefetch = () => {
+  const componentPromise = import('./UserProfile');
+
+  // 预取资源
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = './UserProfile.chunk.js';
+  document.head.appendChild(link);
+
+  return componentPromise;
+};
+
+// 3. 条件动态导入
+const loadComponentConditionally = (condition) => {
+  if (condition) {
+    return import('./HeavyComponent');
+  }
+  return import('./LightComponent');
+};
+
+// 4. 并行加载多个组件
+const loadMultipleComponents = async () => {
+  const [componentA, componentB, componentC] = await Promise.all([
+    import('./ComponentA'),
+    import('./ComponentB'),
+    import('./ComponentC')
+  ]);
+
+  return { componentA, componentB, componentC };
+};
+
+// 5. 缓存加载结果
+const componentCache = new Map();
+
+const loadCachedComponent = (componentName) => {
+  if (componentCache.has(componentName)) {
+    return componentCache.get(componentName);
+  }
+
+  const promise = import(`./${componentName}`);
+  componentCache.set(componentName, promise);
+  return promise;
+};
+```
+
+</CodeBlock>
+
+### 2.4 高级Suspense模式
+
+<CodeBlock>
+
+```jsx
+// 1. Suspense列表
+function SuspenseList({ revealOrder = 'forwards', ...props }) {
+  const [loadedItems, setLoadedItems] = useState([]);
+
+  const loadItem = async (id) => {
+    const item = await import(`./items/${id}`);
+    setLoadedItems(prev => [...prev, item]);
+  };
+
+  return (
+    <SuspenseList revealOrder={revealOrder}>
+      {props.children}
+    </SuspenseList>
+  );
+}
+
+// 2. 并行Suspense
+function ParallelSuspense() {
+  return (
+    <div>
+      <Suspense fallback={<LoaderA />}>
+        <ComponentA />
+      </Suspense>
+      <Suspense fallback={<LoaderB />}>
+        <ComponentB />
+      </Suspense>
+    </div>
+  );
+}
+
+// 3. Suspense边界
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Lazy loading error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div>
+          <h1>Something went wrong.</h1>
+          <details>
+            <summary>Error details</summary>
+            {this.state.error && this.state.error.message}
+          </details>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 使用错误边界
+<ErrorBoundary>
+  <Suspense fallback={<div>Loading...</div>}>
+    <LazyComponent />
+  </Suspense>
+</ErrorBoundary>
+
+// 4. 自定义Suspense组件
+function CustomSuspense({
+  fallback: Fallback,
+  children,
+  minDisplayTime = 0
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), minDisplayTime);
+    return () => clearTimeout(timer);
+  }, [minDisplayTime]);
+
+  return (
+    <Suspense fallback={<Fallback />}>
+      {isVisible && children}
+    </Suspense>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 路由级别代码分割
+
+路由级别的代码分割是最常见且最有效的代码分割策略。
+
+### 3.1 React Router + 代码分割
+
+<CodeBlock>
+
+```jsx
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Loading from './Loading';
+
+// 路由级代码分割
+const Home = lazy(() => import('../pages/Home'));
+const About = lazy(() => import('../pages/About'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Settings = lazy(() => import('../pages/Settings'));
+const Profile = lazy(() => import('../pages/Profile'));
+const Reports = lazy(() => import('../pages/Reports'));
+
+// 嵌套路由
+const UserDashboard = lazy(() => import('../pages/user/Dashboard'));
+const UserSettings = lazy(() => import('../pages/user/Settings'));
+const UserProfile = lazy(() => import('../pages/user/Profile'));
+
+// 管理员路由
+const AdminPanel = lazy(() => import('../pages/admin/Panel'));
+const AdminUsers = lazy(() => import('../pages/admin/Users'));
+const AdminSettings = lazy(() => import('../pages/admin/Settings'));
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+
+          {/* 用户路由 */}
+          <Route path="/dashboard/*" element={<Dashboard />}>
+            <Route index element={<UserDashboard />} />
+            <Route path="settings" element={<UserSettings />} />
+            <Route path="profile" element={<UserProfile />} />
+          </Route>
+
+          {/* 管理员路由 */}
+          <Route
+            path="/admin/*"
+            element={
+              <Suspense fallback={<AdminLoading />}>
+                <AdminPanel />
+              </Suspense>
+            }
+          >
+            <Route index element={<AdminUsers />} />
+            <Route path="settings" element={<AdminSettings />} />
+          </Route>
+
+          {/* 动态路由 */}
+          <Route
+            path="/settings/:section"
+            element={
+              <Suspense fallback={<SettingsSkeleton />}>
+                <Settings />
+              </Suspense>
+            }
+          />
+
+          {/* 懒加载的独立页面 */}
+          <Route
+            path="/reports"
+            element={
+              <Suspense fallback={<ReportLoader />}>
+                <Reports />
+              </Suspense>
+            }
+          />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  );
+}
+
+// 使用Suspense组件
+function SuspenseRoute({ component: Component, ...rest }) {
+  return (
+    <Route
+      {...rest}
+      element={
+        <Suspense fallback={<RouteLoader />}>
+          <Component />
+        </Suspense>
+      }
+    />
+  );
+}
+
+// 进一步优化的路由配置
+function OptimizedRoutes() {
+  return (
+    <Routes>
+      <SuspenseRoute path="/" component={Home} />
+      <SuspenseRoute path="/about" component={About} />
+      <SuspenseRoute
+        path="/dashboard/*"
+        component={Dashboard}
+      />
+    </Routes>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 Next.js路由代码分割
+
+<CodeBlock>
+
+```jsx
+// pages/index.js - 首页
+export default function Home() {
+  return <h1>Home Page</h1>;
+}
+
+// pages/about.js - 关于页面
+export default function About() {
+  return <h1>About Page</h1>;
+}
+
+// pages/dashboard/index.js - 仪表板主页
+import { lazy, Suspense } from 'react';
+
+const DashboardOverview = lazy(() =>
+  import('../components/DashboardOverview')
+);
+
+const AnalyticsWidget = lazy(() =>
+  import('../components/AnalyticsWidget')
+);
+
+const RecentActivity = lazy(() =>
+  import('../components/RecentActivity')
+);
+
+export default function Dashboard() {
+  return (
+    <div>
+      <h1>Dashboard</h1>
+
+      <Suspense fallback={<div>Loading analytics...</div>}>
+        <AnalyticsWidget />
+      </Suspense>
+
+      <Suspense fallback={<div>Loading overview...</div>}>
+        <DashboardOverview />
+      </Suspense>
+
+      <Suspense fallback={<div>Loading activity...</div>}>
+        <RecentActivity />
+      </Suspense>
+    </div>
+  );
+}
+
+// pages/user/[id].js - 动态路由
+import { useRouter } from 'next/router';
+
+const UserProfile = lazy(() => import('../../components/UserProfile'));
+const UserActivity = lazy(() => import('../../components/UserActivity'));
+
+export default function UserPage() {
+  const router = useRouter();
+  const { id } = router.query;
+
+  return (
+    <div>
+      <Suspense fallback={<UserSkeleton />}>
+        <UserProfile userId={id} />
+      </Suspense>
+
+      <Suspense fallback={<ActivitySkeleton />}>
+        <UserActivity userId={id} />
+      </Suspense>
+    </div>
+  );
+}
+
+// pages/admin/index.js - 管理员页面
+const AdminLayout = lazy(() => import('../../components/admin/Layout'));
+const AdminPanel = lazy(() => import('../../components/admin/Panel'));
+
+export default function AdminIndex() {
+  return (
+    <Suspense fallback={<AdminLoading />}>
+      <AdminLayout>
+        <AdminPanel />
+      </AdminLayout>
+    </Suspense>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 条件路由代码分割
+
+<CodeBlock>
+
+```jsx
+// 基于用户角色的路由
+const AdminRoutes = lazy(() => import('./AdminRoutes'));
+const UserRoutes = lazy(() => import('./UserRoutes'));
+const PublicRoutes = lazy(() => import('./PublicRoutes'));
+
+function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <Loading />;
+  }
+
+  return (
+    <Suspense fallback={<RoutesLoader />}>
+      {user?.role === 'admin' ? (
+        <AdminRoutes />
+      ) : user ? (
+        <UserRoutes />
+      ) : (
+        <PublicRoutes />
+      )}
+    </Suspense>
+  );
+}
+
+// 基于特性的路由
+const FeatureFlaggedRoutes = () => {
+  const [features, setFeatures] = useState({});
+
+  useEffect(() => {
+    // 获取特性标志
+    fetchFeatures().then(setFeatures);
+  }, []);
+
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+
+      {features.analytics && (
+        <Route
+          path="/analytics/*"
+          element={
+            <Suspense fallback={<AnalyticsLoader />}>
+              <AnalyticsRoutes />
+            </Suspense>
+          }
+        />
+      )}
+
+      {features.reports && (
+        <Route
+          path="/reports/*"
+          element={
+            <Suspense fallback={<ReportsLoader />}>
+              <ReportsRoutes />
+            </Suspense>
+          }
+        />
+      )}
+    </Routes>
+  );
+};
+
+// 基于设备类型的路由
+const DesktopRoutes = lazy(() => import('./DesktopRoutes'));
+const MobileRoutes = lazy(() => import('./MobileRoutes'));
+const TabletRoutes = lazy(() => import('./TabletRoutes'));
+
+function DeviceBasedRoutes() {
+  const deviceType = useDeviceType();
+
+  return (
+    <Suspense fallback={<DeviceLoader />}>
+      {deviceType === 'mobile' && <MobileRoutes />}
+      {deviceType === 'tablet' && <TabletRoutes />}
+      {deviceType === 'desktop' && <DesktopRoutes />}
+    </Suspense>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 组件级代码分割
+
+除了路由级别的代码分割，组件级别的代码分割可以进一步优化性能。
+
+### 4.1 条件组件分割
+
+<CodeBlock>
+
+```jsx
+// 1. 基于状态的组件分割
+function ConditionalComponent() {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  return (
+    <div>
+      <button onClick={() => setShowAdvanced(true)}>
+        Show Advanced Features
+      </button>
+
+      <Suspense fallback={<AdvancedFeaturesSkeleton />}>
+        {showAdvanced && (
+          <lazyAdvancedFeatures />
+        )}
+      </Suspense>
+    </div>
+  );
+}
+
+// 2. 基于props的组件分割
+const LazyModal = lazy(() => import('./Modal'));
+const LazyTooltip = lazy(() => import('./Tooltip'));
+
+function UIRenderer({ type, ...props }) {
+  if (type === 'modal') {
+    return (
+      <Suspense fallback={null}>
+        <LazyModal {...props} />
+      </Suspense>
+    );
+  }
+
+  if (type === 'tooltip') {
+    return (
+      <Suspense fallback={null}>
+        <LazyTooltip {...props} />
+      </Suspense>
+    );
+  }
+
+  return null;
+}
+
+// 3. Tab组件分割
+const TabContent = lazy(() => import('./TabContent'));
+
+function LazyTab({ tabs }) {
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <div>
+      <div className="tab-headers">
+        {tabs.map((tab, index) => (
+          <button
+            key={index}
+            onClick={() => setActiveTab(index)}
+            className={activeTab === index ? 'active' : ''}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="tab-content">
+        <Suspense fallback={<TabLoader />}>
+          <TabContent content={tabs[activeTab].content} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 第三方库分割
+
+<CodeBlock>
+
+```jsx
+// 1. Chart.js动态导入
+const Chart = lazy(() =>
+  import('chart.js').then(module => {
+    // 动态注册组件
+    ChartJS.register(
+      CategoryScale,
+      LinearScale,
+      PointElement,
+      LineElement,
+      Title,
+      Tooltip,
+      Legend
+    );
+    return { default: module.Chart };
+  })
+);
+
+function ChartComponent({ data, type }) {
+  return (
+    <Suspense fallback={<ChartSkeleton />}>
+      <Chart type={type} data={data} />
+    </Suspense>
+  );
+}
+
+// 2. 富文本编辑器分割
+const RichTextEditor = lazy(() => import('react-quill'));
+const ReactQuill = () => (
+  <Suspense fallback={<EditorSkeleton />}>
+    <RichTextEditor />
+  </Suspense>
+);
+
+// 3. 日期选择器分割
+const DatePicker = lazy(() => import('react-datepicker'));
+const ReactDatePicker = () => (
+  <Suspense fallback={<DatePickerSkeleton />}>
+    <DatePicker />
+  </Suspense>
+);
+
+// 4. 视频播放器分割
+const VideoPlayer = lazy(() => import('react-player'));
+
+function VideoComponent({ src }) {
+  return (
+    <Suspense fallback={<VideoSkeleton />}>
+      <VideoPlayer url={src} controls />
+    </Suspense>
+  );
+}
+
+// 5. 代码编辑器分割
+const CodeEditor = lazy(() => import('@monaco-editor/react'));
+
+function CodeEditorComponent({ value, onChange }) {
+  return (
+    <Suspense fallback={<CodeEditorSkeleton />}>
+      <CodeEditor
+        height="400px"
+        defaultLanguage="javascript"
+        value={value}
+        onChange={onChange}
+        theme="vs-dark"
+      />
+    </Suspense>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 复杂组件分割
+
+<CodeBlock>
+
+```jsx
+// 1. 嵌套组件分割
+const HeavyWidget = lazy(() => import('./HeavyWidget'));
+
+function WidgetContainer() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <div>
+      <button onClick={() => setIsVisible(true)}>
+        Load Widget
+      </button>
+
+      <Suspense fallback={<WidgetSkeleton />}>
+        {isVisible && <HeavyWidget />}
+      </Suspense>
+    </div>
+  );
+}
+
+// 2. 组件树懒加载
+const LazyComponentTree = () => {
+  const [shouldLoadTree, setShouldLoadTree] = useState(false);
+
+  const LazyTree = lazy(() => import('./Tree'));
+  const LazyTreeNode = lazy(() => import('./TreeNode'));
+  const LazyTreeLeaf = lazy(() => import('./TreeLeaf'));
+
+  return (
+    <div>
+      <button onClick={() => setShouldLoadTree(true)}>
+        Show Tree
+      </button>
+
+      {shouldLoadTree && (
+        <Suspense fallback={<TreeLoader />}>
+          <LazyTree>
+            <Suspense fallback={null}>
+              <LazyTreeNode>
+                <Suspense fallback={null}>
+                  <LazyTreeLeaf />
+                </Suspense>
+              </LazyTreeNode>
+            </Suspense>
+          </LazyTree>
+        </Suspense>
+      )}
+    </div>
+  );
+};
+
+// 3. 动态组件加载器
+function DynamicComponentLoader({
+  componentName,
+  props,
+  fallback = <div>Loading...</div>
+}) {
+  const [Component, setComponent] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadComponent = async () => {
+      try {
+        const module = await import(`./components/${componentName}`);
+        if (mounted) {
+          setComponent(() => module.default);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err);
+        }
+      }
+    };
+
+    loadComponent();
+
+    return () => {
+      mounted = false;
+    };
+  }, [componentName]);
+
+  if (error) {
+    return <ErrorComponent error={error} />;
+  }
+
+  if (!Component) {
+    return fallback;
+  }
+
+  return <Component {...props} />;
+}
+
+// 使用示例
+<DynamicComponentLoader
+  componentName="UserProfile"
+  userId={123}
+  fallback={<UserProfileSkeleton />}
+/>
+```
+
+</CodeBlock>
+
+---
+
+## 5. Bundle分析与优化
+
+理解和分析Bundle是代码分割的关键。
+
+### 5.1 Webpack Bundle分析
+
+<CodeBlock>
+
+```bash
+# 安装分析工具
+npm install --save-dev webpack-bundle-analyzer
+
+# 在webpack.config.js中配置
+const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+
+module.exports = {
+  plugins: [
+    new BundleAnalyzerPlugin({
+      analyzerMode: 'static',
+      openAnalyzer: false,
+      reportFilename: 'bundle-report.html',
+    }),
+  ],
+  // 生成stats文件
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      },
+    },
+  },
+};
+
+# 使用命令生成分析报告
+npm run build
+npx webpack-bundle-analyzer build/static/js/*.js
+```
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// 2. React打包分析
+import { measurePerformance } from 'web-vitals';
+
+// 性能测量组件
+function BundleSizeMonitor() {
+  useEffect(() => {
+    // 测量加载时间
+    import('./HeavyComponent').then(module => {
+      const loadTime = performance.now();
+      console.log(`Bundle loaded in ${loadTime.toFixed(2)}ms`);
+
+      // 发送性能数据
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'bundle_loaded', {
+          bundle_name: 'HeavyComponent',
+          load_time: loadTime,
+        });
+      }
+    });
+  }, []);
+
+  return null;
+}
+
+// Bundle大小追踪
+function trackBundleSize() {
+  if (typeof window === 'undefined') return;
+
+  // 获取当前chunk大小
+  const scriptTags = document.querySelectorAll('script[src*="chunk"]');
+  scriptTags.forEach(tag => {
+    fetch(tag.src, { method: 'HEAD' })
+      .then(response => {
+        const size = response.headers.get('content-length');
+        console.log(`Chunk: ${tag.src}, Size: ${size} bytes`);
+      });
+  });
+}
+
+// 分析未使用的代码
+function analyzeUnusedCode() {
+  import('webpack-bundle-analyzer').then(({
+    default: BundleAnalyzerPlugin
+  }) => {
+    // 分析未使用的模块
+    const stats = require('../dist/bundle-stats.json');
+
+    // 找出未使用的模块
+    const unusedModules = Object.keys(stats.modules)
+      .filter(moduleName =>
+        stats.modules[moduleName].used === false
+      );
+
+    console.log('Unused modules:', unusedModules);
+  });
+}
+```
+
+</CodeBlock>
+
+### 5.2 Vite Bundle分析
+
+<CodeBlock>
+
+```bash
+# Vite内置分析
+npm install --save-dev rollup-plugin-analyzer
+
+# vite.config.js
+import { defineConfig } from 'vite';
+import { visualizer } from 'rollup-plugin-visualizer';
+
+export default defineConfig({
+  plugins: [
+    visualizer({
+      filename: 'dist/stats.html',
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+    }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['antd', '@mui/material'],
+        },
+      },
+    },
+  },
+});
+
+# 生成报告
+npm run build
+# 自动打开 stats.html
+```
+
+</CodeBlock>
+
+<CodeBlock>
+
+```jsx
+// Vite代码分割配置
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React生态
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+
+          // UI库
+          'ui-vendor': ['antd', '@mui/material', 'chakra-ui'],
+
+          // 工具库
+          'utils': ['lodash', 'moment', 'axios'],
+
+          // 图表库
+          'charts': ['chart.js', 'd3', 'recharts'],
+
+          // 编辑器
+          'editor': ['react-quill', '@monaco-editor/react'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+    ],
+  },
+});
+```
+
+</CodeBlock>
+
+### 5.3 动态导入优化
+
+<CodeBlock>
+
+```jsx
+// 1. 预加载策略
+function preloadComponent(importFunc) {
+  // 预取但不执行
+  const promise = importFunc();
+
+  // 添加到预取队列
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      promise.then(module => {
+        // 预执行
+        if (module.default && typeof module.default.preload === 'function') {
+          module.default.preload();
+        }
+      });
+    });
+  }
+
+  return promise;
+}
+
+// 使用预加载
+const LazyComponent = lazy(() =>
+  preloadComponent(() => import('./Component'))
+);
+
+// 2. 预获取策略
+function prefetchComponent(importFunc) {
+  const link = document.createElement('link');
+  link.rel = 'prefetch';
+  link.href = importFunc.toString().match(/['"](.*)['"]/)[1];
+  document.head.appendChild(link);
+}
+
+// 基于用户行为的预获取
+function PredictivePrefetch() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // 用户悬停在链接上时预获取
+    const handleMouseEnter = (e) => {
+      const href = e.target.getAttribute('href');
+      if (href) {
+        // 预获取下一页
+        prefetchComponent(() => import(`./pages${href}`));
+      }
+    };
+
+    // 预测用户可能访问的页面
+    const predictAndPrefetch = () => {
+      const currentPath = router.pathname;
+      const predictions = getPredictedNextPages(currentPath);
+
+      predictions.forEach(path => {
+        prefetchComponent(() => import(`./pages${path}`));
+      });
+    };
+
+    // 空闲时预获取
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(predictAndPrefetch);
+    }
+
+    document.addEventListener('mouseenter', handleMouseEnter, true);
+
+    return () => {
+      document.removeEventListener('mouseenter', handleMouseEnter, true);
+    };
+  }, [router.pathname]);
+
+  return null;
+}
+
+// 3. 缓存策略
+const componentCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟
+
+function cachedImport(importFunc, key) {
+  const cached = componentCache.get(key);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.promise;
+  }
+
+  const promise = importFunc();
+  componentCache.set(key, {
+    promise,
+    timestamp: Date.now(),
+  });
+
+  return promise;
+}
+
+// 使用缓存的懒加载
+const CachedLazyComponent = lazy(() =>
+  cachedImport(() => import('./Component'), 'component-key')
+);
+```
+
+</CodeBlock>
+
+---
+
+## 6. 预加载和预获取
+
+预加载和预获取是提升用户体验的重要策略。
+
+### 6.1 资源预加载
+
+<CodeBlock>
+
+```jsx
+// 1. Link组件预加载
+import { Link } from 'react-router-dom';
+
+function PrefetchLink({ to, children, ...props }) {
+  return (
+    <Link
+      to={to}
+      {...props}
+      onMouseEnter={() => {
+        // 预获取资源
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = to;
+        document.head.appendChild(link);
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
+// 2. 基于路由的预加载
+const routes = [
+  { path: '/dashboard', chunk: 'dashboard' },
+  { path: '/reports', chunk: 'reports' },
+  { path: '/settings', chunk: 'settings' },
+];
+
+function RoutePrefetcher() {
+  const [currentRoute, setCurrentRoute] = useState('/');
+
+  useEffect(() => {
+    // 预加载当前路由
+    const currentChunk = routes.find(r => r.path === currentRoute);
+    if (currentChunk) {
+      import(`./pages${currentChunk.path}`);
+    }
+
+    // 预加载相邻路由
+    const currentIndex = routes.findIndex(r => r.path === currentRoute);
+    const nextRoute = routes[currentIndex + 1];
+    const prevRoute = routes[currentIndex - 1];
+
+    if (nextRoute) {
+      import(`./pages${nextRoute.path}`);
+    }
+    if (prevRoute) {
+      import(`./pages${prevRoute.path}`);
+    }
+  }, [currentRoute]);
+
+  return <Router onRouteChange={setCurrentRoute} />;
+}
+
+// 3. 智能预加载
+function SmartPreloader() {
+  const [userPreferences, setUserPreferences] = useState({});
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // 分析用户行为
+    const analyzeUserBehavior = () => {
+      const frequentlyVisited = getFrequentlyVisitedPages();
+      const timeSpent = getAverageTimeSpent();
+      const navigationPattern = getNavigationPattern();
+
+      return {
+        frequentlyVisited,
+        timeSpent,
+        navigationPattern,
+      };
+    };
+
+    // 基于用户行为预加载
+    const userPrefs = analyzeUserBehavior();
+    setUserPreferences(userPrefs);
+    setIsLoaded(true);
+
+    // 预加载用户可能访问的页面
+    userPrefs.frequentlyVisited.forEach(page => {
+      import(`./pages${page.path}`);
+    });
+  }, []);
+
+  return null;
+}
+```
+
+</CodeBlock>
+
+### 6.2 Service Worker预缓存
+
+<CodeBlock>
+
+```jsx
+// 1. 注册Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then(registration => {
+        console.log('SW registered: ', registration);
+      })
+      .catch(registrationError => {
+        console.log('SW registration failed: ', registrationError);
+      });
+  });
+}
+
+// 2. sw.js - 预缓存策略
+const CACHE_NAME = 'my-app-v1';
+const urlsToCache = [
+  '/',
+  '/static/js/bundle.js',
+  '/static/css/main.css',
+  // 不预缓存大型chunk
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        // 只缓存核心资源
+        return cache.addAll(urlsToCache);
+      })
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        // 缓存命中则返回
+        if (response) {
+          return response;
+        }
+
+        // 网络请求并缓存
+        return fetch(event.request)
+          .then(response => {
+            // 不缓存chunk文件
+            if (event.request.url.includes('.chunk.')) {
+              return response;
+            }
+
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          });
+      })
+  );
+});
+
+// 3. Workbox预缓存
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate } from 'workbox-strategies';
+
+precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
+
+// 缓存策略
+registerRoute(
+  ({ request }) => request.destination === 'script',
+  new StaleWhileRevalidate()
+);
+```
+
+</CodeBlock>
+
+### 6.3 HTTP/2 Push
+
+<CodeBlock>
+
+```jsx
+// 1. 服务器端推送（需要服务器支持）
+// Node.js/Express示例
+app.get('/', (req, res) => {
+  // 推送关键资源
+  res.push('/static/js/main.js');
+  res.push('/static/css/main.css');
+
+  // 推送可能需要的路由
+  res.push('/dashboard.js');
+  res.push('/settings.js');
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <link rel="preload" href="/static/js/main.js" as="script">
+      <link rel="preload" href="/dashboard.js" as="script">
+    </head>
+    <body>
+      <div id="root"></div>
+      <script src="/static/js/main.js"></script>
+    </body>
+    </html>
+  `);
+});
+
+// 2. 前端预加载提示
+function ResourceHint({ children, to, type = 'prefetch' }) {
+  return (
+    <>
+      <link rel={type} href={to} />
+      {children}
+    </>
+  );
+}
+
+// 使用示例
+<ResourceHint to="/dashboard" type="prefetch">
+  <Link to="/dashboard">Dashboard</Link>
+</ResourceHint>
+
+// 3. 基于性能的预加载
+function PerformanceBasedPreloader() {
+  const [connection, setConnection] = useState(null);
+
+  useEffect(() => {
+    // 检测网络状态
+    if ('connection' in navigator) {
+      const conn = navigator.connection;
+      setConnection(conn);
+
+      // 基于网络状况调整预加载策略
+      if (conn.effectiveType === '4g') {
+        // 快速网络：预加载更多资源
+        prefetchHeavyResources();
+      } else if (conn.effectiveType === '3g') {
+        // 慢速网络：只预加载必要资源
+        prefetchEssentialResources();
+      } else {
+        // 慢速网络：跳过预加载
+        skipPreloading();
+      }
+    }
+  }, []);
+
+  return null;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 最佳实践
+
+### 7.1 代码分割策略
+
+<BestPractices>
+
+```jsx
+// ✅ 好的分割策略
+
+// 1. 路由级分割
+// 每个主要页面一个chunk
+const Home = lazy(() => import('../pages/Home'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const Settings = lazy(() => import('../pages/Settings'));
+
+// 2. 第三方库分离
+const vendorChunk = {
+  react: ['react', 'react-dom', 'react-router-dom'],
+  ui: ['antd', '@mui/material'],
+  charts: ['chart.js', 'recharts'],
+};
+
+// 3. 功能模块分割
+const AdminPanel = lazy(() => import('./admin/Panel'));
+const Reports = lazy(() => import('./reports/Reports'));
+
+// 4. 条件分割
+const Component = lazy(() =>
+  import('./Component').then(module => ({
+    default: module.ConditionalComponent
+  }))
+);
+
+// 5. 合理大小的chunk
+// 避免过小的chunk（增加请求开销）
+// 避免过大的chunk（失去分割意义）
+// 目标：每个chunk 50-200KB
+
+// ❌ 避免的分割策略
+
+// 1. 过度分割
+const Button = lazy(() => import('./Button'));
+const Input = lazy(() => import('./Input'));
+const Card = lazy(() => import('./Card'));
+// 每个小组件都分割会增加请求数量
+
+// 2. 分割核心功能
+const App = lazy(() => import('./App'));
+// 不要分割应用核心，否则首屏加载慢
+
+// 3. 不考虑依赖关系
+const ModuleA = lazy(() => import('./ModuleA'));
+const ModuleB = lazy(() => import('./ModuleB'));
+// ModuleA和ModuleB共享依赖，重复打包
+
+// 4. 没有加载状态
+<Suspense fallback={null}>
+  <LazyComponent />
+</Suspense>
+// 必须提供有意义的加载UI
+```
+
+</BestPractices>
+
+### 7.2 加载状态管理
+
+<BestPractices>
+
+```jsx
+// ✅ 好的加载状态
+
+// 1. 多级加载状态
+<Suspense fallback={<PageLoader />}>
+  <Page>
+    <Suspense fallback={<SectionLoader />}>
+      <Section />
+    </Suspense>
+  </Page>
+</Suspense>
+
+// 2. 骨架屏
+function SkeletonLoader({ type }) {
+  if (type === 'page') {
+    return (
+      <div className="skeleton page-skeleton">
+        <div className="skeleton-header" />
+        <div className="skeleton-content">
+          <div className="skeleton-line" />
+          <div className="skeleton-line" />
+          <div className="skeleton-line" />
+        </div>
+      </div>
+    );
+  }
+
+  if (type === 'card') {
+    return (
+      <div className="skeleton card-skeleton">
+        <div className="skeleton-image" />
+        <div className="skeleton-title" />
+        <div className="skeleton-text" />
+      </div>
+    );
+  }
+
+  return <div className="skeleton" />;
+}
+
+// 3. 进度指示
+function ProgressLoader({ progress }) {
+  return (
+    <div className="loader">
+      <div
+        className="progress-bar"
+        style={{ width: `${progress}%` }}
+      />
+      <div className="progress-text">{progress}% loaded</div>
+    </div>
+  );
+}
+
+// 4. 智能加载策略
+const loadWithRetry = async (importFunc, maxRetries = 3) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await importFunc();
+    } catch (error) {
+      if (i === maxRetries - 1) {
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+
+// 5. 超时处理
+function SuspenseWithTimeout({
+  children,
+  fallback,
+  timeout = 10000
+}) {
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+    }, timeout);
+
+    return () => clearTimeout(timer);
+  }, [timeout]);
+
+  if (timedOut) {
+    return <div>Loading timed out</div>;
+  }
+
+  return (
+    <Suspense fallback={fallback}>
+      {children}
+    </Suspense>
+  );
+}
+```
+
+</BestPractices>
+
+### 7.3 错误处理
+
+<BestPractices>
+
+```jsx
+// ✅ 完整的错误处理
+
+// 1. 错误边界
+class LazyLoadErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // 记录错误
+    console.error('Lazy loading failed:', error, errorInfo);
+
+    // 发送错误报告
+    if (window.gtag) {
+      window.gtag('event', 'exception', {
+        description: error.message,
+        fatal: false,
+      });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="error-fallback">
+          <h2>Something went wrong</h2>
+          <details>
+            <summary>Error details</summary>
+            <pre>{this.state.error?.stack}</pre>
+          </details>
+          <button onClick={() => window.location.reload()}>
+            Reload page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 2. 降级方案
+const LazyComponent = lazy(() =>
+  import('./Component')
+    .catch(() => import('./ComponentFallback'))
+);
+
+// 3. 重试机制
+function RetryableLazyComponent({ importFunc }) {
+  const [retryCount, setRetryCount] = useState(0);
+  const [Component, setComponent] = useState(null);
+  const [error, setError] = useState(null);
+
+  const attemptLoad = useCallback(async () => {
+    try {
+      const module = await importFunc();
+      setComponent(() => module.default);
+      setError(null);
+    } catch (err) {
+      setError(err);
+      if (retryCount < 3) {
+        setRetryCount(count => count + 1);
+        setTimeout(attemptLoad, 1000 * retryCount);
+      }
+    }
+  }, [importFunc, retryCount]);
+
+  useEffect(() => {
+    attemptLoad();
+  }, [attemptLoad]);
+
+  if (error) {
+    return (
+      <div className="error-state">
+        <p>Failed to load component</p>
+        <button onClick={attemptLoad}>
+          Retry ({retryCount}/3)
+        </button>
+      </div>
+    );
+  }
+
+  if (!Component) {
+    return <LoadingSpinner />;
+  }
+
+  return <Component />;
+}
+
+// 4. 错误监控
+function withErrorMonitoring(WrappedComponent) {
+  return function MonitoredComponent(props) {
+    return (
+      <ErrorBoundary>
+        <WrappedComponent {...props} />
+      </ErrorBoundary>
+    );
+  };
+}
+```
+
+</BestPractices>
+
+---
+
+## 8. 实际应用案例
+
+### 8.1 电商平台代码分割
+
+<CodeBlock>
+
+```jsx
+// 电商平台分割策略
+import { lazy } from 'react';
+
+// 首页组件
+const Home = lazy(() => import('./pages/Home'));
+
+// 商品相关
+const ProductList = lazy(() => import('./products/ProductList'));
+const ProductDetail = lazy(() => import('./products/ProductDetail'));
+const ProductReviews = lazy(() => import('./products/ProductReviews'));
+
+// 购物车
+const Cart = lazy(() => import('./cart/Cart'));
+
+// 用户相关
+const UserProfile = lazy(() => import('./user/Profile'));
+const UserOrders = lazy(() => import('./user/Orders'));
+const UserSettings = lazy(() => import('./user/Settings'));
+
+// 支付
+const Checkout = lazy(() => import('./checkout/Checkout'));
+const Payment = lazy(() => import('./checkout/Payment'));
+
+// 管理后台
+const AdminPanel = lazy(() => import('./admin/Panel'));
+const AdminProducts = lazy(() => import('./admin/Products'));
+const AdminOrders = lazy(() => import('./admin/Orders'));
+
+// 报表
+const SalesReport = lazy(() => import('./reports/SalesReport'));
+const InventoryReport = lazy(() => import('./reports/InventoryReport'));
+
+// 第三方库分割
+const RichTextEditor = lazy(() => import('react-quill'));
+const DatePicker = lazy(() => import('react-datepicker'));
+const Chart = lazy(() => import('chart.js'));
+
+// 路由配置
+function App() {
+  return (
+    <Router>
+      <Suspense fallback={<AppLoader />}>
+        <Routes>
+          {/* 公共页面 */}
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<ProductList />} />
+          <Route
+            path="/products/:id"
+            element={
+              <Suspense fallback={<ProductDetailSkeleton />}>
+                <ProductDetail />
+              </Suspense>
+            }
+          />
+
+          {/* 需要登录的页面 */}
+          <PrivateRoute path="/cart" element={
+            <Suspense fallback={<CartSkeleton />}>
+              <Cart />
+            </Suspense>
+          } />
+
+          <PrivateRoute path="/checkout" element={
+            <Suspense fallback={<CheckoutSkeleton />}>
+              <Checkout />
+            </Suspense>
+          } />
+
+          {/* 用户中心 */}
+          <PrivateRoute path="/profile" element={
+            <Suspense fallback={<UserProfileSkeleton />}>
+              <UserProfile />
+            </Suspense>
+          } />
+
+          <PrivateRoute path="/orders" element={
+            <Suspense fallback={<UserOrdersSkeleton />}>
+              <UserOrders />
+            </Suspense>
+          } />
+
+          {/* 管理员页面 */}
+          <AdminRoute path="/admin" element={
+            <Suspense fallback={<AdminLoader />}>
+              <AdminPanel />
+            </Suspense>
+          } />
+
+          {/* 报表页面（低频访问） */}
+          <AdminRoute path="/reports/sales" element={
+            <Suspense fallback={<SalesReportSkeleton />}>
+              <SalesReport />
+            </Suspense>
+          } />
+        </Routes>
+      </Suspense>
+    </Router>
+  );
+}
+
+// 代码分割配置
+// webpack.config.js
+module.exports = {
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+        ecommerce: {
+          test: /[\\/]src[\\/](products|cart|checkout)[\\/]/,
+          name: 'ecommerce',
+          chunks: 'all',
+        },
+        admin: {
+          test: /[\\/]src[\\/]admin[\\/]/,
+          name: 'admin',
+          chunks: 'all',
+        },
+      },
+    },
+  },
+};
+```
+
+</CodeBlock>
+
+### 8.2 SaaS仪表板分割
+
+<CodeBlock>
+
+```jsx
+// SaaS应用分割策略
+import { lazy, Suspense } from 'react';
+
+// 核心功能
+const Dashboard = lazy(() => import('./dashboard/Dashboard'));
+const Analytics = lazy(() => import('./analytics/Analytics'));
+const UserManagement = lazy(() => import('./users/UserManagement'));
+
+// 插件系统
+const PluginHost = lazy(() => import('./plugins/PluginHost'));
+
+// 可插拔功能
+const installableModules = {
+  crm: {
+    component: lazy(() => import('./plugins/crm/CRM')),
+    routes: ['/crm', '/crm/leads', '/crm/customers'],
+  },
+  projectManagement: {
+    component: lazy(() => import('./plugins/pm/ProjectManager')),
+    routes: ['/projects', '/projects/:id'],
+  },
+  inventory: {
+    component: lazy(() => import('./plugins/inventory/Inventory')),
+    routes: ['/inventory', '/inventory/items'],
+  },
+};
+
+// 动态插件加载器
+function PluginLoader({ pluginName }) {
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const installPlugin = async (name) => {
+    setIsLoading(true);
+    try {
+      await loadPluginResources(name);
+      setIsInstalled(true);
+    } catch (error) {
+      console.error(`Failed to install plugin: ${name}`, error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isInstalled) {
+      // 预加载插件资源
+      installableModules[pluginName].component.preload?.();
+    }
+  }, [isInstalled, pluginName]);
+
+  if (isLoading) {
+    return <PluginLoaderSkeleton />;
+  }
+
+  if (!isInstalled) {
+    return (
+      <div className="plugin-installer">
+        <h3>{pluginName} Plugin</h3>
+        <p>This plugin is not installed</p>
+        <button onClick={() => installPlugin(pluginName)}>
+          Install Plugin
+        </button>
+      </div>
+    );
+  }
+
+  const Component = installableModules[pluginName].component;
+
+  return (
+    <Suspense fallback={<PluginSkeleton />}>
+      <Component />
+    </Suspense>
+  );
+}
+
+// 主应用
+function SaaSApp() {
+  const [activeModules, setActiveModules] = useState(['dashboard']);
+
+  return (
+    <div className="saas-app">
+      <header>
+        <nav>
+          <button onClick={() => setActiveModules(['dashboard'])}>
+            Dashboard
+          </button>
+          <button onClick={() => setActiveModules(['analytics'])}>
+            Analytics
+          </button>
+          {Object.keys(installableModules).map(module => (
+            <button
+              key={module}
+              onClick={() => setActiveModules([module])}
+            >
+              {module}
+            </button>
+          ))}
+        </nav>
+      </header>
+
+      <main>
+        {activeModules.map(module => (
+          <Suspense key={module} fallback={<ModuleLoader />}>
+            {module === 'dashboard' && <Dashboard />}
+            {module === 'analytics' && <Analytics />}
+            {module === 'crm' && <PluginLoader pluginName="crm" />}
+            {module === 'projectManagement' && (
+              <PluginLoader pluginName="projectManagement" />
+            )}
+            {module === 'inventory' && (
+              <PluginLoader pluginName="inventory" />
+            )}
+          </Suspense>
+        ))}
+      </main>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.3 CMS内容管理系统分割
+
+<CodeBlock>
+
+```jsx
+// CMS分割策略
+import { lazy } from 'react';
+
+// 编辑器相关
+const RichTextEditor = lazy(() => import('./editor/RichTextEditor'));
+const MarkdownEditor = lazy(() => import('./editor/MarkdownEditor'));
+const CodeEditor = lazy(() => import('./editor/CodeEditor'));
+
+// 内容管理
+const ContentList = lazy(() => import('./content/ContentList'));
+const ContentEditor = lazy(() => import('./content/ContentEditor'));
+const MediaLibrary = lazy(() => import('./content/MediaLibrary'));
+
+// 主题系统
+const ThemeEditor = lazy(() => import('./themes/ThemeEditor'));
+const ThemeCustomizer = lazy(() => import('./themes/ThemeCustomizer'));
+
+// SEO工具
+const SEOManager = lazy(() => import('./seo/SEOManager'));
+
+// 性能监控
+const PerformanceMonitor = lazy(() => import('./monitoring/Performance'));
+
+// 多媒体处理
+const ImageEditor = lazy(() => import('./media/ImageEditor'));
+const VideoProcessor = lazy(() => import('./media/VideoProcessor'));
+
+// 国际化
+const i18n = {
+  en: lazy(() => import('./i18n/en')),
+  zh: lazy(() => import('./i18n/zh')),
+  es: lazy(() => import('./i18n/es')),
+};
+
+// 根据内容类型选择编辑器
+function EditorSelector({ contentType }) {
+  return (
+    <Suspense fallback={<EditorLoader />}>
+      {contentType === 'rich-text' && <RichTextEditor />}
+      {contentType === 'markdown' && <MarkdownEditor />}
+      {contentType === 'code' && <CodeEditor />}
+    </Suspense>
+  );
+}
+
+// CMS主界面
+function CMSApp() {
+  const [currentView, setCurrentView] = useState('content');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
+
+  return (
+    <div className="cms-app">
+      <aside className="sidebar">
+        <nav>
+          <button onClick={() => setCurrentView('content')}>
+            Content
+          </button>
+          <button onClick={() => setCurrentView('media')}>
+            Media Library
+          </button>
+          <button onClick={() => setCurrentView('themes')}>
+            Themes
+          </button>
+          <button onClick={() => setCurrentView('seo')}>
+            SEO
+          </button>
+          <button onClick={() => setCurrentView('analytics')}>
+            Analytics
+          </button>
+        </nav>
+      </aside>
+
+      <main className="content-area">
+        <Suspense fallback={<ViewLoader />}>
+          {currentView === 'content' && <ContentList />}
+          {currentView === 'media' && <MediaLibrary />}
+          {currentView === 'themes' && <ThemeEditor />}
+          {currentView === 'seo' && <SEOManager />}
+          {currentView === 'analytics' && <PerformanceMonitor />}
+        </Suspense>
+      </main>
+
+      <footer className="language-switcher">
+        <select
+          value={selectedLanguage}
+          onChange={(e) => setSelectedLanguage(e.target.value)}
+        >
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="es">Español</option>
+        </select>
+        <Suspense fallback={null}>
+          {React.createElement(i18n[selectedLanguage])}
+        </Suspense>
+      </footer>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 性能监控与优化
+
+### 9.1 性能指标监控
+
+<CodeBlock>
+
+```jsx
+// 1. Bundle加载时间监控
+function BundlePerformanceTracker() {
+  useEffect(() => {
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.initiatorType === 'script') {
+          // 记录chunk加载时间
+          console.log(`Chunk: ${entry.name}, Load time: ${entry.duration}ms`);
+
+          // 发送到分析服务
+          if (window.gtag) {
+            window.gtag('event', 'chunk_loaded', {
+              chunk_name: entry.name,
+              load_time: entry.duration,
+              transfer_size: entry.transferSize,
+            });
+          }
+        }
+      }
+    });
+
+    observer.observe({ entryTypes: ['resource'] });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return null;
+}
+
+// 2. 实际用户体验监控
+function UserExperienceMonitor() {
+  useEffect(() => {
+    // 首屏渲染时间
+    const paintEntries = performance.getEntriesByType('paint');
+    paintEntries.forEach((entry) => {
+      console.log(`${entry.name}: ${entry.startTime}ms`);
+    });
+
+    // 交互时间
+    let interactiveTime = 0;
+    const navigation = performance.getEntriesByType('navigation')[0];
+    interactiveTime = navigation.domInteractive - navigation.navigationStart;
+    console.log(`Interactive: ${interactiveTime}ms`);
+
+    // 发送指标
+    if (window.webVitals) {
+      import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+        getCLS(console.log);
+        getFID(console.log);
+        getFCP(console.log);
+        getLCP(console.log);
+        getTTFB(console.log);
+      });
+    }
+  }, []);
+
+  return null;
+}
+
+// 3. 代码分割效果对比
+function CodeSplittingAnalyzer() {
+  const [metrics, setMetrics] = useState({
+    initialBundleSize: 0,
+    loadedChunks: [],
+    cacheHits: 0,
+  });
+
+  useEffect(() => {
+    // 分析初始包大小
+    const scripts = document.querySelectorAll('script[src*=".js"]:not([src*=".chunk"])');
+    scripts.forEach((script) => {
+      fetch(script.src, { method: 'HEAD' })
+        .then((response) => {
+          const size = parseInt(response.headers.get('content-length') || '0');
+          setMetrics((prev) => ({
+            ...prev,
+            initialBundleSize: prev.initialBundleSize + size,
+          }));
+        });
+    });
+
+    // 监控chunk加载
+    const chunkObserver = new PerformanceObserver((list) => {
+      const chunks = list.getEntries()
+        .filter(entry => entry.name.includes('.chunk'))
+        .map(entry => ({
+          name: entry.name,
+          size: entry.transferSize,
+          duration: entry.duration,
+        }));
+
+      setMetrics((prev) => ({
+        ...prev,
+        loadedChunks: chunks,
+      }));
+    });
+
+    chunkObserver.observe({ entryTypes: ['resource'] });
+
+    return () => chunkObserver.disconnect();
+  }, []);
+
+  return (
+    <div className="metrics-panel">
+      <h3>Code Splitting Metrics</h3>
+      <p>Initial Bundle: {(metrics.initialBundleSize / 1024).toFixed(2)} KB</p>
+      <p>Loaded Chunks: {metrics.loadedChunks.length}</p>
+      <p>
+        Total Chunk Size: {(
+          metrics.loadedChunks.reduce((sum, chunk) => sum + chunk.size, 0) / 1024
+        ).toFixed(2)} KB
+      </p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 9.2 自动化性能优化
+
+<CodeBlock>
+
+```jsx
+// 1. 智能预加载
+function IntelligentPreloader() {
+  const [userBehavior, setUserBehavior] = useState({});
+
+  useEffect(() => {
+    // 分析用户行为
+    const trackUserInteraction = (e) => {
+      const { type, target } = e;
+      const path = getElementPath(target);
+
+      // 记录用户交互
+      analytics.track('user_interaction', {
+        type,
+        path,
+        timestamp: Date.now(),
+      });
+    };
+
+    document.addEventListener('click', trackUserInteraction, true);
+    document.addEventListener('mouseover', trackUserInteraction, true);
+    document.addEventListener('touchstart', trackUserInteraction, true);
+
+    return () => {
+      document.removeEventListener('click', trackUserInteraction, true);
+      document.removeEventListener('mouseover', trackUserInteraction, true);
+      document.removeEventListener('touchstart', trackUserInteraction, true);
+    };
+  }, []);
+
+  useEffect(() => {
+    // 基于分析结果预加载
+    const predictAndPrefetch = async () => {
+      const predictions = await getUserBehaviorPredictions();
+
+      predictions.forEach((prediction) => {
+        if (prediction.probability > 0.7) {
+          // 高概率预测，预加载
+          import(`./pages${prediction.path}`).then((module) => {
+            console.log(`Prefetched: ${prediction.path}`);
+          });
+        }
+      });
+    };
+
+    predictAndPrefetch();
+  }, [userBehavior]);
+
+  return null;
+}
+
+// 2. 自适应加载策略
+function AdaptiveLoader() {
+  const [connection, setConnection] = useState(null);
+  const [deviceInfo, setDeviceInfo] = useState(null);
+
+  useEffect(() => {
+    // 检测网络状况
+    if ('connection' in navigator) {
+      setConnection(navigator.connection);
+    }
+
+    // 检测设备信息
+    setDeviceInfo({
+      isMobile: /Mobi|Android/i.test(navigator.userAgent),
+      isLowEnd: navigator.hardwareConcurrency < 4,
+      memory: navigator.deviceMemory,
+    });
+  }, []);
+
+  const getLoadingStrategy = useCallback(() => {
+    if (!connection || !deviceInfo) {
+      return 'default';
+    }
+
+    const isSlowConnection = ['slow-2g', '2g'].includes(connection.effectiveType);
+    const isLowEndDevice = deviceInfo.isLowEnd || deviceInfo.memory < 4;
+    const isMobile = deviceInfo.isMobile;
+
+    if (isSlowConnection || isLowEndDevice) {
+      return 'conservative'; // 保守加载
+    }
+
+    if (isMobile) {
+      return 'balanced'; // 平衡模式
+    }
+
+    return 'aggressive'; // 激进模式
+  }, [connection, deviceInfo]);
+
+  const strategy = getLoadingStrategy();
+
+  useEffect(() => {
+    switch (strategy) {
+      case 'conservative':
+        // 只预加载核心资源
+        prefetchEssential();
+        break;
+      case 'balanced':
+        // 预加载核心和常见资源
+        prefetchCommon();
+        break;
+      case 'aggressive':
+        // 积极预加载
+        prefetchAggressive();
+        break;
+    }
+  }, [strategy]);
+
+  return null;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 10. 常见陷阱和解决方案
+
+### 10.1 动态导入错误
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 忽略加载失败
+const BadComponent = lazy(() => import('./Component'));
+
+function BadApp() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BadComponent />
+    </Suspense>
+  );
+}
+
+// ✅ 正确 - 处理加载错误
+const GoodComponent = lazy(() =>
+  import('./Component').catch(err => {
+    console.error('Failed to load component:', err);
+    return { default: ErrorFallback };
+  })
+);
+
+function GoodApp() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<div>Loading...</div>}>
+        <GoodComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+// ❌ 错误 - 没有错误边界
+const ComponentWithoutErrorBoundary = lazy(() =>
+  import('./MightFailComponent')
+);
+
+// ✅ 正确 - 完整的错误处理
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Lazy loading error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ErrorFallback error={this.state.error} />;
+    }
+    return this.props.children;
+  }
+}
+
+const SafeComponent = lazy(() => import('./MightFailComponent'));
+```
+
+</ErrorBox>
+
+### 10.2 过度分割
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 过度分割
+const Button = lazy(() => import('./Button'));
+const Input = lazy(() => import('./Input'));
+const Card = lazy(() => import('./Card'));
+const Modal = lazy(() => import('./Modal'));
+
+function Form() {
+  return (
+    <>
+      <Suspense fallback={null}><Button /></Suspense>
+      <Suspense fallback={null}><Input /></Suspense>
+      <Suspense fallback={null}><Card /></Suspense>
+      <Suspense fallback={null}><Modal /></Suspense>
+    </>
+  );
+}
+
+// 问题：每个小组件都单独请求，增加网络开销
+
+// ✅ 正确 - 合理分割
+// 1. 按功能模块分割
+const FormModule = lazy(() => import('./form/FormModule'));
+
+// 2. 按路由分割
+const SettingsPage = lazy(() => import('./pages/Settings'));
+
+// 3. 按使用频率分割
+const HighFrequencyModule = lazy(() => import('./common/HighFrequency'));
+const LowFrequencyModule = lazy(() => import('./admin/LowFrequency'));
+
+// 4. 按大小分割
+const SmallUtility = lazy(() => import('./utils/SmallUtility')); // 小于5KB
+// 不分割，直接引入
+import { helperFunction } from './utils/helper';
+
+// 5. 第三方库分组
+const UIChunks = {
+  antd: ['antd', '@ant-design/icons'],
+  material: ['@mui/material', '@mui/icons-material'],
+  chart: ['chart.js', 'react-chartjs-2'],
+};
+
+// webpack配置
+module.exports = {
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      minSize: 20000, // 最小20KB才分割
+      cacheGroups: {
+        // 合并小的工具函数
+        utils: {
+          test: /[\\/]src[\\/]utils[\\/]/,
+          name: 'utils',
+          chunks: 'all',
+          enforce: true,
+        },
+      },
+    },
+  },
+};
+```
+
+</ErrorBox>
+
+### 10.3 加载状态问题
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 加载状态不友好
+const BadComponent = lazy(() => import('./Component'));
+
+function BadApp() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <BadComponent />
+    </Suspense>
+  );
+}
+
+// ✅ 正确 - 有意义的加载状态
+const GoodComponent = lazy(() => import('./Component'));
+
+function GoodApp() {
+  return (
+    <Suspense
+      fallback={
+        <ComponentSkeleton>
+          <div className="skeleton-header" />
+          <div className="skeleton-content">
+            <div className="skeleton-line" />
+            <div className="skeleton-line" />
+            <div className="skeleton-line" />
+          </div>
+        </ComponentSkeleton>
+      }
+    >
+      <GoodComponent />
+    </Suspense>
+  );
+}
+
+// ❌ 错误 - 没有最小显示时间
+function InstantHideLoader() {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // 快速加载时，闪一下就消失
+    import('./Component').then(() => setIsLoaded(true));
+  }, []);
+
+  if (isLoaded) return <Component />;
+  return <div>Loading...</div>;
+}
+
+// ✅ 正确 - 最小显示时间
+function StableLoader({ minDisplayTime = 500 }) {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+    }, minDisplayTime);
+
+    return () => clearTimeout(timer);
+  }, [minDisplayTime]);
+
+  if (!isVisible) return null;
+  return <LoadingSpinner />;
+}
+
+// ✅ 正确 - 多级加载状态
+function MultiLevelLoader() {
+  return (
+    <div>
+      <Suspense fallback={<PageLoader />}>
+        <Page>
+          <Suspense fallback={<SectionLoader />}>
+            <Section />
+          </Suspense>
+        </Page>
+      </Suspense>
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+### 10.4 缓存问题
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有缓存策略
+const NoCacheComponent = lazy(() => import('./Component'));
+
+function NoCacheApp() {
+  const [show, setShow] = useState(false);
+
+  return (
+    <>
+      <button onClick={() => setShow(true)}>Show</button>
+      {show && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <NoCacheComponent />
+        </Suspense>
+      )}
+    </>
+  );
+}
+
+// 问题：每次show变为true都重新加载
+
+// ✅ 正确 - 使用缓存
+const cachedImports = new Map();
+
+function cachedImport(importFunc, key) {
+  if (cachedImports.has(key)) {
+    return cachedImports.get(key);
+  }
+
+  const promise = importFunc();
+  cachedImports.set(key, promise);
+  return promise;
+}
+
+const CachedComponent = lazy(() =>
+  cachedImport(() => import('./Component'), 'component-key')
+);
+
+function CachedApp() {
+  const [show, setShow] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (show && !loaded) {
+      // 预先加载
+      cachedImport(() => import('./Component'), 'component-key')
+        .then(() => setLoaded(true));
+    }
+  }, [show, loaded]);
+
+  return (
+    <>
+      <button onClick={() => setShow(true)}>Show</button>
+      {show && (
+        <Suspense fallback={<div>Loading...</div>}>
+          <CachedComponent />
+        </Suspense>
+      )}
+    </>
+  );
+}
+
+// ✅ 正确 - 内存管理
+function MemoryManagedApp() {
+  const [cache, setCache] = useState(new Map());
+
+  const loadComponent = useCallback(async (key) => {
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+
+    const module = await import(`./${key}`);
+    setCache(prev => new Map(prev.set(key, module)));
+
+    // 清理旧缓存（限制大小）
+    if (cache.size > 10) {
+      const entries = Array.from(cache.entries());
+      const [oldestKey] = entries[0];
+      setCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(oldestKey);
+        return newCache;
+      });
+    }
+
+    return module;
+  }, [cache]);
+
+  return <ComponentLoader loadComponent={loadComponent} />;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 11. 实践练习
+
+### 练习1：实现基础代码分割
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建包含多个页面的React应用
+- 实现路由级别的代码分割
+- 为每个页面添加加载状态
+- 优化首屏加载时间
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+import { lazy, Suspense } from 'react';
+
+const Home = lazy(() => import('./pages/Home'));
+const About = lazy(() => import('./pages/About'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+
+// 路由配置
+function App() {
+  return (
+    <BrowserRouter>
+      <Suspense fallback={<Loading />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  );
+}
+```
+
+**提示**：
+- 使用React.lazy进行懒加载
+- 用Suspense包装懒加载组件
+- 创建有意义的加载UI
+- 测量首屏加载时间
+
+</Expandable>
+
+### 练习2：实现组件级代码分割
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 创建条件渲染的组件
+- 实现按需加载第三方库
+- 添加错误处理和重试机制
+- 优化bundle大小
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+const HeavyWidget = lazy(() => import('./HeavyWidget'));
+const Chart = lazy(() => import('chart.js'));
+
+function Dashboard() {
+  const [showWidget, setShowWidget] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+
+  return (
+    <div>
+      <button onClick={() => setShowWidget(true)}>
+        Load Widget
+      </button>
+      <button onClick={() => setShowChart(true)}>
+        Show Chart
+      </button>
+
+      <Suspense fallback={<WidgetSkeleton />}>
+        {showWidget && <HeavyWidget />}
+      </Suspense>
+
+      <Suspense fallback={<ChartSkeleton />}>
+        {showChart && <Chart />}
+      </Suspense>
+    </div>
+  );
+}
+```
+
+**提示**：
+- 区分核心功能和可选功能
+- 合理设置Suspense边界
+- 实现错误边界
+- 监控bundle大小
+
+</Expandable>
+
+### 练习3：实现智能预加载系统
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 实现基于用户行为的预加载
+- 添加预获取和预加载策略
+- 根据网络状况调整加载策略
+- 实现缓存机制
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+function IntelligentPreloader() {
+  const [userBehavior, setUserBehavior] = useState({});
+
+  useEffect(() => {
+    // 分析用户行为
+    const trackUserInteraction = (e) => {
+      // 实现用户行为追踪
+    };
+
+    // 基于行为预加载
+    const predictAndPrefetch = () => {
+      // 实现预测和预加载逻辑
+    };
+
+    document.addEventListener('click', trackUserInteraction);
+    predictAndPrefetch();
+
+    return () => {
+      document.removeEventListener('click', trackUserInteraction);
+    };
+  }, [userBehavior]);
+
+  return null;
+}
+```
+
+**提示**：
+- 收集用户行为数据
+- 实现预测算法
+- 预获取常用资源
+- 缓存和清理策略
+
+</Expandable>
+
+### 练习4：实现性能监控仪表板
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 监控bundle加载时间
+- 追踪代码分割效果
+- 分析首屏性能指标
+- 提供优化建议
+
+**实现要求**：
+```javascript
+// 需要实现的功能
+function PerformanceDashboard() {
+  const [metrics, setMetrics] = useState({
+    bundleSize: 0,
+    loadTime: 0,
+    cacheHitRate: 0,
+  });
+
+  useEffect(() => {
+    // 收集性能指标
+    const collectMetrics = () => {
+      // 实现指标收集
+    };
+
+    // 分析优化建议
+    const generateRecommendations = () => {
+      // 实现优化建议生成
+    };
+
+    collectMetrics();
+    generateRecommendations();
+  }, []);
+
+  return (
+    <div className="performance-dashboard">
+      <h2>Performance Metrics</h2>
+      <div className="metric-card">
+        <h3>Bundle Size</h3>
+        <p>{metrics.bundleSize} KB</p>
+      </div>
+      <div className="metric-card">
+        <h3>Load Time</h3>
+        <p>{metrics.loadTime} ms</p>
+      </div>
+      <div className="metric-card">
+        <h3>Cache Hit Rate</h3>
+        <p>{metrics.cacheHitRate}%</p>
+      </div>
+    </div>
+  );
+}
+```
+
+**提示**：
+- 使用Performance API
+- 追踪关键指标
+- 可视化数据
+- 提供优化建议
+
+</Expandable>
+
+---
+
+## 12. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 代码分割是提升应用性能的关键技术
+- ✅ React.lazy和Suspense是实现代码分割的核心API
+- ✅ 路由级代码分割是最常见且有效的策略
+- ✅ 组件级代码分割可以进一步优化性能
+- ✅ 合理设置加载状态对用户体验至关重要
+- ✅ 错误处理和重试机制是代码分割的重要组成部分
+- ✅ Bundle分析工具帮助优化分割策略
+- ✅ 预加载和预获取可以进一步提升性能
+- ✅ 避免过度分割导致请求过多
+- ✅ 监控性能指标持续优化
+
+</Checklist>
+
+### 代码分割最佳实践
+
+<BestPractices>
+
+1. **合理分割** - 按功能模块和路由分割，避免过度分割
+2. **加载状态** - 提供有意义的加载UI和骨架屏
+3. **错误处理** - 使用错误边界和处理加载失败
+4. **性能监控** - 持续监控Bundle大小和加载时间
+5. **预加载策略** - 基于用户行为预加载常用资源
+6. **缓存机制** - 实现智能缓存避免重复加载
+7. **分析优化** - 定期分析Bundle和优化分割策略
+8. **渐进增强** - 确保基本功能在无JS时也能工作
+
+</BestPractices>
+
+### 何时使用代码分割
+
+<BestPractices>
+
+**推荐使用代码分割的场景**：
+- 多页面应用（MPA）
+- 大型单页应用（SPA）
+- 功能模块相对独立
+- 有大型第三方库依赖
+- 低频访问的管理功能
+- 用户定制化功能
+
+**不需要代码分割的场景**：
+- 简单单页应用
+- 核心功能必须立即可用
+- 高度SEO敏感的页面
+- 实时交互应用
+- 首屏必须完整展示
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了代码分割的基础和应用，接下来可以学习：
+
+1. **[性能监控工具]** - 深度性能分析
+2. **[React Profiler]** - 渲染性能分析
+3. **[服务端渲染(SSR)]** - 首屏性能优化
+4. **[渐进式Web应用(PWA)]** - 离线缓存和性能
+
+---
+
+## 13. 延伸阅读
+
+### 官方资源
+
+- [React.lazy文档](https://react.dev/reference/react/lazy) - 官方懒加载API
+- [Suspense文档](https://react.dev/reference/react/Suspense) - 官方Suspense指南
+- [Webpack代码分割](https://webpack.js.org/guides/code-splitting/) - 构建工具分割指南
+- [Vite构建优化](https://vitejs.dev/guide/build.html) - Vite分割策略
+
+### 推荐阅读
+
+- [Code Splitting Patterns](https://patterns.dev/) - 现代代码分割模式
+- [Bundle Analysis Guide](https://web.dev/find-and-fix-performance-issues/) - Bundle分析指南
+- [Loading Performance](https://web.dev/loading-performance/) - 加载性能优化
+
+### 相关话题
+
+- [React.memo](../react-memo) - 组件记忆化
+- [虚拟化技术](../virtualization) - 大数据渲染优化
+- [性能优化进阶](../advanced/advanced-optimization) - 深入性能优化
+
+---
+
+[← 上一章：虚拟化技术](virtualization) | [下一章：性能监控工具 →](../)

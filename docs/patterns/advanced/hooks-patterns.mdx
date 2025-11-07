@@ -1,0 +1,1665 @@
+# Hooks模式 - 现代逻辑复用与状态管理
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+Hooks是React 16.8引入的革命性特性，它允许在函数组件中使用状态和其他React特性。Hooks不仅仅是API的补充，它代表了一种全新的组件逻辑组织方式。在本章中，我们将深入探讨各种Hooks模式、最佳实践、性能优化和实际应用案例。
+
+## 本章学习目标
+
+- 理解Hooks的设计理念和优势
+- 掌握自定义Hooks的创建和使用
+- 学会实现复杂Hooks模式
+- 掌握Hooks的性能优化技巧
+- 理解Hooks的规则和限制
+- 学会使用Hooks替代传统模式
+- 掌握Hooks的实际应用案例
+- 理解Hooks的最佳实践和常见陷阱
+
+---
+
+## 1. 什么是Hooks？
+
+Hooks是让你在不编写类组件的情况下使用状态（state）和其他React特性的函数。Hooks是对函数式组件的增强，它让你在函数组件中使用类组件的功能，同时保持函数式组件的简洁性。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Hooks</strong>是让你在函数组件中"钩入"React状态的函数。以<strong>use</strong>开头命名（如useState, useEffect, useContext等），并遵循Hooks的规则。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// 基础Hooks使用
+function Counter({ initialCount = 0 }) {
+  // 使用useState Hook
+  const [count, setCount] = useState(initialCount);
+  const [name, setName] = useState('Counter');
+
+  // 使用useEffect Hook
+  useEffect(() => {
+    document.title = `${name}: ${count}`;
+  }, [count, name]);
+
+  // 使用useCallback Hook
+  const increment = useCallback(() => {
+    setCount(c => c + 1);
+  }, []);
+
+  return (
+    <div>
+      <h1>{name}</h1>
+      <p>Count: {count}</p>
+      <button onClick={increment}>+</button>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name"
+      />
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 1.1 Hooks的诞生背景
+
+<Grid>
+
+<div>
+  <h4>类组件的问题</h4>
+  <ul>
+    <li>❌ 复杂的生命周期方法</li>
+    <li>❌ this绑定问题</li>
+    <li>❌ 难以复用状态逻辑</li>
+    <li>❌ 组件难以拆分和测试</li>
+    <li>❌ 冗余样板代码</li>
+  </ul>
+</div>
+
+<div>
+  <h4>Hooks的解决方案</h4>
+  <ul>
+    <li>✅ 简洁的状态管理</li>
+    <li>✅ 无this绑定问题</li>
+    <li>✅ 逻辑复用（自定义Hooks）</li>
+    <li>✅ 组件拆分更自然</li>
+    <li>✅ 清晰的逻辑组织</li>
+  </ul>
+</div>
+
+</Grid>
+
+### 1.2 Hooks的分类
+
+<CodeBlock>
+
+```jsx
+// 内置Hooks
+// 状态Hooks
+useState        // 管理组件状态
+useReducer      // 复杂状态逻辑
+
+// 副作用Hooks
+useEffect       // 副作用处理
+useLayoutEffect // 同步副作用
+
+// 上下文Hooks
+useContext      // 访问Context
+
+// 性能Hooks
+useMemo         // 缓存计算结果
+useCallback     // 缓存函数
+useTransition   // 标记非紧急更新
+useDeferredValue // 延迟值
+
+// 其他Hooks
+useRef          // 访问DOM或保存可变值
+useImperativeHandle // 暴露方法
+useDebugValue   // 自定义Hook调试
+useId           // 生成唯一ID
+```
+
+</CodeBlock>
+
+---
+
+## 2. 自定义Hooks基础
+
+### 2.1 什么是自定义Hooks？
+
+自定义Hooks是一个以"use"开头的JavaScript函数，它可以调用其他Hooks。自定义Hooks让我们能够将组件逻辑提取到可复用的函数中。
+
+<CodeBlock>
+
+```jsx
+// 基本的自定义Hook
+function useCounter(initialCount = 0) {
+  const [count, setCount] = useState(initialCount);
+
+  const increment = useCallback(() => {
+    setCount(c => c + 1);
+  }, []);
+
+  const decrement = useCallback(() => {
+    setCount(c => c - 1);
+  }, []);
+
+  const reset = useCallback(() => {
+    setCount(initialCount);
+  }, [initialCount]);
+
+  return { count, increment, decrement, reset };
+}
+
+// 使用自定义Hook
+function Counter1() {
+  const { count, increment, decrement, reset } = useCounter(0);
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>+</button>
+      <button onClick={decrement}>-</button>
+      <button onClick={reset}>Reset</button>
+    </div>
+  );
+}
+
+function Counter2() {
+  const { count, increment } = useCounter(10);
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={increment}>+</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 提取逻辑到自定义Hook
+
+<CodeBlock>
+
+```jsx
+// 提取表单逻辑
+function useForm(initialValues) {
+  const [values, setValues] = useState(initialValues);
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
+  const handleChange = useCallback((name, value) => {
+    setValues(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleBlur = useCallback((name) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+  }, []);
+
+  const reset = useCallback(() => {
+    setValues(initialValues);
+    setErrors({});
+    setTouched({});
+  }, [initialValues]);
+
+  return {
+    values,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    reset,
+    setValues,
+    setErrors
+  };
+}
+
+// 使用
+function LoginForm() {
+  const { values, errors, handleChange, handleBlur } = useForm({
+    email: '',
+    password: ''
+  });
+
+  return (
+    <form>
+      <input
+        value={values.email}
+        onChange={(e) => handleChange('email', e.target.value)}
+        onBlur={() => handleBlur('email')}
+      />
+      {errors.email && <span>{errors.email}</span>}
+      <input
+        type="password"
+        value={values.password}
+        onChange={(e) => handleChange('password', e.target.value)}
+        onBlur={() => handleBlur('password')}
+      />
+      {errors.password && <span>{errors.password}</span>}
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 带副作用的自定义Hook
+
+<CodeBlock>
+
+```jsx
+// 带副作用的自定义Hook
+function useApi(url, options = {}) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [url, options]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, loading, error, refetch: fetchData };
+}
+
+// 使用
+function UserProfile({ userId }) {
+  const { data: user, loading, error, refetch } = useApi(`/api/users/${userId}`);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return (
+    <div>
+      <h1>{user.name}</h1>
+      <button onClick={refetch}>Refresh</button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 高级Hooks模式
+
+### 3.1 组合多个Hooks
+
+<CodeBlock>
+
+```jsx
+// 组合多个自定义Hooks
+function useUserPreferences() {
+  const [theme, setTheme] = useState('light');
+  const [language, setLanguage] = useState('en');
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
+  return { theme, setTheme, language, setLanguage };
+}
+
+function useNotifications() {
+  const [notifications, setNotifications] = useState([]);
+
+  const addNotification = useCallback((notification) => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, ...notification }]);
+    setTimeout(() => {
+      removeNotification(id);
+    }, 5000);
+  }, []);
+
+  const removeNotification = useCallback((id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
+
+  return { notifications, addNotification, removeNotification };
+}
+
+function App() {
+  const { theme, setTheme } = useUserPreferences();
+  const { notifications } = useNotifications();
+
+  return (
+    <div className={theme}>
+      {notifications.map(n => (
+        <div key={n.id}>{n.message}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 条件Hook使用
+
+<CodeBlock>
+
+```jsx
+// 条件渲染基于Hook
+function useFeatureFlag(featureName) {
+  const [isEnabled, setIsEnabled] = useState(false);
+
+  useEffect(() => {
+    // 获取特性标志
+    checkFeatureFlag(featureName).then(setIsEnabled);
+  }, [featureName]);
+
+  return isEnabled;
+}
+
+function Feature({ name, children }) {
+  const isEnabled = useFeatureFlag(name);
+
+  if (!isEnabled) {
+    return <div>Feature not available</div>;
+  }
+
+  return <>{children}</>;
+}
+
+// 使用
+<Feature name="new-dashboard">
+  <Dashboard />
+</Feature>
+```
+
+</CodeBlock>
+
+### 3.3 异步操作模式
+
+<CodeBlock>
+
+```jsx
+// 异步操作自定义Hook
+function useAsync(asyncFunction, immediate = true) {
+  const [status, setStatus] = useState('idle');
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  const execute = useCallback(async (...args) => {
+    setStatus('pending');
+    setError(null);
+    setData(null);
+
+    try {
+      const result = await asyncFunction(...args);
+      setData(result);
+      setStatus('success');
+      return result;
+    } catch (error) {
+      setError(error);
+      setStatus('error');
+      throw error;
+    }
+  }, [asyncFunction]);
+
+  useEffect(() => {
+    if (immediate) {
+      execute();
+    }
+  }, [execute, immediate]);
+
+  return { execute, status, data, error };
+}
+
+// 使用
+function SearchBox() {
+  const [query, setQuery] = useState('');
+  const { execute, status, data } = useAsync(
+    (searchTerm) => searchUsers(searchTerm),
+    false
+  );
+
+  const handleChange = useCallback((e) => {
+    const value = e.target.value;
+    setQuery(value);
+    if (value.length > 2) {
+      execute(value);
+    }
+  }, [execute]);
+
+  return (
+    <div>
+      <input value={query} onChange={handleChange} />
+      {status === 'pending' && <div>Searching...</div>}
+      {data && <SearchResults results={data} />}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.4 本地存储Hooks
+
+<CodeBlock>
+
+```jsx
+// 本地存储自定义Hook
+function useLocalStorage(key, initialValue) {
+  const [storedValue, setStoredValue] = useState(() => {
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.error(error);
+      return initialValue;
+    }
+  });
+
+  const setValue = useCallback((value) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error(error);
+    }
+  }, [key, storedValue]);
+
+  return [storedValue, setValue];
+}
+
+// 使用
+function UserSettings() {
+  const [name, setName] = useLocalStorage('userName', '');
+  const [theme, setTheme] = useLocalStorage('theme', 'light');
+  const [notifications, setNotifications] = useLocalStorage('notifications', true);
+
+  return (
+    <div>
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Your name"
+      />
+      <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+      </select>
+      <label>
+        <input
+          type="checkbox"
+          checked={notifications}
+          onChange={(e) => setNotifications(e.target.checked)}
+        />
+        Enable notifications
+      </label>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 实际应用案例
+
+### 4.1 数据获取模式
+
+<CodeBlock>
+
+```jsx
+// 高级数据获取Hook
+function useData(url, options = {}) {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [lastFetch, setLastFetch] = useState(0);
+
+  const fetch = useCallback(async (force = false) => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetch;
+
+    // 缓存5分钟
+    if (!force && timeSinceLastFetch < 5 * 60 * 1000 && data) {
+      return data;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error('Network response was not ok');
+      const result = await response.json();
+      setData(result);
+      setLastFetch(now);
+      return result;
+    } catch (err) {
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [url, options, data, lastFetch]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return { data, loading, error, refetch: () => fetch(true) };
+}
+
+// 使用
+function UserList({ filter }) {
+  const { data: users, loading, error, refetch } = useData(
+    `/api/users?filter=${filter}`
+  );
+
+  if (loading) return <Spinner />;
+  if (error) return <ErrorMessage error={error} onRetry={refetch} />;
+
+  return (
+    <div>
+      <button onClick={refetch}>Refresh</button>
+      <ul>
+        {users.map(user => (
+          <li key={user.id}>{user.name}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 无限滚动模式
+
+<CodeBlock>
+
+```jsx
+// 无限滚动Hook
+function useInfiniteScroll(callback, options = {}) {
+  const {
+    threshold = 100,
+    rootMargin = '0px',
+    hasMore = true,
+    loading = false
+  } = options;
+
+  const [isFetching, setIsFetching] = useState(false);
+
+  useEffect(() => {
+    if (!hasMore || loading || isFetching) return;
+
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight;
+      const scrollTop = document.documentElement.scrollTop;
+      const clientHeight = document.documentElement.clientHeight;
+
+      if (scrollTop + clientHeight + threshold >= scrollHeight) {
+        setIsFetching(true);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [hasMore, loading, isFetching, threshold]);
+
+  useEffect(() => {
+    if (isFetching && callback) {
+      callback();
+    }
+  }, [isFetching, callback]);
+
+  useEffect(() => {
+    if (!loading) {
+      setIsFetching(false);
+    }
+  }, [loading]);
+
+  return [isFetching];
+}
+
+// 使用
+function InfiniteUserList() {
+  const [page, setPage] = useState(0);
+  const [users, setUsers] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore) return;
+
+    setLoading(true);
+    try {
+      const newUsers = await fetchUsers(page);
+      if (newUsers.length === 0) {
+        setHasMore(false);
+      } else {
+        setUsers(prev => [...prev, ...newUsers]);
+        setPage(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [page, loading, hasMore]);
+
+  const [isFetching] = useInfiniteScroll(loadMore, {
+    hasMore,
+    loading
+  });
+
+  return (
+    <div>
+      {users.map(user => (
+        <UserCard key={user.id} user={user} />
+      ))}
+      {loading && <Spinner />}
+      {!hasMore && <div>No more users</div>}
+      {isFetching && <div>Loading more...</div>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 拖拽模式
+
+<CodeBlock>
+
+```jsx
+// 拖拽Hook
+function useDrag(initialPosition = { x: 0, y: 0 }) {
+  const [position, setPosition] = useState(initialPosition);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const elementRef = useRef(null);
+
+  const handleMouseDown = useCallback((e) => {
+    if (!elementRef.current) return;
+
+    setIsDragging(true);
+    const rect = elementRef.current.getBoundingClientRect();
+    setStartPosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+
+    const handleMouseMove = (e) => {
+      if (!isDragging) return;
+
+      const newX = e.clientX - startPosition.x;
+      const newY = e.clientY - startPosition.y;
+
+      setPosition({ x: newX, y: newY });
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [isDragging, startPosition]);
+
+  return {
+    position,
+    isDragging,
+    ref: elementRef,
+    bind: {
+      ref: elementRef,
+      onMouseDown: handleMouseDown,
+      style: {
+        position: 'absolute',
+        left: position.x,
+        top: position.y,
+        cursor: isDragging ? 'grabbing' : 'grab'
+      }
+    }
+  };
+}
+
+// 使用
+function DraggableBox() {
+  const { position, isDragging, bind } = useDrag();
+
+  return (
+    <div {...bind}>
+      Drag me! Position: {position.x}, {position.y}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.4 窗口大小检测模式
+
+<CodeBlock>
+
+```jsx
+// 窗口大小检测Hook
+function useWindowSize() {
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return windowSize;
+}
+
+// 媒体查询Hook
+function useMediaQuery(query) {
+  const [matches, setMatches] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia(query).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const mediaQuery = window.matchMedia(query);
+    setMatches(mediaQuery.matches);
+
+    const handler = (event) => setMatches(event.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, [query]);
+
+  return matches;
+}
+
+// 使用
+function ResponsiveLayout() {
+  const { width, height } = useWindowSize();
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isTablet = useMediaQuery('(max-width: 1024px)');
+
+  return (
+    <div>
+      <h1>Window Size: {width}x{height}</h1>
+      <h2>Mobile: {isMobile ? 'Yes' : 'No'}</h2>
+      <h2>Tablet: {isTablet ? 'Yes' : 'No'}</h2>
+      {isMobile ? <MobileLayout /> : <DesktopLayout />}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. Hooks性能优化
+
+### 5.1 useCallback优化
+
+<CodeBlock>
+
+```jsx
+// ❌ 避免 - 每次渲染创建新函数
+function BadComponent({ onItemClick }) {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <button onClick={() => setCount(c => c + 1)}>Increment</button>
+      <List onItemClick={onItemClick} />
+    </div>
+  );
+}
+
+// ✅ 正确 - 使用useCallback缓存函数
+function GoodComponent({ onItemClick }) {
+  const [count, setCount] = useState(0);
+
+  const handleIncrement = useCallback(() => {
+    setCount(c => c + 1);
+  }, []);
+
+  return (
+    <div>
+      <button onClick={handleIncrement}>Increment</button>
+      <List onItemClick={onItemClick} />
+    </div>
+  );
+}
+
+// 正确使用依赖
+const handleCallback = useCallback((id) => {
+  onItemClick(id);
+}, [onItemClick]);
+
+// 避免不必要的依赖
+const expensiveCallback = useCallback(() => {
+  console.log('This is stable');
+  // 没有依赖，因为内部没有使用任何props或state
+}, []); // 空依赖数组
+
+// 正确的依赖
+const smartCallback = useCallback((id) => {
+  setItems(items => items.filter(item => item.id !== id));
+  setCount(c => c + 1);
+  console.log('Count updated'); // 纯console，可以放在依赖外
+}, [setItems, setCount]); // 只包含真正使用的依赖
+```
+
+</CodeBlock>
+
+### 5.2 useMemo优化
+
+<CodeBlock>
+
+```jsx
+
+```jsx
+// 计算优化
+function ExpensiveComponent({ list, filter }) {
+  // ❌ 避免 - 每次渲染都重新计算
+  const expensiveValue = list
+    .filter(item => item.category === filter)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(item => ({
+      ...item,
+      displayName: item.name.toUpperCase()
+    }));
+
+  // ✅ 正确 - 使用useMemo缓存
+  const expensiveValue = useMemo(() => {
+    return list
+      .filter(item => item.category === filter)
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(item => ({
+        ...item,
+        displayName: item.name.toUpperCase()
+      }));
+  }, [list, filter]);
+
+  return (
+    <ul>
+      {expensiveValue.map(item => (
+        <li key={item.id}>{item.displayName}</li>
+      ))}
+    </ul>
+  );
+}
+
+// 合理使用useMemo
+function ListComponent({ items }) {
+  // 简单计算不需要memo
+  const total = items.length;
+
+  // 复杂计算使用memo
+  const sortedItems = useMemo(() => {
+    return [...items].sort((a, b) => a.priority - b.priority);
+  }, [items]);
+
+  // 简单对象创建不需要memo
+  const metadata = { count: items.length, type: 'list' };
+
+  return (
+    <div>
+      <p>Total items: {total}</p>
+      <p>Metadata: {metadata.count} {metadata.type}</p>
+      {sortedItems.map(item => (
+        <Item key={item.id} {...item} />
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 自定义Hook性能优化
+
+<CodeBlock>
+
+```jsx
+// 避免在自定义Hook中创建新对象
+function useUserProfile(userId) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // ❌ 错误 - 每次渲染都返回新对象
+  return {
+    user,
+    loading,
+    updateProfile: (updates) => {
+      setUser(prev => ({ ...prev, ...updates }));
+    }
+  };
+
+  // ✅ 正确 - 使用useCallback
+  const updateProfile = useCallback((updates) => {
+    setUser(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  return {
+    user,
+    loading,
+    updateProfile
+  };
+}
+
+// 使用useRef缓存实例值
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
+
+// 使用useMemo在Hook中缓存复杂计算
+function useComplexData(data) {
+  const processedData = useMemo(() => {
+    return data
+      .filter(item => item.active)
+      .map(item => ({
+        ...item,
+        processed: true,
+        score: calculateScore(item)
+      }))
+      .sort((a, b) => b.score - a.score);
+  }, [data]);
+
+  return processedData;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. Hooks规则和限制
+
+### 6.1 Hooks规则
+
+<CodeBlock>
+
+```jsx
+// 规则1：只在最顶层调用Hooks
+function MyComponent() {
+  // ✅ 正确 - 在函数顶层调用
+  const [count, setCount] = useState(0);
+  const [name, setName] = useState('');
+
+  if (condition) {
+    // ❌ 错误 - 不要在条件语句中调用Hooks
+    const [flag, setFlag] = useState(false);
+  }
+
+  for (let i = 0; i < 3; i++) {
+    // ❌ 错误 - 不要在循环中调用Hooks
+    const [item, setItem] = useState(null);
+  }
+
+  return <div>{count}</div>;
+}
+
+// 规则2：只在React函数中调用Hooks
+function App() {
+  const [data, setData] = useState(null);
+
+  const fetchData = async () => {
+    const result = await fetch('/api/data');
+    setData(result);
+  };
+
+  // ✅ 正确 - 在React函数组件中
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  return <div>{data}</div>;
+}
+
+// ✅ 正确 - 在自定义Hook中
+function useData(url) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch(url).then(setData);
+  }, [url]);
+
+  return data;
+}
+```
+
+</CodeBlock>
+
+### 6.2 ESLint规则
+
+<CodeBlock>
+
+```json
+// .eslintrc.json
+{
+  "plugins": ["react-hooks"],
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
+  }
+}
+
+// 常见错误
+function Component() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    // ❌ 错误 - 缺少count依赖
+    console.log('Count changed:', count);
+  }, []); // 警告：添加count到依赖数组
+
+  useEffect(() => {
+    // ✅ 正确
+    console.log('Count changed:', count);
+  }, [count]);
+
+  const increment = () => {
+    setCount(count + 1);
+  };
+
+  return <button onClick={increment}>{count}</button>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 最佳实践
+
+### 7.1 自定义Hook设计原则
+
+<CodeBlock>
+
+```jsx
+// 原则1：单一职责
+function useUser() {
+  // 只处理用户相关逻辑
+  const [user, setUser] = useState(null);
+  const login = (creds) => {};
+  const logout = () => {};
+  return { user, login, logout };
+}
+
+function useNotifications() {
+  // 只处理通知相关逻辑
+  const [notifications, setNotifications] = useState([]);
+  const add = (notification) => {};
+  const remove = (id) => {};
+  return { notifications, add, remove };
+}
+
+// 原则2：返回有意义的值
+function useCounter(initialCount = 0) {
+  const [count, setCount] = useState(initialCount);
+
+  // ❌ 不好 - 返回原始值
+  return [count, setCount];
+
+  // ✅ 好 - 返回有意义的命名
+  return {
+    count,
+    increment: () => setCount(c => c + 1),
+    decrement: () => setCount(c => c - 1),
+    reset: () => setCount(initialCount),
+    set: (value) => setCount(value)
+  };
+}
+
+// 原则3：处理边界情况
+function useApi(url) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetch = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await fetch(url);
+      if (!result.ok) throw new Error('Network error');
+      setData(await result.json());
+    } catch (err) {
+      setError(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [url]);
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  return { data, error, loading, refetch: fetch };
+}
+```
+
+</CodeBlock>
+
+### 7.2 Hooks组合模式
+
+<CodeBlock>
+
+```jsx
+// 组合多个自定义Hook
+function useUserDashboard() {
+  const user = useUser();
+  const notifications = useNotifications();
+  const preferences = usePreferences();
+
+  return {
+    user,
+    notifications,
+    preferences,
+    isLoading: user.loading || notifications.loading,
+    hasNewNotifications: notifications.unreadCount > 0
+  };
+}
+
+// 使用Provider模式
+function UserProvider({ children }) {
+  const userData = useUserProvider();
+  const notifications = useNotificationProvider();
+  const theme = useThemeProvider();
+
+  return (
+    <UserContext.Provider value={userData}>
+      <NotificationContext.Provider value={notifications}>
+        <ThemeContext.Provider value={theme}>
+          {children}
+        </ThemeContext.Provider>
+      </NotificationContext.Provider>
+    </UserContext.Provider>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.3 错误处理
+
+<CodeBlock>
+
+```jsx
+// 提供错误边界
+function useAsync(asyncFunction, immediate = true) {
+  const [status, setStatus] = useState('idle');
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+
+  const execute = useCallback(async (...args) => {
+    setStatus('pending');
+    setError(null);
+
+    try {
+      const result = await asyncFunction(...args);
+      setData(result);
+      setStatus('success');
+      return result;
+    } catch (error) {
+      setError(error);
+      setStatus('error');
+      throw error;
+    }
+  }, [asyncFunction]);
+
+  useEffect(() => {
+    if (immediate) {
+      execute();
+    }
+  }, [execute, immediate]);
+
+  return { execute, status, data, error };
+}
+
+// 使用ErrorBoundary
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <div>Something went wrong: {this.state.error?.message}</div>;
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 常见陷阱
+
+### 陷阱1：闭包陷阱
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 闭包陷阱
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      console.log(count); // 始终是0
+      setCount(count + 1);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, []); // 空依赖，count不会更新
+
+  return <div>{count}</div>;
+}
+
+// ✅ 正确 - 使用函数式更新
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCount(c => c + 1); // 使用最新值
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, []); // 不需要count依赖
+
+  return <div>{count}</div>;
+}
+
+// 或使用useRef
+function Counter() {
+  const [count, setCount] = useState(0);
+  const countRef = useRef(count);
+
+  useEffect(() => {
+    countRef.current = count;
+  }, [count]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      console.log(countRef.current);
+      setCount(countRef.current + 1);
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, []);
+
+  return <div>{count}</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：过度使用useMemo
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 过度使用useMemo
+function BadComponent({ items }) {
+  // 不必要的useMemo
+  const total = useMemo(() => items.length, [items]);
+  const isEmpty = useMemo(() => items.length === 0, [items]);
+  const firstItem = useMemo(() => items[0], [items]);
+
+  return <div>{total} items</div>;
+}
+
+// ✅ 正确 - 合理使用useMemo
+function GoodComponent({ items }) {
+  // 简单计算不需要memo
+  const total = items.length;
+  const isEmpty = items.length === 0;
+
+  // 只对昂贵计算使用memo
+  const sortedExpensiveItems = useMemo(() => {
+    return items
+      .filter(item => item.active)
+      .sort((a, b) => expensiveSort(a, b))
+      .map(expensiveMap);
+  }, [items]);
+
+  return <div>{total} items</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：依赖数组错误
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 错误的依赖
+function Component({ onUpdate }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    onUpdate(count);
+  }, [onUpdate]); // onUpdate每次都变化
+
+  // ✅ 正确 - 使用useCallback
+  const handleUpdate = useCallback((value) => {
+    onUpdate(value);
+  }, [onUpdate]);
+
+  useEffect(() => {
+    onUpdate(count);
+  }, [onUpdate, count]);
+
+  // 或使用useRef
+  const onUpdateRef = useRef(onUpdate);
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  useEffect(() => {
+    onUpdateRef.current(count);
+  }, [count]);
+
+  return <div>{count}</div>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 9. 实践练习
+
+### 练习1：创建useDebounce Hook
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 防抖Hook，延迟执行函数
+- 支持自定义延迟时间
+- 自动清理定时器
+
+**实现要求**：
+```javascript
+function useDebounce(value, delay) {
+  // 返回防抖后的值
+  return debouncedValue;
+}
+
+function SearchInput() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
+  useEffect(() => {
+    if (debouncedSearchTerm) {
+      searchAPI(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm]);
+
+  return (
+    <input
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+  );
+}
+```
+
+**提示**：
+- 使用useState和useEffect
+- 清除上一个定时器
+- 处理空值情况
+
+</Expandable>
+
+### 练习2：创建useIntersection Hook
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 元素可见性检测
+- 使用Intersection Observer API
+- 可配置阈值
+
+**实现要求**：
+```javascript
+function useIntersection(elementRef, options) {
+  // 返回是否可见
+  return isIntersecting;
+}
+
+function LazyImage({ src, alt }) {
+  const imgRef = useRef(null);
+  const isVisible = useIntersection(imgRef, {
+    threshold: 0.1,
+    rootMargin: '50px'
+  });
+
+  return (
+    <div ref={imgRef}>
+      {isVisible && <img src={src} alt={alt} />}
+    </div>
+  );
+}
+```
+
+**提示**：
+- 使用useRef和useState
+- Intersection Observer
+- 清理observer
+- SSR兼容
+
+</Expandable>
+
+### 练习3：创建useEventListener Hook
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 事件监听Hook
+- 自动清理
+- 支持多种事件类型
+
+**实现要求**：
+```javascript
+function useEventListener(target, event, handler, options) {
+  // 事件监听逻辑
+}
+
+function ClickOutside({ onClickOutside, children }) {
+  const ref = useRef(null);
+
+  useEventListener(window, 'click', (e) => {
+    if (ref.current && !ref.current.contains(e.target)) {
+      onClickOutside();
+    }
+  });
+
+  return <div ref={ref}>{children}</div>;
+}
+```
+
+**提示**：
+- useEffect清理
+- 事件委托
+- 依赖管理
+- 移动端支持
+
+</Expandable>
+
+### 练习4：创建useWebSocket Hook
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- WebSocket连接管理
+- 自动重连
+- 消息发送和接收
+- 连接状态管理
+
+**实现要求**：
+```javascript
+function useWebSocket(url, options) {
+  const [socket, setSocket] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [connected, setConnected] = useState(false);
+
+  // 连接逻辑
+  // 消息处理
+  // 自动重连
+  // 清理资源
+}
+```
+
+**提示**：
+- WebSocket API
+- 错误处理
+- 重连机制
+- 状态管理
+- 性能优化
+
+</Expandable>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ Hooks是函数组件中使用状态和副作用的函数
+- ✅ 自定义Hooks让我们提取和复用逻辑
+- ✅ 遵循Hooks规则：只在顶层调用，只在React函数中调用
+- ✅ 使用useCallback和useMemo优化性能
+- ✅ 合理设计自定义Hook的返回值
+- ✅ 避免闭包陷阱，使用函数式更新
+- ✅ 使用useRef处理可变值
+- ✅ 正确管理依赖数组
+- ✅ 提供有意义的错误信息
+- ✅ 编写可测试的自定义Hooks
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **单一职责** - 每个自定义Hook专注一个功能
+2. **有意义返回** - 返回对象而非数组
+3. **处理边界** - 空值、错误、加载状态
+4. **性能优化** - 合理使用useCallback和useMemo
+5. **依赖管理** - 正确声明依赖数组
+6. **清理资源** - 在useEffect中清理副作用
+7. **类型安全** - TypeScript提供完整类型
+8. **测试覆盖** - 测试Hook的各种场景
+
+</BestPractices>
+
+### 常见自定义Hook模式
+
+**数据获取**：
+- `useApi` - 基础API调用
+- `useFetch` - 数据获取
+- `useInfiniteQuery` - 无限滚动
+
+**交互**：
+- `useDrag` - 拖拽
+- `useClickOutside` - 点击外部
+- `useKeyPress` - 键盘事件
+
+**性能**：
+- `useDebounce` - 防抖
+- `useThrottle` - 节流
+- `useIntersection` - 可见性检测
+
+**系统**：
+- `useLocalStorage` - 本地存储
+- `useWindowSize` - 窗口大小
+- `useMediaQuery` - 媒体查询
+
+### 下一步学习
+
+现在你已经掌握了Hooks模式，接下来可以学习：
+
+1. **[错误边界](../advanced/error-boundaries)** - 深入React错误处理
+2. **[Context模式](../advanced/context-patterns)** - 状态共享
+3. **[自定义Hooks进阶](../hooks/advanced/custom-hooks)** - 深入自定义Hooks
+4. **[性能优化](../performance/)** - 性能优化技巧
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [Hooks概览](https://react.dev/reference/react) - React官方文档
+- [自定义Hooks](https://react.dev/reference/react) - 自定义Hooks指南
+- [Hooks规则](https://react.dev/reference/react) - Hooks规则和限制
+
+### 推荐阅读
+
+- [React Hooks最佳实践](https://kentcdodds.com/blog/application-state-management-with-react) - 状态管理
+- [自定义Hooks模式](https://usehooks.com/) - Hooks模式集合
+- [React Hook速查表](https://react-hooks-cheatsheet.pages.dev/) - 快速参考
+
+### 相关话题
+
+- [自定义Hooks](../hooks/advanced/custom-hooks) - 进阶使用
+- [状态模式](../basics/container-presentational) - 状态管理
+- [性能优化](../performance/) - 优化技巧
+
+---
+
+[← 上一章：Context模式](../advanced/context-patterns) | [下一章：错误边界 →](error-boundaries)

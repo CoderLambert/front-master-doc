@@ -1,0 +1,1879 @@
+# 组合 vs 继承 - React设计哲学
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+组合与继承是React组件设计中的核心哲学理念。React推荐使用组合（Composition）而非继承（Inheritance）来构建可复用的组件系统。本章将深入探讨这一设计理念，解释为什么React选择组合模式，以及如何有效地使用组合来构建灵活、可维护的组件。
+
+## 本章学习目标
+
+- 理解React组合优于继承的设计理念
+- 掌握组合模式的核心概念和实现方法
+- 学会使用组合替代继承构建组件
+- 理解哪些场景适合使用组合
+- 掌握组件间复用的最佳实践
+- 理解继承的局限性和问题
+- 学会根据需求选择合适的模式
+- 掌握组合模式的高级技巧
+
+---
+
+## 1. 为什么React选择组合而非继承？
+
+React官方明确推荐使用组合而非继承来构建组件。这是一个经过深思熟虑的设计决策，背后有充分的技术和实践理由。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心理念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>组合</strong>是通过组合多个简单组件来构建复杂功能，<strong>继承</strong>是通过类继承构建层次结构。React认为组合提供了更好的<strong>灵活性、可维护性和可测试性</strong>。
+  </p>
+</Box>
+
+<CodeBlock>
+
+```jsx
+// ❌ 继承方式 - 假设有个基类Button
+class BaseButton extends React.Component {
+  handleClick() { /* ... */ }
+  render() { /* ... */ }
+}
+
+class SubmitButton extends BaseButton { /* 继承Button */ }
+class CancelButton extends BaseButton { /* 继承Button */ }
+
+// ✅ 组合方式 - 多个简单组件组合
+function Button({ onClick, children, variant }) {
+  return <button onClick={onClick}>{children}</button>;
+}
+
+function SubmitButton() {
+  return <Button variant="submit">Submit</Button>;
+}
+
+function CancelButton() {
+  return <Button variant="cancel">Cancel</Button>;
+}
+```
+
+</CodeBlock>
+
+### 1.1 组合 vs 继承对比
+
+<Grid>
+
+<div>
+  <h4>组合的优势</h4>
+  <ul>
+    <li>✅ 组件职责单一</li>
+    <li>✅ 更好的可测试性</li>
+    <li>✅ 易于维护和修改</li>
+    <li>✅ 灵活性高</li>
+    <li>✅ 避免深层继承链</li>
+    <li>✅ 代码复用性更好</li>
+  </ul>
+</div>
+
+<div>
+  <h4>继承的问题</h4>
+  <ul>
+    <li>❌ 紧耦合的层次结构</li>
+    <li>❌ 难以理解继承链</li>
+    <li>❌ 违反开闭原则</li>
+    <li>❌ 测试困难</li>
+    <li>❌ 过度抽象</li>
+    <li>❌ 违反单一职责</li>
+  </ul>
+</div>
+
+</Grid>
+
+<CodeBlock>
+
+```jsx
+// ❌ 继承的问题示例
+// 1. 深层继承链难以理解
+class Component extends React.Component {}
+class Button extends Component {}
+class FancyButton extends Button {}
+class ThemedFancyButton extends FancyButton {}
+
+// 2. 属性覆盖困难
+class Button extends React.Component {
+  handleClick() { console.log('click'); }
+}
+
+class SubmitButton extends Button {
+  handleClick() {
+    // 想要调用父类方法？很复杂
+    super.handleClick();
+    // 还要添加新逻辑
+  }
+}
+
+// 3. 动态组合困难
+class Modal extends React.Component {
+  render() {
+    return (
+      <div>
+        {this.props.header}  {/* 难以动态组合 */}
+        {this.props.content}
+        {this.props.footer}
+      </div>
+    );
+  }
+}
+```
+
+</CodeBlock>
+
+### 1.2 继承的实际问题
+
+<CodeBlock>
+
+```jsx
+// 问题1：强耦合
+class Parent {
+  parentMethod() { /* ... */ }
+}
+
+class Child extends Parent {
+  // Child与Parent强耦合
+  // 修改Parent可能影响所有Child
+  // 难以复用Child的部分逻辑
+}
+
+// 问题2：违反单一职责
+class DataComponent extends React.Component {
+  // 既要处理UI，又要处理数据
+  // 还要处理验证，还要处理格式化
+  // 违背了单一职责原则
+}
+
+// 问题3：测试困难
+describe('Child', () => {
+  // 需要创建整个继承链的实例
+  // 难以进行单元测试
+  // 依赖关系复杂
+});
+
+// 问题4：灵活性差
+class Modal extends React.Component {}
+class FullScreenModal extends Modal {}
+class DraggableModal extends Modal {}
+
+// 如何同时满足全屏和拖拽？
+// class DraggableFullScreenModal extends ??? {}
+```
+
+</CodeBlock>
+
+---
+
+## 2. 组合模式基础
+
+组合模式的核心思想是：将复杂问题分解为多个简单问题，通过组合多个简单组件来解决复杂问题。
+
+<CodeBlock>
+
+```jsx
+// 基础组合模式
+// 1. props组合
+function App() {
+  return (
+    <Container>
+      <Header />
+      <Main />
+      <Footer />
+    </Container>
+  );
+}
+
+// 2. 函数组合
+function createUserProfile(user) {
+  return compose(
+    withAvatar,
+    withName,
+    withContactInfo,
+    withPermissions
+  )(user);
+}
+
+// 3. 组件组合
+function UserDashboard() {
+  return (
+    <DashboardLayout>
+      <UserStats />
+      <UserActivity />
+      <UserSettings />
+    </DashboardLayout>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.1 组件组合的基本形式
+
+<CodeBlock>
+
+```jsx
+// 形式1：属性组合
+function Card({ header, content, footer }) {
+  return (
+    <div className="card">
+      {header && <div className="card-header">{header}</div>}
+      <div className="card-content">{content}</div>
+      {footer && <div className="card-footer">{footer}</div>}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Card
+      header={<h2>Card Title</h2>}
+      content={<p>Card content goes here</p>}
+      footer={<button>Action</button>}
+    />
+  );
+}
+
+// 形式2：children组合
+function Container({ children }) {
+  return (
+    <div className="container">
+      {children}
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <Container>
+      <h1>Title</h1>
+      <p>Content</p>
+    </Container>
+  );
+}
+
+// 形式3：模式组合
+function withLoading(Component) {
+  return function LoadedComponent({ isLoading, ...props }) {
+    if (isLoading) return <Spinner />;
+    return <Component {...props} />;
+  };
+}
+
+const UserListWithLoading = withLoading(UserList);
+```
+
+</CodeBlock>
+
+### 2.2 组合模式的优势
+
+<CodeBlock>
+
+```jsx
+// 优势1：灵活性
+function Modal({ children, showHeader, showFooter }) {
+  return (
+    <div className="modal">
+      {showHeader && <div className="modal-header">{children.header}</div>}
+      <div className="modal-body">{children.body}</div>}
+      {showFooter && <div className="modal-footer">{children.footer}</div>}
+    </div>
+  );
+}
+
+// 可以灵活组合
+<Modal showHeader={true} showFooter={false}>
+  {{
+    header: <h2>Title</h2>,
+    body: <p>Content</p>
+  }}
+</Modal>
+
+// 优势2：可测试性
+function Button({ onClick, children }) {
+  return <button onClick={onClick}>{children}</button>;
+}
+
+// 每个组件都可以独立测试
+test('Button renders correctly', () => {
+  const { getByRole } = render(<Button>Click</Button>);
+  expect(getByRole('button')).toBeInTheDocument();
+});
+
+// 优势3：易于维护
+// 修改Button组件不会影响其他组件
+// 添加新功能只需组合现有组件
+```
+
+</CodeBlock>
+
+---
+
+## 3. 替代继承的组合模式
+
+### 3.1 替代类继承
+
+<CodeBlock>
+
+```jsx
+// ❌ 类继承方式
+class Animal {
+  speak() { /* ... */ }
+}
+
+class Dog extends Animal {
+  speak() { return 'Woof!'; }
+}
+
+class Cat extends Animal {
+  speak() { return 'Meow!'; }
+}
+
+// ✅ 组合方式
+// 1. 策略模式
+function createAnimal(speak) {
+  return { speak };
+}
+
+const Dog = createAnimal(() => 'Woof!');
+const Cat = createAnimal(() => 'Meow!');
+
+// 2. 组件组合
+const Animal = ({ speak, children }) => (
+  <div onClick={speak}>{children}</div>
+);
+
+const Dog = () => <Animal speak={() => alert('Woof!')}>🐕</Animal>;
+const Cat = () => <Animal speak={() => alert('Meow!')}>🐱</Animal>;
+
+// 3. Hooks组合
+function useAnimalBehavior(sound) {
+  const speak = useCallback(() => {
+    console.log(sound);
+  }, [sound]);
+
+  return { speak };
+}
+
+function Dog() {
+  const { speak } = useAnimalBehavior('Woof!');
+  return <button onClick={speak}>Dog</button>;
+}
+```
+
+</CodeBlock>
+
+### 3.2 替代属性继承
+
+<CodeBlock>
+
+```jsx
+// ❌ 继承属性
+class FormField extends React.Component {
+  state = { value: '' };
+  handleChange = (e) => this.setState({ value: e.target.value });
+}
+
+class EmailField extends FormField {
+  validate() {
+    return this.state.value.includes('@');
+  }
+}
+
+// ✅ 组合属性
+// 1. Props传递
+function FormField({ label, value, onChange, validation }) {
+  return (
+    <div className="form-field">
+      <label>{label}</label>
+      <input value={value} onChange={onChange} />
+      {validation && <span className="error">{validation}</span>}
+    </div>
+  );
+}
+
+function EmailField() {
+  const [email, setEmail] = useState('');
+  const validation = !email.includes('@') ? 'Invalid email' : null;
+
+  return (
+    <FormField
+      label="Email"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      validation={validation}
+    />
+  );
+}
+
+// 2. Render Props
+function FormField({ label, children }) {
+  const [value, setValue] = useState('');
+
+  return (
+    <div className="form-field">
+      <label>{label}</label>
+      {children({ value, setValue })}
+    </div>
+  );
+}
+
+function EmailField() {
+  return (
+    <FormField label="Email">
+      {({ value, setValue }) => (
+        <input
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+      )}
+    </FormField>
+  );
+}
+
+// 3. Hooks
+function useFormField(initialValue = '') {
+  const [value, setValue] = useState(initialValue);
+  return { value, setValue, onChange: (e) => setValue(e.target.value) };
+}
+
+function EmailField() {
+  const { value, onChange } = useFormField();
+
+  return (
+    <FormField
+      label="Email"
+      value={value}
+      onChange={onChange}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 替代方法继承
+
+<CodeBlock>
+
+```jsx
+// ❌ 继承方法
+class Validatable {
+  validate() { /* 通用验证逻辑 */ }
+}
+
+class Form extends Validatable {
+  handleSubmit() {
+    if (this.validate()) {
+      // 提交逻辑
+    }
+  }
+}
+
+// ✅ 组合方法
+// 1. 工具函数
+function validateField(field) {
+  // 验证逻辑
+  return field.value ? true : 'Required';
+}
+
+function Form({ fields }) {
+  const [errors, setErrors] = useState({});
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const newErrors = {};
+
+    fields.forEach(field => {
+      const error = validateField(field);
+      if (error) newErrors[field.name] = error;
+    });
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length === 0) {
+      // 提交
+    }
+  };
+
+  return <form onSubmit={handleSubmit}>{/* ... */}</form>;
+}
+
+// 2. Hooks
+function useValidation(rules) {
+  const [errors, setErrors] = useState({});
+
+  const validate = useCallback((values) => {
+    const newErrors = {};
+    rules.forEach(rule => {
+      const error = rule.test(values[rule.field]);
+      if (error) newErrors[rule.field] = error;
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [rules]);
+
+  return { errors, validate };
+}
+
+// 3. 高阶组件
+function withValidation(Component) {
+  return function ValidatedComponent(props) {
+    const [errors, setErrors] = useState({});
+    // 验证逻辑
+    return <Component {...props} errors={errors} setErrors={setErrors} />;
+  };
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 组合模式的实际应用
+
+### 4.1 构建可复用组件库
+
+<CodeBlock>
+
+```jsx
+// 基础组件
+function Button({ children, variant, size, ...props }) {
+  return (
+    <button
+      className={`btn btn-${variant} btn-${size}`}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
+
+// 组合基础组件构建复杂组件
+function Modal({ isOpen, onClose, title, children }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{title}</h2>
+          <Button onClick={onClose} variant="icon">×</Button>
+        </div>
+        <div className="modal-body">
+          {children}
+        </div>
+        <div className="modal-footer">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={onClose}>
+            OK
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 使用
+function App() {
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  return (
+    <div>
+      <Button onClick={() => setModalOpen(true)}>
+        Open Modal
+      </Button>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Confirm Action"
+      >
+        <p>Are you sure?</p>
+      </Modal>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 构建表单系统
+
+<CodeBlock>
+
+```jsx
+// 表单字段组件
+function FormField({ label, error, children }) {
+  return (
+    <div className="form-field">
+      <label>{label}</label>
+      {children}
+      {error && <span className="error">{error}</span>}
+    </div>
+  );
+}
+
+// 组合构建各种字段
+function TextInput({ value, onChange, ...props }) {
+  return <input type="text" value={value} onChange={onChange} {...props} />;
+}
+
+function EmailInput({ value, onChange, ...props }) {
+  return (
+    <TextInput
+      type="email"
+      value={value}
+      onChange={onChange}
+      {...props}
+    />
+  );
+}
+
+function PasswordInput({ value, onChange, ...props }) {
+  return (
+    <TextInput
+      type="password"
+      value={value}
+      onChange={onChange}
+      {...props}
+    />
+  );
+}
+
+// 使用组合
+function LoginForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  return (
+    <form>
+      <FormField label="Email">
+        <EmailInput
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </FormField>
+
+      <FormField label="Password">
+        <PasswordInput
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </FormField>
+
+      <Button type="submit">Login</Button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 构建布局系统
+
+<CodeBlock>
+
+```jsx
+// 布局组件
+function Container({ children, size = 'medium' }) {
+  return <div className={`container container-${size}`}>{children}</div>;
+}
+
+function Grid({ children, columns = 2, gap = 'medium' }) {
+  return (
+    <div
+      className="grid"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: gap
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function Flex({ children, direction = 'row', justify, align }) {
+  return (
+    <div
+      className="flex"
+      style={{
+        display: 'flex',
+        flexDirection: direction,
+        justifyContent: justify,
+        alignItems: align
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// 组合布局
+function Dashboard() {
+  return (
+    <Container size="large">
+      <Grid columns={3} gap="large">
+        <Card>Widget 1</Card>
+        <Card>Widget 2</Card>
+        <Card>Widget 3</Card>
+      </Grid>
+
+      <Flex justify="space-between" align="center">
+        <h1>Dashboard</h1>
+        <Button>Add Widget</Button>
+      </Flex>
+
+      <Grid columns={2} gap="medium">
+        <div>
+          <Card>Chart</Card>
+        </div>
+        <div>
+          <Card>Table</Card>
+        </div>
+      </Grid>
+    </Container>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.4 构建主题系统
+
+<CodeBlock>
+
+```jsx
+// 主题上下文
+const ThemeContext = React.createContext();
+
+function ThemeProvider({ theme, children }) {
+  return (
+    <ThemeContext.Provider value={theme}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}
+
+// 主题化组件
+function ThemedComponent({ children, variant }) {
+  const theme = useContext(ThemeContext);
+
+  return (
+    <div
+      className={`themed-component ${variant || ''}`}
+      style={{
+        backgroundColor: theme.background,
+        color: theme.text,
+        borderColor: theme.border
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// 组合主题
+function App() {
+  return (
+    <ThemeProvider theme={lightTheme}>
+      <ThemedComponent variant="primary">
+        <h1>Title</h1>
+        <Button variant="primary">Button</Button>
+      </ThemedComponent>
+    </ThemeProvider>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 组合模式的高级技巧
+
+### 5.1 组件增强
+
+<CodeBlock>
+
+```jsx
+// 1. 属性增强
+function withProps(AddedProps) {
+  return function(Component) {
+    return function EnhancedComponent(props) {
+      return <Component {...props} {...AddedProps} />;
+    };
+  };
+}
+
+// 使用
+const EnhancedButton = withProps({ variant: 'primary' })(Button);
+<EnhancedButton>Click me</EnhancedButton>
+
+// 2. 行为增强
+function withClickTracking(Component) {
+  return function TrackedComponent(props) {
+    const handleClick = (e) => {
+      analytics.track('button_click', {
+        component: Component.name,
+        ...props
+      });
+      props.onClick?.(e);
+    };
+
+    return <Component {...props} onClick={handleClick} />;
+  };
+}
+
+const TrackedButton = withClickTracking(Button);
+
+// 3. 状态增强
+function withLoadingState(Component) {
+  return function WithLoadingStateComponent(props) {
+    const [isLoading, setLoading] = useState(false);
+
+    const withLoading = async (asyncFn) => {
+      setLoading(true);
+      try {
+        await asyncFn();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    return (
+      <Component
+        {...props}
+        isLoading={isLoading}
+        withLoading={withLoading}
+      />
+    );
+  };
+}
+```
+
+</CodeBlock>
+
+### 5.2 组件修饰器
+
+<CodeBlock>
+
+```jsx
+// 修饰器模式
+function compose(...decorators) {
+  return function(Component) {
+    return decorators.reduceRight((acc, decorator) => {
+      return decorator(acc);
+    }, Component);
+  };
+}
+
+// 多个修饰器
+const EnhancedComponent = compose(
+  withLoading,
+  withErrorBoundary,
+  withClickTracking
+)(BaseComponent);
+
+// 条件修饰器
+function conditional(condition, decorator) {
+  return condition ? decorator : (Component) => Component;
+}
+
+const ConditionalComponent = conditional(
+  process.env.NODE_ENV === 'development',
+  withDevTools
+)(Component);
+```
+
+</CodeBlock>
+
+### 5.3 组件切片
+
+<CodeBlock>
+
+```jsx
+// 切片组合
+function useUserSlice() {
+  const [user, setUser] = useState(null);
+  const login = useCallback((credentials) => {
+    // 登录逻辑
+  }, []);
+  const logout = useCallback(() => {
+    // 登出逻辑
+  }, []);
+
+  return { user, login, logout };
+}
+
+function useThemeSlice() {
+  const [theme, setTheme] = useState('light');
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  }, []);
+
+  return { theme, toggleTheme };
+}
+
+// 组合切片
+function useAppState() {
+  const user = useUserSlice();
+  const theme = useThemeSlice();
+
+  return { ...user, ...theme };
+}
+```
+
+</CodeBlock>
+
+### 5.4 组件工厂
+
+<CodeBlock>
+
+```jsx
+// 组件工厂
+function createComponent(type, styles = {}) {
+  const BaseComponent = ({ children, ...props }) => {
+    return React.createElement(
+      type,
+      { style: styles, ...props },
+      children
+    );
+  };
+
+  return BaseComponent;
+}
+
+// 使用
+const RedButton = createComponent('button', {
+  backgroundColor: 'red',
+  color: 'white'
+});
+
+const BlueBox = createComponent('div', {
+  backgroundColor: 'blue',
+  width: '100px',
+  height: '100px'
+});
+
+function App() {
+  return (
+    <div>
+      <RedButton>Red Button</RedButton>
+      <BlueBox>Blue Box</BlueBox>
+    </div>
+  );
+}
+
+// 复杂工厂
+function createFormField(type, config) {
+  return function Field({ label, ...props }) {
+    const [value, setValue] = useState('');
+
+    return (
+      <div className="form-field">
+        <label>{label}</label>
+        {type === 'input' && (
+          <input value={value} onChange={(e) => setValue(e.target.value)} {...props} />
+        )}
+        {type === 'textarea' && (
+          <textarea value={value} onChange={(e) => setValue(e.target.value)} {...props} />
+        )}
+        {type === 'select' && (
+          <select value={value} onChange={(e) => setValue(e.target.value)} {...props}>
+            {config.options?.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+    );
+  };
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 常见继承模式的组合替代方案
+
+### 6.1 替代多层继承
+
+<CodeBlock>
+
+```jsx
+// ❌ 多层继承
+class Component extends React.Component {}
+class FormComponent extends Component {}
+class ValidatableForm extends FormComponent {}
+class SubmitableForm extends ValidatableForm {}
+
+// ✅ 组合替代
+// 1. Hooks组合
+function useFormComponent(initialValues) {
+  const [values, setValues] = useState(initialValues);
+  return { values, setValues };
+}
+
+function useValidation(rules) {
+  const [errors, setErrors] = useState({});
+  const validate = useCallback((values) => {
+    // 验证逻辑
+  }, [rules]);
+  return { errors, validate };
+}
+
+function useSubmitHandler(onSubmit) {
+  const [isSubmitting, setSubmitting] = useState(false);
+  const handleSubmit = useCallback(async (values) => {
+    setSubmitting(true);
+    try {
+      await onSubmit(values);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [onSubmit]);
+  return { isSubmitting, handleSubmit };
+}
+
+// 组合所有Hooks
+function useForm({ initialValues, validationRules, onSubmit }) {
+  const formState = useFormComponent(initialValues);
+  const validation = useValidation(validationRules);
+  const submitHandler = useSubmitHandler(onSubmit);
+
+  return {
+    ...formState,
+    ...validation,
+    ...submitHandler
+  };
+}
+
+// 使用
+function MyForm() {
+  const form = useForm({
+    initialValues: { name: '', email: '' },
+    validationRules: [/* ... */],
+    onSubmit: (values) => {
+      console.log('Submit:', values);
+    }
+  });
+
+  // 渲染表单
+  return <form>{/* ... */}</form>;
+}
+```
+
+</CodeBlock>
+
+### 6.2 替代混入(Mixins)
+
+<CodeBlock>
+
+```jsx
+// ❌ Mixins方式（已废弃）
+const LoggingMixin = {
+  componentDidMount() {
+    console.log('Component mounted');
+  }
+};
+
+class ComponentWithLogging extends React.Component {
+  constructor(props) {
+    super(props);
+    Object.assign(this, LoggingMixin);
+  }
+}
+
+// ✅ 组合替代
+// 1. Hooks
+function useLogging() {
+  useEffect(() => {
+    console.log('Component mounted');
+  }, []);
+}
+
+// 2. 高阶组件
+function withLogging(Component) {
+  return function LoggedComponent(props) {
+    useEffect(() => {
+      console.log('Component mounted');
+    }, []);
+
+    return <Component {...props} />;
+  };
+}
+
+// 3. 装饰器模式
+function logLifecycle(WrappedComponent) {
+  return class extends React.Component {
+    componentDidMount() {
+      console.log('Mounted:', WrappedComponent.name);
+    }
+
+    render() {
+      return <WrappedComponent {...this.props} />;
+    }
+  };
+}
+
+// 4. 组合多个功能
+function withFeatures(...features) {
+  return function(Component) {
+    return function EnhancedComponent(props) {
+      features.forEach(feature => feature.useHook?.(props));
+
+      return <Component {...props} />;
+    };
+  };
+}
+
+const withLoggingAndErrorBoundary = withFeatures(
+  { useHook: () => useEffect(() => console.log('Mounted'), []) },
+  { useHook: () => useErrorHandler() }
+);
+```
+
+</CodeBlock>
+
+### 6.3 替代接口实现
+
+<CodeBlock>
+
+```jsx
+// ❌ 接口继承
+interface Draggable {
+  onDragStart: () => void;
+  onDrag: (x: number, y: number) => void;
+  onDragEnd: () => void;
+}
+
+class DraggableComponent extends React.Component implements Draggable {
+  // 实现接口方法
+}
+
+// ✅ 组合接口
+// 1. Props类型
+function DraggableComponent({ onDragStart, onDrag, onDragEnd }) {
+  // 使用传入的回调
+  return <div>{/* ... */}</div>;
+}
+
+// 使用
+<DraggableComponent
+  onDragStart={() => console.log('Start')}
+  onDrag={(x, y) => console.log(x, y)}
+  onDragEnd={() => console.log('End')}
+/>
+
+// 2. Context
+const DraggableContext = React.createContext();
+
+function DraggableProvider({ children }) {
+  const [isDragging, setIsDragging] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const value = {
+    isDragging,
+    position,
+    startDrag: () => setIsDragging(true),
+    drag: (x, y) => setPosition({ x, y }),
+    endDrag: () => setIsDragging(false)
+  };
+
+  return (
+    <DraggableContext.Provider value={value}>
+      {children}
+    </DraggableContext.Provider>
+  );
+}
+
+function DraggableComponent() {
+  const { isDragging, position, startDrag, drag, endDrag } =
+    useContext(DraggableContext);
+
+  return <div>{/* 使用上下文 */}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 组合模式最佳实践
+
+### 7.1 组件设计原则
+
+<CodeBlock>
+
+```jsx
+// ✅ 单一职责原则
+// 每个组件只做一件事
+function Button({ onClick, children }) {
+  return <button onClick={onClick}>{children}</button>;
+}
+
+function Modal({ isOpen, onClose, children }) {
+  if (!isOpen) return null;
+  return <div>{children}</div>;
+}
+
+// ✅ 组合而非继承
+function Card({ header, body, footer }) {
+  return (
+    <div>
+      {header && <header>{header}</header>}
+      <main>{body}</main>
+      {footer && <footer>{footer}</footer>}
+    </div>
+  );
+}
+
+// ✅ 最小化组件API
+// 只暴露必要的props
+function Input({ value, onChange, ...rest }) {
+  return <input value={value} onChange={onChange} {...rest} />;
+}
+
+// ✅ 使用children增强灵活性
+function Container({ children }) {
+  return <div className="container">{children}</div>;
+}
+
+// 非常灵活的使用方式
+<Container>
+  <h1>Title</h1>
+  <p>Content</p>
+  <Button>Action</Button>
+</Container>
+
+// ❌ 避免的实践
+// 1. 组件职责过多
+function ComplexComponent() {
+  // 既做UI，又做数据获取，又做验证，又做格式化
+  // 应该拆分为多个简单组件
+}
+
+// 2. 过度抽象
+function GenericComponent<T, U, V>(props: Props<T, U, V>) {
+  // 过度抽象，难以理解和使用
+}
+
+// 3. 暴露过多内部实现
+function Component({ internalState, privateMethod, _handleClick }) {
+  // 暴露了不应该暴露的细节
+}
+```
+
+</CodeBlock>
+
+### 7.2 组合模式设计模式
+
+<CodeBlock>
+
+```jsx
+// 1. 装饰器模式
+function withBorder(Component) {
+  return function BorderedComponent(props) {
+    return (
+      <div style={{ border: '1px solid black' }}>
+        <Component {...props} />
+      </div>
+    );
+  };
+}
+
+function withPadding(Component) {
+  return function PaddedComponent(props) {
+    return (
+      <div style={{ padding: '10px' }}>
+        <Component {...props} />
+      </div>
+    );
+  };
+}
+
+const DecoratedButton = withBorder(withPadding(Button));
+
+// 2. 适配器模式
+function adaptToButton(Component) {
+  return function AdaptedComponent(props) {
+    return (
+      <Button
+        onClick={props.onActivate}
+        disabled={props.isDisabled}
+      >
+        {props.label}
+      </Button>
+    );
+  };
+}
+
+// 3. 外观模式
+function createModal({ title, content, actions }) {
+  return (
+    <Modal>
+      <Modal.Header>{title}</Modal.Header>
+      <Modal.Body>{content}</Modal.Body>
+      <Modal.Footer>
+        {actions.map((action, i) => (
+          <Button key={i} onClick={action.onClick}>
+            {action.label}
+          </Button>
+        ))}
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+// 使用外观模式
+createModal({
+  title: 'Confirm',
+  content: 'Are you sure?',
+  actions: [
+    { label: 'Cancel', onClick: handleCancel },
+    { label: 'OK', onClick: handleOK }
+  ]
+});
+```
+
+</CodeBlock>
+
+### 7.3 性能优化
+
+<CodeBlock>
+
+```jsx
+// 1. 避免不必要的重渲染
+const Button = React.memo(function Button({ onClick, children }) {
+  return <button onClick={onClick}>{children}</button>;
+});
+
+// 2. 使用useCallback和useMemo
+function ParentComponent() {
+  const [count, setCount] = useState(0);
+
+  // 缓存回调
+  const handleClick = useCallback(() => {
+    console.log('Clicked');
+  }, []);
+
+  // 缓存计算
+  const expensiveValue = useMemo(() => {
+    return computeExpensiveValue(count);
+  }, [count]);
+
+  return (
+    <div>
+      <Button onClick={handleClick}>Click</Button>
+      <span>{expensiveValue}</span>
+    </div>
+  );
+}
+
+// 3. 懒加载组件
+const LazyComponent = React.lazy(() => import('./LazyComponent'));
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LazyComponent />
+    </Suspense>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 常见陷阱和解决方案
+
+### 陷阱1：过度使用继承
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 仍然使用继承
+class BaseComponent extends React.Component {
+  baseMethod() { /* ... */ }
+}
+
+class ExtendedComponent extends BaseComponent {
+  extendedMethod() { /* ... */ }
+}
+
+// ✅ 正确 - 使用组合
+function BaseComponent({ children }) {
+  return <div>{children}</div>;
+}
+
+function useBaseMethod() {
+  return useCallback(() => {
+    console.log('Base method');
+  }, []);
+}
+
+function ExtendedComponent() {
+  const baseMethod = useBaseMethod();
+  return <div onClick={baseMethod}>Extended</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱2：忽略组件隔离
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 组件间强耦合
+function Parent() {
+  const [state, setState] = useState('');
+
+  return (
+    <div>
+      <Child1 setState={setState} />
+      <Child2 state={state} />
+    </div>
+  );
+}
+
+// ✅ 正确 - 通过Context共享
+const StateContext = React.createContext();
+
+function Parent() {
+  const [state, setState] = useState('');
+
+  return (
+    <StateContext.Provider value={{ state, setState }}>
+      <Child1 />
+      <Child2 />
+    </StateContext.Provider>
+  );
+}
+
+function Child1() {
+  const { setState } = useContext(StateContext);
+  return <button onClick={() => setState('new')}>Update</button>;
+}
+
+function Child2() {
+  const { state } = useContext(StateContext);
+  return <div>{state}</div>;
+}
+```
+
+</ErrorBox>
+
+### 陷阱3：滥用组合
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 过度组合
+function Component() {
+  return (
+    <withBorder>
+      <withPadding>
+        <withMargin>
+          <withShadow>
+            <Button />
+          </withShadow>
+        </withMargin>
+      </withPadding>
+    </withBorder>
+  );
+}
+
+// ✅ 正确 - 适度的组合
+function StyledButton({ children, ...props }) {
+  return (
+    <Button
+      {...props}
+      style={{
+        border: '1px solid black',
+        padding: '10px',
+        margin: '5px',
+        boxShadow: '2px 2px 5px rgba(0,0,0,0.2)'
+      }}
+    >
+      {children}
+    </Button>
+  );
+}
+```
+
+</ErrorBox>
+
+### 陷阱4：组件过于复杂
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 组件承担太多职责
+function ComplexForm() {
+  // 数据管理
+  const [formData, setFormData] = useState({});
+  // 验证
+  const [errors, setErrors] = useState({});
+  // API调用
+  const [isSubmitting, setSubmitting] = useState(false);
+  // UI状态
+  const [isModalOpen, setModalOpen] = useState(false);
+  // 业务逻辑
+  // 格式化
+  // 副作用处理
+  // ...
+
+  return <form>{/* 100+ 行代码 */}</form>;
+}
+
+// ✅ 正确 - 拆分为多个组件
+function FormContainer({ children, onSubmit }) {
+  const [formData, setFormData] = useState({});
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setSubmitting] = useState(false);
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {children}
+    </form>
+  );
+}
+
+function FormField({ name, label, validation }) {
+  const { formData, setFormData, errors } = useFormContext();
+  // 只负责单个字段
+}
+
+function SubmitButton() {
+  const { isSubmitting } = useFormContext();
+  return <Button type="submit" disabled={isSubmitting}>Submit</Button>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 9. 实践练习
+
+### 练习1：重构继承组件为组合
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 有一个使用继承的组件层级结构
+- 重构为组合模式
+- 保持功能不变
+
+**原始代码**：
+```javascript
+class BaseForm extends React.Component {
+  handleSubmit() {
+    console.log('Base submit');
+  }
+}
+
+class ValidatedForm extends BaseForm {
+  handleSubmit() {
+    if (this.validate()) {
+      super.handleSubmit();
+    }
+  }
+
+  validate() {
+    // 验证逻辑
+  }
+}
+
+class WithSubmit extends ValidatedForm {
+  handleSubmit() {
+    super.handleSubmit();
+    this.showSuccess();
+  }
+
+  showSuccess() {
+    // 显示成功消息
+  }
+}
+```
+
+**提示**：
+- 使用Hooks替代继承
+- 拆分为多个组件
+- 使用组合替代继承链
+
+</Expandable>
+
+### 练习2：构建组件库
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 使用组合模式构建基础组件库
+- 包含Button、Input、Card、Modal等组件
+- 支持主题定制
+
+**实现要求**：
+```javascript
+// 基础组件
+function Button({ variant, size, children, ...props }) { ... }
+function Input({ value, onChange, ...props }) { ... }
+function Card({ header, body, footer }) { ... }
+
+// 组合组件
+function Modal({ isOpen, onClose, children }) { ... }
+function Form({ onSubmit, children }) { ... }
+
+// 主题系统
+function ThemeProvider({ theme, children }) { ... }
+function ThemedButton({ theme, ...props }) { ... }
+```
+
+**提示**：
+- 从简单组件开始
+- 逐步组合成复杂组件
+- 使用Context实现主题
+
+</Expandable>
+
+### 练习3：设计模式实现
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 使用组合模式实现常见设计模式
+- 装饰器、适配器、外观模式
+
+**实现要求**：
+```javascript
+// 装饰器模式
+function withLoading(Component) { ... }
+function withErrorBoundary(Component) { ... }
+
+// 适配器模式
+function adaptToInput(Component) { ... }
+
+// 外观模式
+function createForm(config) { ... }
+```
+
+**提示**：
+- 理解设计模式的目的
+- 使用组合实现模式
+- 保持API简洁
+
+</Expandable>
+
+### 练习4：复杂组件重构
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 有一个复杂的单文件组件
+- 重构为多个简单组件
+- 使用组合模式
+
+**原始组件包含**：
+- 表单输入
+- 验证
+- 数据获取
+- 错误处理
+- 加载状态
+- 多种布局
+
+**提示**：
+- 拆分组件职责
+- 使用Hooks提取逻辑
+- 通过props和Context传递数据
+- 保持组件可测试性
+
+</Expandable>
+
+---
+
+## 10. 组合模式与其他模式
+
+### 10.1 组合 vs 高阶组件
+
+<Compare>
+
+```jsx
+// 组合方式
+function Component() {
+  const { data, loading, error } = useData();
+  const { user } = useUser();
+  return <div>{/* 渲染 */}</div>;
+}
+
+// 高阶组件
+const EnhancedComponent = withData(withUser(Component));
+
+// 对比
+// ✅ 组合更简单
+// ✅ 组合更灵活
+// ✅ 组合更容易测试
+// ✅ HOC有命名冲突问题
+// ❌ 组合可能导致嵌套过深
+```
+
+</Compare>
+
+### 10.2 组合 vs Render Props
+
+<Compare>
+
+```jsx
+// 组合方式
+function Component() {
+  const state = useCounter();
+  return <div>Count: {state.count}</div>;
+}
+
+// Render Props
+<Counter>
+  {({ count, increment }) => (
+    <div>Count: {count}</div>
+  )}
+</Counter>
+
+// 对比
+// ✅ 组合更直观
+// ❌ Render Props有嵌套问题
+// ❌ Render Props难以TypeScript
+// ❌ Render Props性能问题
+```
+
+</Compare>
+
+### 10.3 组合 vs Context
+
+<Compare>
+
+```jsx
+// 组合方式 - Props传递
+<Provider>
+  <Consumer>
+    {(data) => <Component data={data} />}
+  </Consumer>
+</Provider>
+
+// 组合方式 - Hooks
+function Component() {
+  const data = useContext(Context);
+  return <div>{data}</div>;
+}
+
+// 对比
+// ✅ Hooks更简洁
+// ✅ Hooks性能更好
+// ❌ Context有更新问题
+// ❌ 过度使用Context影响性能
+```
+
+</Compare>
+
+---
+
+## 11. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ React推荐组合而非继承
+- ✅ 组合提供更好的灵活性和可维护性
+- ✅ 通过props和children实现组合
+- ✅ Hooks是组合模式的现代化实现
+- ✅ 组件职责应该单一
+- ✅ 避免深层继承链
+- ✅ 使用组合替代mixins
+- ✅ 装饰器模式是组合的典型应用
+- ✅ 性能优化时使用React.memo
+- ✅ 过度组合也会导致问题
+
+</Checklist>
+
+### 组合模式最佳实践
+
+<BestPractices>
+
+1. **优先使用组合** - 优先考虑组合而非继承
+2. **保持组件简单** - 每个组件只做一件事
+3. **合理拆分** - 将复杂组件拆分为多个简单组件
+4. **使用Hooks** - Hooks是组合的现代方式
+5. **避免过度抽象** - 不要为了组合而组合
+6. **性能优化** - 使用React.memo优化重渲染
+7. **测试友好** - 组合模式使组件更易测试
+8. **文档清晰** - 记录组件的组合方式
+
+</BestPractices>
+
+### 何时使用组合
+
+<BestPractices>
+
+**强烈推荐使用组合**：
+- 构建可复用组件库
+- 实现组件功能增强
+- 状态逻辑复用
+- 避免继承问题
+- 构建灵活API
+
+**可以使用继承**：
+- 第三方库需要继承（无法改变）
+- 原生DOM元素扩展
+- 特殊情况下的代码复用
+
+**避免使用继承**：
+- 构建应用组件
+- 扩展已有组件
+- 共享状态逻辑
+- 组件层级构建
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了组合优于继承的设计理念，接下来可以学习：
+
+1. **[组件模式总览](../basics/functional-components)** - 系统学习各种组件模式
+2. **[高阶组件](../basics/higher-order-components)** - 深入HOC模式
+3. **[Render Props](../basics/render-props)** - 渲染属性模式
+4. **[自定义Hooks进阶](../hooks/advanced/custom-hooks)** - 深入自定义Hooks
+
+---
+
+## 12. 延伸阅读
+
+### 官方资源
+
+- [组合 vs 继承](https://react.dev/learn/thinking-in-react) - React官方文档
+- [JSX中的组合](https://react.dev/learn/writing-markup-with-jsx) - 组合思维
+- [组件设计原则](https://react.dev/reference/react) - 组件最佳实践
+
+### 推荐阅读
+
+- [组合优于继承](https://www.patterns.dev/posts/pro composition-over-inheritance/) - 设计模式
+- [React组件设计](https://reactpatterns.com/) - 模式集合
+- [函数式组件设计](https://www.smashingmagazine.com/) - 设计指南
+
+### 相关话题
+
+- [高阶组件](../basics/higher-order-components) - HOC模式
+- [Render Props](../basics/render-props) - 渲染属性
+- [自定义Hooks](../hooks/advanced/custom-hooks) - 逻辑复用
+
+---
+
+[← 上一章：受控与非受控](controlled-uncontrolled) | [组件模式总结 →](../)
