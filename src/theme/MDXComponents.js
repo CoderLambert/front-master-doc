@@ -270,8 +270,26 @@ const MDXComponents = {
     </div>
   ),
 
-  // 使用默认的Highlight
-  code: (props) => <Highlight code={props.code || ''} language={props.language || 'javascript'} {...props} />,
+  // 使用默认的Highlight组件渲染代码
+  code: ({ className, children, ...props }) => {
+    const match = /language-(\w+)/.exec(className || '');
+    const codeString = children?.trim() || '';
+    return (
+      <Highlight code={codeString} language={(match && match[1]) || 'javascript'} {...props}>
+        {({ className: highlightClassName, style, tokens, getLineProps, getTokenProps }) => (
+          <pre className={highlightClassName} style={style}>
+            {tokens.map((line, i) => (
+              <div key={i} {...getLineProps({ line, key: i })}>
+                {line.map((token, key) => (
+                  <span key={key} {...getTokenProps({ token, key })} />
+                ))}
+              </div>
+            ))}
+          </pre>
+        )}
+      </Highlight>
+    );
+  },
 };
 
 export default MDXComponents;
