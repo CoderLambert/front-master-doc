@@ -204,6 +204,21 @@ const MDXComponents = {
     );
   },
 
+  // CodeBlock组件 - 代码块容器
+  CodeBlock: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        border: '1px solid var(--ifm-toc-border-color)',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        background: 'var(--ifm-background-surface-color)',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
   // CompareTable组件
   CompareTable: ({ children }) => (
     <div
