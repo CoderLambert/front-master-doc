@@ -204,6 +204,22 @@ const MDXComponents = {
     );
   },
 
+  // Highlight组件 - 高亮显示文本
+  Highlight: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        padding: '20px',
+        background: 'var(--ifm-background-surface-color)',
+        border: '1px solid var(--ifm-toc-border-color)',
+        borderRadius: '8px',
+        borderLeft: '4px solid var(--ifm-color-primary)',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
   // CodeBlock组件 - 代码块容器
   CodeBlock: ({ children }) => (
     <div
