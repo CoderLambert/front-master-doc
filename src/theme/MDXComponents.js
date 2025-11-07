@@ -49,6 +49,21 @@ const MDXComponents = {
     </div>
   ),
 
+  // Timeline组件 - 时间线
+  Timeline: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        padding: '20px',
+        background: 'var(--ifm-background-surface-color)',
+        border: '1px solid var(--ifm-toc-border-color)',
+        borderRadius: '8px',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
   // Compare组件 - 对比容器
   Compare: ({ children }) => (
     <div
@@ -256,7 +271,7 @@ const MDXComponents = {
   ),
 
   // 使用默认的Highlight
-  code: (props) => <Highlight {...props} />,
+  code: (props) => <Highlight code={props.code || ''} language={props.language || 'javascript'} {...props} />,
 };
 
 export default MDXComponents;
