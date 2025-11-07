@@ -79,6 +79,21 @@ const MDXComponents = {
     </div>
   ),
 
+  // GoodBad组件 - 好/坏对比容器
+  GoodBad: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        padding: '20px',
+        background: 'var(--ifm-background-surface-color)',
+        border: '1px solid var(--ifm-toc-border-color)',
+        borderRadius: '8px',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
   // Process组件 - 流程容器
   Process: ({ children }) => (
     <div
