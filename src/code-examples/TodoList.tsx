@@ -60,5 +60,3 @@ function TodoList() {
     </div>
   );
 }
-
-export default TodoList;

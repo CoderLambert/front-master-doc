@@ -1,13 +1,9 @@
 // Counter component
-import CounterRaw from './Counter.js?raw';
-const CounterExample = CounterRaw.trim();
-
-// TodoList component
-import TodoListRaw from './TodoList.js?raw';
-const TodoListExample = TodoListRaw.trim();
+import CounterCode from '!!raw-loader!@site/src/code-examples/Counter.tsx';
+import TodoListCode from '!!raw-loader!@site/src/code-examples/TodoList.tsx';
 
 // Export all examples
 export {
-  CounterExample,
-  TodoListExample,
+  CounterCode,
+  TodoListCode,
 };

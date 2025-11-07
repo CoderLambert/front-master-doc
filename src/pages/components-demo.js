@@ -1,13 +1,15 @@
-import React from 'react';
 import Layout from '@theme/Layout';
 import { CodePlayground, LiveCode, CodeBlock, CopyButton } from '@site/src/components';
+import { createPlaygroundFiles, createLiveCode } from '@site/src/utils/codeTransform';
 
 // Import code examples as raw text (raw-loader handles .txt files)
-import CounterCode from '!!raw-loader!@site/src/code-examples/Counter.txt';
-import TodoListCode from '!!raw-loader!@site/src/code-examples/TodoList.txt';
+import CounterCode from '!!raw-loader!@site/src/code-examples/Counter.tsx';
+import TodoListCode from '!!raw-loader!@site/src/code-examples/TodoList.tsx';
 
 function ComponentsDemo() {
-  const codeExample = CounterCode.trim();
+  // 转换代码为 CodePlayground 格式
+  const counterFiles = createPlaygroundFiles(CounterCode.trim(), 'Counter', { title: '计数器示例' });
+  const todoListFiles = createPlaygroundFiles(TodoListCode.trim(), 'TodoList', { title: '待办事项列表' });
 
   return (
     <Layout
@@ -22,9 +24,20 @@ function ComponentsDemo() {
           <p>完整的代码编辑器，支持多文件编辑和实时预览</p>
 
           <CodePlayground
-            files={{
-              '/App.js': codeExample,
-            }}
+            files={counterFiles}
+            showConsole={true}
+            showTabs={true}
+            editorHeight={400}
+          />
+        </section>
+
+
+       <section style={{ marginBottom: '60px' }}>
+          <h2>1. todoListFiles 组件</h2>
+          <p>完整的代码编辑器，支持多文件编辑和实时预览</p>
+
+          <CodePlayground
+            files={todoListFiles}
             showConsole={true}
             showTabs={true}
             editorHeight={400}
@@ -36,7 +49,7 @@ function ComponentsDemo() {
           <p>轻量级实时代码预览组件</p>
 
           <LiveCode
-            code={codeExample}
+            code={CounterCode}
             showEditor={true}
             showPreview={true}
             showError={true}
@@ -52,7 +65,7 @@ function ComponentsDemo() {
             showLineNumbers={true}
             showCopyButton={true}
           >
-{codeExample}
+            {CounterCode}
           </CodeBlock>
         </section>
 
@@ -69,12 +82,12 @@ function ComponentsDemo() {
           }}>
             <pre style={{ margin: 0 }}>
               <code>
-{codeExample}
+                {CounterCode}
               </code>
             </pre>
             <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
               <CopyButton
-                code={codeExample}
+                code={CounterCode}
                 showIcon={true}
                 showText={true}
                 size="medium"
@@ -89,8 +102,7 @@ function ComponentsDemo() {
           <p>noInline={true} 时必须使用 render 渲染组件</p>
           <LiveCode
             noInline={true}
-            code={`${TodoListCode.trim()}
-render(<TodoList/>)`}
+            code={`${TodoListCode}`}
           />
         </section>
       </div>
