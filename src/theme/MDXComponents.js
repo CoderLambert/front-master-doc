@@ -235,6 +235,74 @@ const MDXComponents = {
     </div>
   ),
 
+  // BestPractices组件 - 最佳实践容器
+  BestPractices: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        padding: '20px',
+        background: 'var(--ifm-background-surface-color)',
+        border: '1px solid var(--ifm-toc-border-color)',
+        borderRadius: '8px',
+        borderLeft: '4px solid #28a745',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
+  // ErrorBox组件 - 错误示例容器
+  ErrorBox: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        padding: '20px',
+        background: '#ffebee',
+        border: '1px solid #e57373',
+        borderRadius: '8px',
+        borderLeft: '4px solid #d32f2f',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
+  // Rules组件 - 规则说明容器
+  Rules: ({ children }) => (
+    <div
+      style={{
+        margin: '20px 0',
+        padding: '20px',
+        background: 'var(--ifm-background-surface-color)',
+        border: '1px solid var(--ifm-toc-border-color)',
+        borderRadius: '8px',
+        borderLeft: '4px solid #ff9800',
+      }}
+    >
+      {children}
+    </div>
+  ),
+
+  // Table组件 - 表格容器
+  Table: ({ children }) => (
+    <div
+      style={{
+        overflowX: 'auto',
+        margin: '20px 0',
+      }}
+    >
+      <table
+        style={{
+          borderCollapse: 'collapse',
+          width: '100%',
+          border: '1px solid var(--ifm-toc-border-color)',
+        }}
+      >
+        {children}
+      </table>
+    </div>
+  ),
+
   // CodeBlock组件 - 代码块容器
   CodeBlock: ({ children }) => (
     <div
