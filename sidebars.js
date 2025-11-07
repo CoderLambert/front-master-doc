@@ -74,12 +74,32 @@ const sidebars = {
         'patterns/basics/container-presentational'
       ]
     },
-    // {
-    //   type: 'category',
-    //   label: '🌊 状态管理',
-    //   collapsed: true,
-    //   items: []
-    // },
+    {
+      type: 'category',
+      label: '🌊 状态管理',
+      collapsed: true,
+      items: [
+        {
+          type: 'category',
+          label: '基础概念',
+          collapsed: true,
+          items: [
+            'state-management/basics/local-vs-global',
+            'state-management/basics/context-api',
+          ]
+        },
+        {
+          type: 'category',
+          label: '中级方案',
+          collapsed: true,
+          items: [
+            'state-management/intermediate/redux-fundamentals',
+            'state-management/intermediate/zustand',
+            'state-management/intermediate/jotai',
+          ]
+        }
+      ]
+    },
     // {
     //   type: 'category',
     //   label: '⚡ 性能优化',
@@ -128,6 +148,17 @@ const sidebars = {
         'patterns/basics/render-props',
         'patterns/basics/compound-components',
         'patterns/basics/container-presentational'
+      ]
+    },
+    {
+      type: 'category',
+      label: '状态管理',
+      items: [
+        'state-management/basics/local-vs-global',
+        'state-management/basics/context-api',
+        'state-management/intermediate/redux-fundamentals',
+        'state-management/intermediate/zustand',
+        'state-management/intermediate/jotai',
       ]
     }
   ]
