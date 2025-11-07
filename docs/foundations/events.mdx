@@ -1,0 +1,1083 @@
+# 事件处理
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+事件处理是React中用户交互的核心机制。在本章中，我们将学习如何处理各种用户事件，包括点击、输入、提交等，以及事件处理的高级技巧和最佳实践。
+
+## 本章学习目标
+
+- 掌握React中的事件处理机制
+- 学习事件对象的用法
+- 掌握不同类型事件的处理方法
+- 理解事件处理中的this绑定问题
+- 学会传递参数给事件处理器
+- 掌握事件委托和性能优化
+
+---
+
+## 1. React中的事件系统
+
+### 1.1 合成事件（SyntheticEvent）
+
+React使用合成事件系统，它提供了跨浏览器的一致性事件接口。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 关键特性</h4>
+  <ul style={{ margin: '10px 0 0 20px' }}>
+    <li>统一的事件API，无需考虑浏览器差异</li>
+    <li>事件对象在处理函数执行后被自动清理</li>
+    <li>支持事件冒泡和取消默认行为</li>
+  </ul>
+</Box>
+
+### 1.2 事件处理的基本语法
+
+在React中，事件处理使用驼峰命名法：
+
+<Compare>
+
+```html
+<!-- HTML事件 -->
+<button onclick="handleClick()">点击我</button>
+```
+
+```jsx
+// React事件
+<button onClick={handleClick}>点击我</button>
+```
+
+</Compare>
+
+<Example>
+
+```jsx
+function Button() {
+  const handleClick = () => {
+    alert('按钮被点击了！');
+  };
+
+  return <button onClick={handleClick}>点击我</button>;
+}
+```
+
+</Example>
+
+---
+
+## 2. 基础事件类型
+
+### 2.1 鼠标事件
+
+#### 2.1.1 onClick - 点击事件
+
+<CodeBlock>
+
+```jsx
+function ClickDemo() {
+  const handleClick = (e) => {
+    console.log('按钮被点击');
+    console.log('事件对象:', e);
+  };
+
+  return (
+    <button onClick={handleClick}>
+      点击我
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 2.1.2 onDoubleClick - 双击事件
+
+<CodeBlock>
+
+```jsx
+function DoubleClickDemo() {
+  const handleDoubleClick = () => {
+    alert('双击！');
+  };
+
+  return (
+    <button onDoubleClick={handleDoubleClick}>
+      双击我
+    </button>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 2.1.3 鼠标悬停事件
+
+<CodeBlock>
+
+```jsx
+function HoverDemo() {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      style={{
+        padding: '20px',
+        background: isHovered ? '#e3f2fd' : '#f5f5f5',
+        borderRadius: '8px',
+        cursor: 'pointer'
+      }}
+    >
+      {isHovered ? '鼠标在上面' : '将鼠标移到这里'}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 键盘事件
+
+#### 2.2.1 onKeyDown / onKeyUp - 按键事件
+
+<CodeBlock>
+
+```jsx
+function KeyboardDemo() {
+  const [key, setKey] = useState('');
+
+  const handleKeyDown = (e) => {
+    setKey(e.key);
+    console.log('按键:', e.key);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        onKeyDown={handleKeyDown}
+        placeholder="按一个键试试"
+        style={{ padding: '10px' }}
+      />
+      <p>按下的键: {key}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 2.2.2 组合键处理
+
+<CodeBlock>
+
+```jsx
+function HotkeyDemo() {
+  const handleKeyDown = (e) => {
+    // Ctrl + Enter 提交
+    if (e.ctrlKey && e.key === 'Enter') {
+      alert('Ctrl + Enter 组合键触发！');
+    }
+
+    // ESC 取消
+    if (e.key === 'Escape') {
+      console.log('ESC - 取消操作');
+    }
+  };
+
+  return (
+    <textarea
+      onKeyDown={handleKeyDown}
+      placeholder="尝试按 Ctrl+Enter 或 ESC"
+      style={{ width: '100%', height: '100px' }}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 表单事件
+
+#### 2.3.1 onChange - 输入变化
+
+<CodeBlock>
+
+```jsx
+function InputDemo() {
+  const [value, setValue] = useState('');
+
+  const handleChange = (e) => {
+    setValue(e.target.value);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        placeholder="输入一些文字"
+      />
+      <p>输入的值: {value}</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 2.3.2 onSubmit - 表单提交
+
+<CodeBlock>
+
+```jsx
+function FormDemo() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault(); // 阻止默认提交行为
+    console.log('提交的数据:', { email, password });
+    alert(`邮箱: ${email}\n密码: ${password}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>邮箱:</label>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+      <div>
+        <label>密码:</label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+      <button type="submit">登录</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 事件对象详解
+
+### 3.1 事件对象属性
+
+React合成事件对象包含以下常用属性：
+
+<Table>
+
+| 属性 | 描述 | 示例 |
+|------|------|------|
+| `type` | 事件类型 | `click`, `keydown` |
+| `target` | 触发事件的元素 | `e.target.value` |
+| `currentTarget` | 绑定事件的元素 | `e.currentTarget` |
+| `key` | 按下的键 | `Enter`, `A`, `Escape` |
+| `code` | 键的物理代码 | `KeyA`, `Enter` |
+| `clientX/clientY` | 鼠标位置 | 鼠标X/Y坐标 |
+| `altKey/ctrlKey` | 修饰键 | 是否按下Alt/Ctrl |
+
+</Table>
+
+### 3.2 常用操作
+
+#### 3.2.1 阻止默认行为
+
+<CodeBlock>
+
+```jsx
+function PreventDemo() {
+  const handleLinkClick = (e) => {
+    e.preventDefault(); // 阻止链接跳转
+    console.log('链接点击被阻止');
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault(); // 阻止表单提交
+    console.log('表单提交被阻止');
+  };
+
+  return (
+    <div>
+      <a href="https://react.dev" onClick={handleLinkClick}>
+        点击我（被阻止）
+      </a>
+      <form onSubmit={handleFormSubmit}>
+        <input type="text" placeholder="输入文本" />
+        <button type="submit">提交（被阻止）</button>
+      </form>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 3.2.2 阻止事件冒泡
+
+<CodeBlock>
+
+```jsx
+function StopPropagationDemo() {
+  const handleDivClick = () => {
+    console.log('div 被点击');
+  };
+
+  const handleButtonClick = (e) => {
+    e.stopPropagation(); // 阻止事件冒泡
+    console.log('button 被点击（不冒泡到div）');
+  };
+
+  return (
+    <div
+      onClick={handleDivClick}
+      style={{ padding: '20px', background: '#f0f0f0' }}
+    >
+      <button onClick={handleButtonClick}>
+        点击按钮（不冒泡）
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 事件处理高级技巧
+
+### 4.1 传递参数给事件处理器
+
+#### 4.1.1 使用箭头函数
+
+<CodeBlock>
+
+```jsx
+function ParamDemo() {
+  const handleItemClick = (id) => {
+    console.log('点击了项目:', id);
+  };
+
+  const items = [
+    { id: 1, name: '项目1' },
+    { id: 2, name: '项目2' },
+    { id: 3, name: '项目3' }
+  ];
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li
+          key={item.id}
+          onClick={() => handleItemClick(item.id)}
+          style={{ cursor: 'pointer' }}
+        >
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 4.1.2 使用bind方法
+
+<CodeBlock>
+
+```jsx
+function BindDemo() {
+  const handleItemClick = function(id) {
+    console.log('点击了项目:', id);
+  };
+
+  const items = [
+    { id: 1, name: '项目1' },
+    { id: 2, name: '项目2' }
+  ];
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li
+          key={item.id}
+          onClick={handleItemClick.bind(this, item.id)}
+          style={{ cursor: 'pointer' }}
+        >
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 事件处理中的状态更新
+
+事件处理函数中经常需要更新状态：
+
+<CodeBlock>
+
+```jsx
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  const [input, setInput] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (input.trim()) {
+      setTodos([
+        ...todos,
+        { id: Date.now(), text: input, completed: false }
+      ]);
+      setInput('');
+    }
+  };
+
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="添加待办事项"
+      />
+      <button type="submit">添加</button>
+
+      <ul>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            onClick={() => toggleTodo(todo.id)}
+            style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              cursor: 'pointer'
+            }}
+          >
+            {todo.text}
+          </li>
+        ))}
+      </ul>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 自定义事件处理 Hook
+
+<CodeBlock>
+
+```jsx
+// 自定义Hook：用于处理输入
+function useInput(initialValue) {
+  const [value, setValue] = useState(initialValue);
+
+  const handleChange = (e) => {
+    setValue(e.target.value);
+  };
+
+  return {
+    value,
+    setValue,
+    bind: {
+      value,
+      onChange: handleChange
+    }
+  };
+}
+
+// 使用
+function CustomHookDemo() {
+  const name = useInput('');
+  const email = useInput('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('提交:', { name: name.value, email: email.value });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input {...name.bind} placeholder="姓名" />
+      <input {...email.bind} placeholder="邮箱" />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 类组件中的事件处理
+
+### 5.1 类的this绑定
+
+类组件中需要在构造函数中绑定this：
+
+<CodeBlock>
+
+```jsx
+class Counter extends React.Component {
+  constructor(props) {
+    super(props);
+    // 绑定this
+    this.handleClick = this.handleClick.bind(this);
+    this.state = { count: 0 };
+  }
+
+  handleClick() {
+    this.setState({ count: this.state.count + 1 });
+  }
+
+  render() {
+    return (
+      <button onClick={this.handleClick}>
+        计数: {this.state.count}
+      </button>
+    );
+  }
+}
+```
+
+</CodeBlock>
+
+### 5.2 箭头函数绑定
+
+另一种方法是使用箭头函数：
+
+<CodeBlock>
+
+```jsx
+class Counter extends React.Component {
+  state = { count: 0 };
+
+  // 箭头函数自动绑定this
+  handleClick = () => {
+    this.setState({ count: this.state.count + 1 });
+  };
+
+  render() {
+    return (
+      <button onClick={this.handleClick}>
+        计数: {this.state.count}
+      </button>
+    );
+  }
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 事件委托
+
+### 6.1 为什么使用事件委托？
+
+事件委托可以提高性能，特别是在处理大量动态元素时。
+
+<Compare>
+
+```jsx
+// ❌ 不好的做法 - 为每个li添加事件监听
+function BadList() {
+  const [items] = useState(['1', '2', '3', '4', '5']);
+
+  const handleClick = (e) => {
+    console.log('点击了:', e.target.textContent);
+  };
+
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={index} onClick={handleClick}>
+          项目 {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// ✅ 好的做法 - 事件委托
+function GoodList() {
+  const [items] = useState(['1', '2', '3', '4', '5']);
+
+  const handleClick = (e) => {
+    if (e.target.tagName === 'LI') {
+      console.log('点击了:', e.target.textContent);
+    }
+  };
+
+  return (
+    <ul onClick={handleClick}>
+      {items.map((item, index) => (
+        <li key={index}>
+          项目 {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</Compare>
+
+### 6.2 动态内容的事件处理
+
+当列表动态添加或删除时，事件委托特别有用：
+
+<CodeBlock>
+
+```jsx
+function DynamicList() {
+  const [items, setItems] = useState([
+    { id: 1, text: '项目1' },
+    { id: 2, text: '项目2' }
+  ]);
+
+  const addItem = () => {
+    const newItem = {
+      id: Date.now(),
+      text: `项目${items.length + 1}`
+    };
+    setItems([...items, newItem]);
+  };
+
+  const handleItemClick = (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (li) {
+      const id = parseInt(li.dataset.id);
+      console.log('点击了项目:', id);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={addItem}>添加项目</button>
+      <ul onClick={handleItemClick}>
+        {items.map(item => (
+          <li key={item.id} data-id={item.id}>
+            {item.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 事件处理最佳实践
+
+### 7.1 性能优化
+
+#### 7.1.1 使用useCallback缓存事件处理函数
+
+<CodeBlock>
+
+```jsx
+function OptimizedList({ items, onItemClick }) {
+  // 缓存事件处理函数，避免不必要的重渲染
+  const handleItemClick = useCallback((id) => {
+    onItemClick(id);
+  }, [onItemClick]);
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li key={item.id} onClick={() => handleItemClick(item.id)}>
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 7.1.2 避免在渲染中创建新函数
+
+<Compare>
+
+```jsx
+// ❌ 不好的做法 - 每次渲染都创建新函数
+function BadExample({ items }) {
+  return (
+    <ul>
+      {items.map(item => (
+        <li onClick={() => console.log(item.id)} key={item.id}>
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+// ✅ 好的做法 - 提取函数或使用useCallback
+function GoodExample({ items, onItemClick }) {
+  const handleClick = useCallback((id) => {
+    onItemClick(id);
+  }, [onItemClick]);
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li onClick={() => handleClick(item.id)} key={item.id}>
+          {item.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</Compare>
+
+### 7.2 事件处理的错误处理
+
+<CodeBlock>
+
+```jsx
+function SafeEventHandler() {
+  const [error, setError] = useState(null);
+
+  const handleClick = (e) => {
+    try {
+      // 可能出错的操作
+      if (!someCondition) {
+        throw new Error('条件不满足');
+      }
+      console.log('处理成功');
+    } catch (err) {
+      setError(err.message);
+      console.error('事件处理错误:', err);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleClick}>安全处理</button>
+      {error && <p style={{ color: 'red' }}>错误: {error}</p>}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.3 清理事件监听
+
+在组件卸载时清理事件监听器：
+
+<CodeBlock>
+
+```jsx
+function WindowListener() {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    };
+
+    // 添加事件监听
+    window.addEventListener('resize', handleResize);
+    handleResize(); // 初始化
+
+    // 清理函数
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  return (
+    <div>
+      <p>窗口宽度: {size.width}px</p>
+      <p>窗口高度: {size.height}px</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 实践练习
+
+### 练习1：简单的点击计数器
+
+创建一个按钮，点击时显示点击次数。
+
+<Expandable title="点击查看提示">
+
+```jsx
+function ClickCounter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <button onClick={() => setCount(count + 1)}>
+        点击了 {count} 次
+      </button>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+### 练习2：密码强度检测器
+
+创建一个输入框，实时显示密码强度。
+
+<Expandable title="点击查看提示">
+
+```jsx
+function PasswordStrength() {
+  const [password, setPassword] = useState('');
+
+  const getStrength = (pwd) => {
+    if (pwd.length < 4) return { level: '弱', color: 'red' };
+    if (pwd.length < 8) return { level: '中', color: 'orange' };
+    return { level: '强', color: 'green' };
+  };
+
+  const strength = getStrength(password);
+
+  return (
+    <div>
+      <input
+        type="password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="输入密码"
+      />
+      <p style={{ color: strength.color }}>
+        密码强度: {strength.level}
+      </p>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+### 练习3：图片轮播
+
+创建简单的图片轮播组件，支持左右切换。
+
+<Expandable title="点击查看提示">
+
+```jsx
+function ImageSlider() {
+  const [current, setCurrent] = useState(0);
+  const images = [
+    'https://via.placeholder.com/300/FF0000/FFFFFF?text=1',
+    'https://via.placeholder.com/300/00FF00/FFFFFF?text=2',
+    'https://via.placeholder.com/300/0000FF/FFFFFF?text=3'
+  ];
+
+  const next = () => {
+    setCurrent((current + 1) % images.length);
+  };
+
+  const prev = () => {
+    setCurrent((current - 1 + images.length) % images.length);
+  };
+
+  return (
+    <div>
+      <img src={images[current]} alt={`图片 ${current + 1}`} />
+      <div>
+        <button onClick={prev}>上一张</button>
+        <span> {current + 1} / {images.length} </span>
+        <button onClick={next}>下一张</button>
+      </div>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+---
+
+## 9. 常见错误
+
+### 9.1 忘记使用箭头函数或bind
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+function BadExample() {
+  return <button onClick={handleClick()}>点击</button>;
+}
+
+// ✅ 正确
+function GoodExample() {
+  return <button onClick={handleClick}>点击</button>;
+}
+```
+
+</ErrorBox>
+
+### 9.2 内存泄漏
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有清理事件监听器
+function BadExample() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    window.addEventListener('resize', handleResize);
+  }, []);
+
+  return <div>Count: {count}</div>;
+}
+
+// ✅ 正确 - 清理监听器
+function GoodExample() {
+  useEffect(() => {
+    const handleResize = () => setCount(window.innerWidth);
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  return <div>Width: {count}px</div>;
+}
+```
+
+</ErrorBox>
+
+### 9.3 不当的状态更新
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 在渲染中直接修改状态
+function BadExample() {
+  const [items, setItems] = useState([]);
+
+  return (
+    <div>
+      {items.map(item => {
+        item.clicked = true; // 不要这样做！
+        return <div key={item.id}>{item.name}</div>;
+      })}
+    </div>
+  );
+}
+
+// ✅ 正确 - 使用setState更新
+function GoodExample() {
+  const [items, setItems] = useState([]);
+
+  const markClicked = (id) => {
+    setItems(items.map(item =>
+      item.id === id ? { ...item, clicked: true } : item
+    ));
+  };
+
+  return (
+    <div>
+      {items.map(item => (
+        <div
+          key={item.id}
+          onClick={() => markClicked(item.id)}
+        >
+          {item.name}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</ErrorBox>
+
+---
+
+## 10. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ React使用合成事件系统，提供跨浏览器的一致性
+- ✅ 事件处理函数使用驼峰命名法（如onClick）
+- ✅ 事件对象提供有用的属性和方法
+- ✅ 可以阻止默认行为和事件冒泡
+- ✅ 可以通过箭头函数或bind传递参数
+- ✅ 事件委托可以提高大量动态元素的性能
+- ✅ 使用useCallback优化事件处理函数
+- ✅ 及时清理事件监听器避免内存泄漏
+
+</Checklist>
+
+### 下一步学习
+
+现在你已经掌握了事件处理，接下来我们将学习：
+
+1. **[条件渲染](conditional-rendering)** - 学习根据条件显示不同内容
+2. **[列表渲染与Keys](lists-and-keys)** - 掌握如何高效渲染列表
+3. **[表单处理](forms)** - 深入学习表单交互
+
+---
+
+## 11. 延伸阅读
+
+### 官方资源
+
+- [处理事件](https://react.dev/learn/responding-to-events) - React官方事件指南
+- [事件参考](https://react.dev/reference/react-dom/components/common) - 事件系统API
+- [事件委托](https://developer.mozilla.org/zh-CN/docs/Learn/JavaScript/Building_blocks/Events#%E4%BA%8B%E4%BB%B6%E5%A7%94%E5%8F%91) - MDN事件委托教程
+
+### 实践建议
+
+1. 练习不同类型的事件处理
+2. 理解事件对象的使用
+3. 掌握事件委托的应用场景
+4. 学会性能优化技巧
+
+---
+
+[← 上一章：State与生命周期](state-lifecycle) | [下一章：条件渲染 →](conditional-rendering)

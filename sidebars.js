@@ -27,7 +27,11 @@ const sidebars = {
         'foundations/what-is-react',
         'foundations/jsx-syntax',
         'foundations/components-props',
-        // 'foundations/state-lifecycle', // 即将推出
+        'foundations/state-lifecycle',
+        'foundations/events',
+        'foundations/conditional-rendering',
+        'foundations/lists-and-keys',
+        'foundations/forms',
       ]
     },
     // 注：更多学习模块即将推出
@@ -68,6 +72,11 @@ const sidebars = {
         'foundations/what-is-react',
         'foundations/jsx-syntax',
         'foundations/components-props',
+        'foundations/state-lifecycle',
+        'foundations/events',
+        'foundations/conditional-rendering',
+        'foundations/lists-and-keys',
+        'foundations/forms',
       ]
     }
   ]

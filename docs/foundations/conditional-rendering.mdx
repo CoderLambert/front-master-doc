@@ -1,0 +1,834 @@
+# 条件渲染
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+条件渲染是React中根据不同条件显示不同内容的核心技能。在本章中，我们将学习各种条件渲染的方法、适用场景和最佳实践。
+
+## 本章学习目标
+
+- 掌握多种条件渲染的实现方法
+- 理解if语句、三元运算符、逻辑与运算符的使用场景
+- 学会使用&&运算符和短路求值
+- 掌握条件渲染与列表渲染的结合
+- 理解早期返回（Guard Clauses）的优势
+- 学会避免条件渲染的常见错误
+
+---
+
+## 1. 什么是条件渲染？
+
+条件渲染是指根据组件的state、props或其他条件，动态决定显示哪些内容。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    条件渲染是React声明式编程的体现：描述<strong>UI应该是什么样子</strong>，React负责根据条件更新UI。
+  </p>
+</Box>
+
+<Example>
+
+```jsx
+function Greeting({ isLoggedIn }) {
+  if (isLoggedIn) {
+    return <h1>欢迎回来！</h1>;
+  }
+  return <h1>请登录</h1>;
+}
+```
+
+</Example>
+
+---
+
+## 2. 条件渲染的实现方法
+
+### 2.1 if语句
+
+最直观的条件渲染方法。
+
+<CodeBlock>
+
+```jsx
+function Message({ user }) {
+  if (user.isAdmin) {
+    return <h1>管理员面板</h1>;
+  }
+  if (user.isLoggedIn) {
+    return <h1>用户仪表板</h1>;
+  }
+  return <h1>请登录</h1>;
+}
+```
+
+</CodeBlock>
+
+### 2.2 三元运算符（? :）
+
+适合简单的条件判断。
+
+<Compare>
+
+```jsx
+// 基本的三元运算符
+function Status({ isOnline }) {
+  return (
+    <span>
+      {isOnline ? '在线' : '离线'}
+    </span>
+  );
+}
+
+// 嵌套三元运算符（谨慎使用）
+function UserType({ role }) {
+  return (
+    <div>
+      {role === 'admin' ? (
+        <AdminPanel />
+      ) : role === 'user' ? (
+        <UserPanel />
+      ) : (
+        <GuestPanel />
+      )}
+    </div>
+  );
+}
+```
+
+</Compare>
+
+<Box style={{ padding: '15px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>💡 提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    避免过多的嵌套三元运算符，可以使用<strong>早期返回</strong>或<strong>策略模式</strong>替代。
+  </p>
+</Box>
+
+### 2.3 逻辑与运算符（&&）
+
+当条件为真时显示内容，条件为假时显示null。
+
+<CodeBlock>
+
+```jsx
+function NotificationList({ notifications, showNotifications }) {
+  return (
+    <div>
+      <h1>通知</h1>
+      {/* 只有当showNotifications为true时才渲染列表 */}
+      {showNotifications && notifications.length > 0 && (
+        <ul>
+          {notifications.map(notification => (
+            <li key={notification.id}>{notification.message}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+<Diagram>
+
+```
+短路求值（Short-circuit Evaluation）
+
+condition && <Component />
+└─ 如果 condition 为 false：直接返回 false，不渲染
+└─ 如果 condition 为 true：返回 <Component /> 并渲染
+```
+
+</Diagram>
+
+### 2.4 早期返回（Guard Clauses）
+
+在组件顶部处理特殊情况，简化主要逻辑。
+
+<Compare>
+
+```jsx
+// ❌ 嵌套的条件
+function UserProfile({ user }) {
+  if (user) {
+    if (user.isActive) {
+      if (user.profile) {
+        return <div>{user.profile.name}</div>;
+      }
+    }
+  }
+  return <div>加载中...</div>;
+}
+
+// ✅ 早期返回
+function UserProfile({ user }) {
+  // 早期返回处理特殊情况
+  if (!user) {
+    return <div>加载中...</div>;
+  }
+  if (!user.isActive) {
+    return <div>账户未激活</div>;
+  }
+  if (!user.profile) {
+    return <div>资料不完整</div>;
+  }
+
+  // 主要逻辑
+  return <div>{user.profile.name}</div>;
+}
+```
+
+</Compare>
+
+---
+
+## 3. 条件渲染的实践应用
+
+### 3.1 登录状态
+
+根据用户登录状态显示不同内容。
+
+<CodeBlock>
+
+```jsx
+function App({ isLoggedIn, userName }) {
+  return (
+    <div>
+      {/* 条件渲染导航栏 */}
+      {isLoggedIn ? (
+        <nav>
+          <span>欢迎，{userName}</span>
+          <button>退出</button>
+        </nav>
+      ) : (
+        <nav>
+          <button>登录</button>
+          <button>注册</button>
+        </nav>
+      )}
+
+      {/* 条件渲染主内容 */}
+      <main>
+        {isLoggedIn ? (
+          <Dashboard />
+        ) : (
+          <LandingPage />
+        )}
+      </main>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 加载状态
+
+在数据加载时显示加载指示器。
+
+<CodeBlock>
+
+```jsx
+function UserList() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchUsers()
+      .then(setUsers)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, []);
+
+  // 加载中
+  if (loading) {
+    return <div className="spinner">加载中...</div>;
+  }
+
+  // 错误状态
+  if (error) {
+    return (
+      <div className="error">
+        <p>加载失败: {error.message}</p>
+        <button onClick={() => window.location.reload()}>
+          重试
+        </button>
+      </div>
+    );
+  }
+
+  // 成功状态
+  return (
+    <ul>
+      {users.map(user => (
+        <li key={user.id}>{user.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.3 权限控制
+
+根据用户权限显示不同内容。
+
+<CodeBlock>
+
+```jsx
+function AdminPanel({ user, children }) {
+  // 检查权限
+  if (!user) {
+    return <div>请登录</div>;
+  }
+
+  if (!user.isAdmin) {
+    return <div>权限不足</div>;
+  }
+
+  return (
+    <div className="admin-panel">
+      <h1>管理员面板</h1>
+      {children}
+    </div>
+  );
+}
+
+// 使用示例
+function App({ user }) {
+  return (
+    <AdminPanel user={user}>
+      {/* 只有管理员可见的内容 */}
+      <button>删除用户</button>
+      <button>系统设置</button>
+    </AdminPanel>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.4 条件样式
+
+根据条件动态应用样式。
+
+<CodeBlock>
+
+```jsx
+function StatusBadge({ status }) {
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case 'success':
+        return { backgroundColor: '#4caf50', color: 'white' };
+      case 'warning':
+        return { backgroundColor: '#ff9800', color: 'white' };
+      case 'error':
+        return { backgroundColor: '#f44336', color: 'white' };
+      default:
+        return { backgroundColor: '#9e9e9e', color: 'white' };
+    }
+  };
+
+  return (
+    <span style={getStatusStyle(status)}>
+      {status}
+    </span>
+  );
+}
+
+// 或者使用类名
+function StatusBadge({ status }) {
+  return (
+    <span className={`badge badge-${status}`}>
+      {status}
+    </span>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 条件渲染与列表渲染
+
+### 4.1 空列表处理
+
+<CodeBlock>
+
+```jsx
+function TodoList({ todos, showCompleted }) {
+  const filteredTodos = showCompleted
+    ? todos
+    : todos.filter(todo => !todo.completed);
+
+  return (
+    <div>
+      <h2>待办事项</h2>
+
+      {/* 条件渲染空状态 */}
+      {filteredTodos.length === 0 ? (
+        <p className="empty-state">暂无待办事项</p>
+      ) : (
+        <ul>
+          {filteredTodos.map(todo => (
+            <li key={todo.id}>
+              <span>{todo.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 条件过滤列表项
+
+<CodeBlock>
+
+```jsx
+function ProductList({ products, inStockOnly }) {
+  const filteredProducts = inStockOnly
+    ? products.filter(product => product.stock > 0)
+    : products;
+
+  return (
+    <div>
+      <h2>商品列表</h2>
+
+      {/* 条件渲染筛选按钮 */}
+      <label>
+        <input
+          type="checkbox"
+          checked={inStockOnly}
+          onChange={(e) => setInStockOnly(e.target.checked)}
+        />
+        仅显示有库存
+      </label>
+
+      {/* 条件渲染列表 */}
+      {filteredProducts.length === 0 ? (
+        <p>没有符合条件的商品</p>
+      ) : (
+        <div className="product-grid">
+          {filteredProducts.map(product => (
+            <div key={product.id} className="product-card">
+              <h3>{product.name}</h3>
+              <p>价格: ¥{product.price}</p>
+              <p>库存: {product.stock}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 高级技巧
+
+### 5.1 条件渲染组件
+
+<CodeBlock>
+
+```jsx
+// 条件组件
+function ShowIf({ condition, children }) {
+  return condition ? children : null;
+}
+
+// 使用示例
+function App({ isLoggedIn, isAdmin }) {
+  return (
+    <div>
+      <h1>仪表板</h1>
+
+      <ShowIf condition={isLoggedIn}>
+        <UserInfo />
+      </ShowIf>
+
+      <ShowIf condition={isAdmin}>
+        <AdminTools />
+      </ShowIf>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 渲染函数模式
+
+<CodeBlock>
+
+```jsx
+// 渲染函数模式
+function ConditionalRenderer({ condition, true: TrueComponent, false: FalseComponent }) {
+  return condition ? <TrueComponent /> : <FalseComponent />;
+}
+
+// 使用示例
+function App({ userType }) {
+  return (
+    <ConditionalRenderer
+      condition={userType === 'admin'}
+      true={<AdminDashboard />}
+      false={<UserDashboard />}
+    />
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 策略模式
+
+<CodeBlock>
+
+```jsx
+// 策略模式处理不同用户类型
+function UserDashboard({ user }) {
+  const renderContent = () => {
+    const strategies = {
+      admin: () => <AdminPanel />,
+      moderator: () => <ModeratorPanel />,
+      user: () => <UserPanel />,
+      guest: () => <GuestPanel />
+    };
+
+    const Component = strategies[user.type] || strategies.guest;
+    return Component();
+  };
+
+  return (
+    <div>
+      <h1>用户面板</h1>
+      {renderContent()}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 性能优化
+
+### 6.1 避免不必要的重渲染
+
+<Compare>
+
+```jsx
+// ❌ 每次渲染都创建新组件
+function BadExample({ show, data }) {
+  return (
+    <div>
+      {show && <ExpensiveComponent data={data} />}
+    </div>
+  );
+}
+
+// ✅ 使用条件避免组件创建
+function GoodExample({ show, data }) {
+  if (!show) {
+    return null;
+  }
+
+  return <ExpensiveComponent data={data} />;
+}
+```
+
+</Compare>
+
+### 6.2 使用React.memo优化
+
+<CodeBlock>
+
+```jsx
+// 包装组件避免不必要的渲染
+const ExpensiveComponent = React.memo(({ data }) => {
+  return <div>复杂计算: {data}</div>;
+});
+
+function App({ show, data }) {
+  return (
+    <div>
+      {show && <ExpensiveComponent data={data} />}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实践练习
+
+### 练习1：登录表单
+
+创建一个登录表单，当用户点击登录时显示加载状态。
+
+<Expandable title="点击查看提示">
+
+```jsx
+function LoginForm() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await login();
+      // 登录成功
+    } catch (err) {
+      setError('登录失败，请检查用户名和密码');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* 表单字段 */}
+
+      {/* 条件渲染错误信息 */}
+      {error && <p className="error">{error}</p>}
+
+      {/* 条件渲染按钮 */}
+      {isLoading ? (
+        <button disabled>登录中...</button>
+      ) : (
+        <button type="submit">登录</button>
+      )}
+    </form>
+  );
+}
+```
+
+</Expandable>
+
+### 练习2：搜索结果
+
+创建一个搜索组件，当用户输入时显示搜索结果或"无结果"提示。
+
+<Expandable title="点击查看提示">
+
+```jsx
+function SearchResults({ query, results, isLoading }) {
+  // 搜索中
+  if (isLoading) {
+    return <div>搜索中...</div>;
+  }
+
+  // 有查询但无结果
+  if (query && results.length === 0) {
+    return <p>没有找到匹配 "{query}" 的结果</p>;
+  }
+
+  // 无查询时显示提示
+  if (!query) {
+    return <p>请输入搜索关键词</p>;
+  }
+
+  // 显示搜索结果
+  return (
+    <div>
+      <p>找到 {results.length} 个结果</p>
+      <ul>
+        {results.map(result => (
+          <li key={result.id}>{result.title}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+### 练习3：用户状态卡片
+
+根据用户状态显示不同颜色的卡片。
+
+<Expandable title="点击查看提示">
+
+```jsx
+function UserCard({ user }) {
+  if (!user) {
+    return <div className="card">加载中...</div>;
+  }
+
+  const getCardStyle = (status) => {
+    const styles = {
+      active: { borderColor: '#4caf50' },
+      inactive: { borderColor: '#9e9e9e' },
+      suspended: { borderColor: '#f44336' }
+    };
+    return styles[status] || styles.inactive;
+  };
+
+  return (
+    <div className="card" style={getCardStyle(user.status)}>
+      <h3>{user.name}</h3>
+      <p>状态: {user.status}</p>
+
+      {/* 条件渲染额外信息 */}
+      {user.status === 'active' && (
+        <p>最后登录: {user.lastLogin}</p>
+      )}
+
+      {user.status === 'suspended' && (
+        <p className="warning">账户已被暂停</p>
+      )}
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+---
+
+## 8. 常见错误
+
+### 8.1 错误的条件判断
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 使用=而不是==
+function BadExample({ isLoggedIn }) {
+  return <div>{isLoggedIn = 'yes' ? '已登录' : '未登录'}</div>;
+}
+
+// ✅ 正确
+function GoodExample({ isLoggedIn }) {
+  return <div>{isLoggedIn ? '已登录' : '未登录'}</div>;
+}
+```
+
+</ErrorBox>
+
+### 8.2 过度使用三元运算符
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 嵌套过深
+function BadExample({ user }) {
+  return (
+    <div>
+      {user ? user.isAdmin ? 'Admin' : 'User' : 'Guest'}
+    </div>
+  );
+}
+
+// ✅ 正确 - 使用早期返回
+function GoodExample({ user }) {
+  if (!user) return <div>Guest</div>;
+  return <div>{user.isAdmin ? 'Admin' : 'User'}</div>;
+}
+```
+
+</ErrorBox>
+
+### 8.3 忘记处理空值
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 没有检查user
+function BadExample({ user }) {
+  return <div>{user.profile.name}</div>;
+}
+
+// ✅ 正确
+function GoodExample({ user }) {
+  if (!user?.profile?.name) {
+    return <div>匿名用户</div>;
+  }
+  return <div>{user.profile.name}</div>;
+}
+```
+
+</ErrorBox>
+
+### 8.4 错误的&&使用
+
+<ErrorBox>
+
+```jsx// ❌ 错误 - 条件为0时不会显示
+function BadExample({ count }) {
+  return <div>{count && <span>计数: {count}</span>}</div>;
+}
+
+// ✅ 正确 - 明确检查
+function GoodExample({ count }) {
+  return <div>{count > 0 && <span>计数: {count}</span>}</div>;
+}
+```
+
+</ErrorBox>
+
+---
+
+## 9. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 条件渲染是React中根据条件显示不同内容的方式
+- ✅ if语句适合复杂的条件判断
+- ✅ 三元运算符适合简单的条件判断
+- ✅ 逻辑与运算符（&&）适合条件为真时显示内容
+- ✅ 早期返回可以简化代码结构
+- ✅ 根据条件显示不同样式或组件
+- ✅ 及时处理加载状态和错误状态
+- ✅ 避免过度嵌套和使用错误的条件判断
+
+</Checklist>
+
+### 下一步学习
+
+现在你已经掌握了条件渲染，接下来我们将学习：
+
+1. **[列表渲染与Keys](lists-and-keys)** - 学习如何高效渲染列表
+2. **[表单处理](forms)** - 掌握表单交互
+3. **[状态管理进阶](../hooks/basics/useState)** - 深入理解状态
+
+---
+
+## 10. 延伸阅读
+
+### 官方资源
+
+- [条件渲染](https://react.dev/learn/conditional-rendering) - React官方条件渲染指南
+- [React中的条件渲染](https://react.dev/reference/react) - 条件渲染API
+
+### 实践建议
+
+1. 多练习不同场景下的条件渲染
+2. 理解各种方法的适用场景
+3. 保持代码简洁，避免过度嵌套
+4. 注意性能优化
+
+---
+
+[← 上一章：事件处理](events) | [下一章：列表渲染与Keys →](lists-and-keys)

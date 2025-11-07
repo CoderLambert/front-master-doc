@@ -5,11 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Quick Start
 
 **Common Commands:**
-- `yarn start` - Start development server at http://localhost:3000
-- `yarn build` - Generate production static site to `build/` directory
-- `yarn serve` - Preview production build locally
-- `yarn deploy` - Deploy to GitHub Pages
-- `yarn clear` - Clear Docusaurus build cache and generated files
+- `npm run start` - Start development server at http://localhost:3000
+- `npm run build` - Generate production static site to `build/` directory
+- `npm run serve` - Preview production build locally
+- `npm run deploy` - Deploy to GitHub Pages
+- `npm run clear` - Clear Docusaurus build cache and generated files
 
 **Requirements:**
 - Node.js >= 20.0
@@ -76,3 +76,10 @@ This is a **Docusaurus 3.9.2** static documentation website built with React. It
 - RSS/Atom feeds for blog
 - Internationalization support (i18n)
 - GitHub integration (edit this page, deployment)
+
+## 设计规范
+@DETAILED_DESIGN.md
+@PROJECT_PLAN.md
+
+## 开发规范
+@FRONTEND_CHECK_RULES.md

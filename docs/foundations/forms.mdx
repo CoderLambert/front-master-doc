@@ -1,0 +1,1592 @@
+# 表单处理
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+表单是Web应用的核心组成部分，用于收集用户输入。在React中，表单处理涉及管理输入状态、验证数据和处理提交。本章将深入探讨React中的表单处理方法，包括受控组件、非受控组件、表单验证和最佳实践。
+
+## 本章学习目标
+
+- 理解受控组件与非受控组件的区别
+- 掌握基本表单元素的处理方法
+- 学会实现表单验证
+- 理解受控组件的优势
+- 掌握复杂表单的处理技巧
+- 学会使用第三方表单库
+
+---
+
+## 1. 什么是表单处理？
+
+表单处理是指管理表单输入、更新状态和验证用户输入的过程。在React中，有两种主要的处理方式：
+
+<Box style={{ padding: '20px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    React中的表单处理围绕<strong>状态管理</strong>和<strong>事件处理</strong>，确保UI与数据保持同步。
+  </p>
+</Box>
+
+<Grid>
+
+<div>
+  <h4>受控组件</h4>
+  <p>组件的状态由React控制，表单数据存储在state中</p>
+  <ul>
+    <li>✅ 数据一致性</li>
+    <li>✅ 易于验证</li>
+    <li>✅ 灵活控制</li>
+    <li>❌ 代码较多</li>
+  </ul>
+</div>
+
+<div>
+  <h4>非受控组件</h4>
+  <p>表单数据由DOM处理，通过ref获取值</p>
+  <ul>
+    <li>✅ 代码简单</li>
+    <li>✅ 性能较好</li>
+    <li>❌ 难以验证</li>
+    <li>❌ 数据不同步</li>
+  </ul>
+</div>
+
+<div>
+  <h4>混合模式</h4>
+  <p>结合两者优点，针对不同场景选择</p>
+  <ul>
+    <li>✅ 灵活</li>
+    <li>✅ 性能优化</li>
+    <li>⚠️ 复杂度增加</li>
+  </ul>
+</div>
+
+</Grid>
+
+---
+
+## 2. 受控组件
+
+### 2.1 基本受控组件
+
+在受控组件中，表单元素的值由React state控制，每次输入都会更新state。
+
+<CodeBlock>
+
+```jsx
+function SimpleForm() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('提交的数据:', { name, email });
+    alert(`Hello ${name}! Your email: ${email}`);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          姓名:
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="请输入姓名"
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          邮箱:
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="请输入邮箱"
+          />
+        </label>
+      </div>
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 textarea元素
+
+在React中，`textarea`使用`value`属性而不是`children`。
+
+<CodeBlock>
+
+```jsx
+function TextareaForm() {
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('消息:', message);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          留言:
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="请输入留言..."
+            rows="4"
+            cols="50"
+          />
+        </label>
+      </div>
+      <div>
+        <p>当前字数: {message.length}</p>
+      </div>
+      <button type="submit">发送</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 select元素
+
+<CodeBlock>
+
+```jsx
+function SelectForm() {
+  const [color, setColor] = useState('red');
+  const [country, setCountry] = useState('');
+
+  const countries = [
+    { value: '', label: '请选择国家' },
+    { value: 'cn', label: '中国' },
+    { value: 'us', label: '美国' },
+    { value: 'jp', label: '日本' }
+  ];
+
+  return (
+    <form>
+      <div>
+        <label>
+          喜欢的颜色:
+          <select value={color} onChange={(e) => setColor(e.target.value)}>
+            <option value="red">红色</option>
+            <option value="blue">蓝色</option>
+            <option value="green">绿色</option>
+            <option value="yellow">黄色</option>
+          </select>
+        </label>
+      </div>
+      <div>
+        <label>
+          国家:
+          <select value={country} onChange={(e) => setCountry(e.target.value)}>
+            {countries.map(country => (
+              <option key={country.value} value={country.value}>
+                {country.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.4 复选框和单选框
+
+<CodeBlock>
+
+```jsx
+function CheckboxRadioForm() {
+  const [subscribe, setSubscribe] = useState(false);
+  const [gender, setGender] = useState('male');
+  const [hobbies, setHobbies] = useState([]);
+
+  const handleHobbyChange = (hobby) => {
+    setHobbies(prev =>
+      prev.includes(hobby)
+        ? prev.filter(h => h !== hobby)
+        : [...prev, hobby]
+    );
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log({
+      subscribe,
+      gender,
+      hobbies
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={subscribe}
+            onChange={(e) => setSubscribe(e.target.checked)}
+          />
+          订阅邮件
+        </label>
+      </div>
+
+      <div>
+        <label>
+          <input
+            type="radio"
+            name="gender"
+            value="male"
+            checked={gender === 'male'}
+            onChange={(e) => setGender(e.target.value)}
+          />
+          男性
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="gender"
+            value="female"
+            checked={gender === 'female'}
+            onChange={(e) => setGender(e.target.value)}
+          />
+          女性
+        </label>
+      </div>
+
+      <div>
+        <p>爱好:</p>
+        <label>
+          <input
+            type="checkbox"
+            value="reading"
+            checked={hobbies.includes('reading')}
+            onChange={() => handleHobbyChange('reading')}
+          />
+          阅读
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            value="sports"
+            checked={hobbies.includes('sports')}
+            onChange={() => handleHobbyChange('sports')}
+          />
+          运动
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            value="music"
+            checked={hobbies.includes('music')}
+            onChange={() => handleHobbyChange('music')}
+          />
+          音乐
+        </label>
+      </div>
+
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 非受控组件
+
+### 3.1 使用useRef获取值
+
+非受控组件使用`ref`直接访问DOM元素的值。
+
+<CodeBlock>
+
+```jsx
+function UncontrolledForm() {
+  const nameRef = useRef();
+  const emailRef = useRef();
+  const fileRef = useRef();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('姓名:', nameRef.current.value);
+    console.log('邮箱:', emailRef.current.value);
+    console.log('文件:', fileRef.current.files[0]);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          姓名:
+          <input type="text" ref={nameRef} />
+        </label>
+      </div>
+      <div>
+        <label>
+          邮箱:
+          <input type="email" ref={emailRef} />
+        </label>
+      </div>
+      <div>
+        <label>
+          文件:
+          <input type="file" ref={fileRef} />
+        </label>
+      </div>
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 3.2 默认值设置
+
+使用`defaultValue`设置非受控组件的初始值。
+
+<CodeBlock>
+
+```jsx
+function UncontrolledWithDefaults() {
+  const formRef = useRef();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(formRef.current);
+    console.log('表单数据:', Object.fromEntries(formData));
+  };
+
+  return (
+    <form ref={formRef} onSubmit={handleSubmit}>
+      <div>
+        <label>
+          用户名:
+          <input type="text" name="username" defaultValue="admin" />
+        </label>
+      </div>
+      <div>
+        <label>
+          密码:
+          <input type="password" name="password" />
+        </label>
+      </div>
+      <div>
+        <label>
+          <input type="checkbox" name="remember" defaultChecked />
+          记住我
+        </label>
+      </div>
+      <button type="submit">登录</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 4. 表单验证
+
+### 4.1 基础验证
+
+在React中，我们可以在`onChange`或`onBlur`时进行实时验证。
+
+<CodeBlock>
+
+```jsx
+function ValidatedForm() {
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
+
+  const validate = (name, value) => {
+    switch (name) {
+      case 'username':
+        if (value.length < 3) {
+          return '用户名至少3个字符';
+        }
+        return '';
+      case 'email':
+        if (!/\S+@\S+\.\S+/.test(value)) {
+          return '邮箱格式不正确';
+        }
+        return '';
+      case 'password':
+        if (value.length < 6) {
+          return '密码至少6个字符';
+        }
+        return '';
+      case 'confirmPassword':
+        if (value !== formData.password) {
+          return '两次密码输入不一致';
+        }
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // 实时验证
+    const error = validate(name, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // 验证所有字段
+    const newErrors = {};
+    Object.keys(formData).forEach(key => {
+      const error = validate(key, formData[key]);
+      if (error) newErrors[key] = error;
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    console.log('表单数据:', formData);
+    alert('提交成功！');
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>
+          用户名:
+          <input
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+          />
+        </label>
+        {errors.username && <p style={{ color: 'red' }}>{errors.username}</p>}
+      </div>
+
+      <div>
+        <label>
+          邮箱:
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+          />
+        </label>
+        {errors.email && <p style={{ color: 'red' }}>{errors.email}</p>}
+      </div>
+
+      <div>
+        <label>
+          密码:
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+          />
+        </label>
+        {errors.password && <p style={{ color: 'red' }}>{errors.password}</p>}
+      </div>
+
+      <div>
+        <label>
+          确认密码:
+          <input
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+          />
+        </label>
+        {errors.confirmPassword && <p style={{ color: 'red' }}>{errors.confirmPassword}</p>}
+      </div>
+
+      <button type="submit">注册</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 异步验证
+
+<CodeBlock>
+
+```jsx
+function AsyncValidatedForm() {
+  const [username, setUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [checking, setChecking] = useState(false);
+
+  // 模拟API检查用户名是否已存在
+  const checkUsername = useCallback(
+    debounce(async (username) => {
+      if (!username) return;
+
+      setChecking(true);
+      try {
+        // 模拟API请求
+        const response = await fetch(`/api/check-username?username=${username}`);
+        const data = await response.json();
+
+        if (data.exists) {
+          setUsernameError('用户名已被使用');
+        } else {
+          setUsernameError('');
+        }
+      } catch (error) {
+        setUsernameError('检查失败，请重试');
+      } finally {
+        setChecking(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleUsernameChange = (e) => {
+    const value = e.target.value;
+    setUsername(value);
+    checkUsername(value);
+  };
+
+  return (
+    <form>
+      <div>
+        <label>
+          用户名:
+          <input
+            type="text"
+            value={username}
+            onChange={handleUsernameChange}
+          />
+          {checking && <span>检查中...</span>}
+        </label>
+        {usernameError && <p style={{ color: 'red' }}>{usernameError}</p>}
+      </div>
+    </form>
+  );
+}
+
+// Debounce函数实现
+function debounce(func, delay) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 复杂表单处理
+
+### 5.1 动态字段
+
+<CodeBlock>
+
+```jsx
+function DynamicFieldsForm() {
+  const [inputs, setInputs] = useState([
+    { id: 1, value: '' }
+  ]);
+
+  const addInput = () => {
+    setInputs([...inputs, { id: Date.now(), value: '' }]);
+  };
+
+  const removeInput = (id) => {
+    setInputs(inputs.filter(input => input.id !== id));
+  };
+
+  const updateInput = (id, value) => {
+    setInputs(inputs.map(input =>
+      input.id === id ? { ...input, value } : input
+    ));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const values = inputs.map(input => input.value);
+    console.log('所有值:', values);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <h3>动态字段</h3>
+      {inputs.map((input, index) => (
+        <div key={input.id}>
+          <input
+            type="text"
+            value={input.value}
+            onChange={(e) => updateInput(input.id, e.target.value)}
+            placeholder={`字段 ${index + 1}`}
+          />
+          {inputs.length > 1 && (
+            <button type="button" onClick={() => removeInput(input.id)}>
+              删除
+            </button>
+          )}
+        </div>
+      ))}
+      <button type="button" onClick={addInput}>
+        添加字段
+      </button>
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 嵌套对象表单
+
+<CodeBlock>
+
+```jsx
+function NestedForm() {
+  const [formData, setFormData] = useState({
+    user: {
+      name: '',
+      email: '',
+      address: {
+        street: '',
+        city: '',
+        zipCode: ''
+      }
+    }
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const nameParts = name.split('.');
+
+    setFormData(prev => {
+      const newData = { ...prev };
+      let current = newData.user;
+
+      // 导航到嵌套属性
+      for (let i = 0; i < nameParts.length - 1; i++) {
+        current[nameParts[i]] = { ...current[nameParts[i]] };
+        current = current[nameParts[i]];
+      }
+
+      // 设置值
+      current[nameParts[nameParts.length - 1]] = value;
+
+      return newData;
+    });
+  };
+
+  return (
+    <form>
+      <h3>用户信息</h3>
+      <div>
+        <label>
+          姓名:
+          <input
+            type="text"
+            name="user.name"
+            value={formData.user.name}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          邮箱:
+          <input
+            type="email"
+            name="user.email"
+            value={formData.user.email}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+
+      <h3>地址</h3>
+      <div>
+        <label>
+          街道:
+          <input
+            type="text"
+            name="user.address.street"
+            value={formData.user.address.street}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          城市:
+          <input
+            type="text"
+            name="user.address.city"
+            value={formData.user.address.city}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          邮政编码:
+          <input
+            type="text"
+            name="user.address.zipCode"
+            value={formData.user.address.zipCode}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 表单数组
+
+<CodeBlock>
+
+```jsx
+function TeamForm() {
+  const [team, setTeam] = useState({
+    name: '',
+    members: [
+      { name: '', email: '', role: 'member' }
+    ]
+  });
+
+  const addMember = () => {
+    setTeam({
+      ...team,
+      members: [
+        ...team.members,
+        { name: '', email: '', role: 'member' }
+      ]
+    });
+  };
+
+  const removeMember = (index) => {
+    const newMembers = team.members.filter((_, i) => i !== index);
+    setTeam({ ...team, members: newMembers });
+  };
+
+  const updateMember = (index, field, value) => {
+    const newMembers = [...team.members];
+    newMembers[index] = { ...newMembers[index], [field]: value };
+    setTeam({ ...team, members: newMembers });
+  };
+
+  return (
+    <form>
+      <h3>团队信息</h3>
+      <div>
+        <label>
+          团队名称:
+          <input
+            type="text"
+            value={team.name}
+            onChange={(e) => setTeam({ ...team, name: e.target.value })}
+          />
+        </label>
+      </div>
+
+      <h3>成员</h3>
+      {team.members.map((member, index) => (
+        <div key={index} style={{ border: '1px solid #ddd', padding: '10px', margin: '10px 0' }}>
+          <div>
+            <label>
+              姓名:
+              <input
+                type="text"
+                value={member.name}
+                onChange={(e) => updateMember(index, 'name', e.target.value)}
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              邮箱:
+              <input
+                type="email"
+                value={member.email}
+                onChange={(e) => updateMember(index, 'email', e.target.value)}
+              />
+            </label>
+          </div>
+          <div>
+            <label>
+              角色:
+              <select
+                value={member.role}
+                onChange={(e) => updateMember(index, 'role', e.target.value)}
+              >
+                <option value="member">成员</option>
+                <option value="lead">组长</option>
+                <option value="admin">管理员</option>
+              </select>
+            </label>
+          </div>
+          {team.members.length > 1 && (
+            <button type="button" onClick={() => removeMember(index)}>
+              移除成员
+            </button>
+          )}
+        </div>
+      ))}
+
+      <button type="button" onClick={addMember}>
+        添加成员
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 表单重置与保存
+
+### 6.1 重置表单
+
+<CodeBlock>
+
+```jsx
+function ResettableForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('提交:', formData);
+    // 提交逻辑
+  };
+
+  const handleReset = () => {
+    setFormData({
+      name: '',
+      email: '',
+      message: ''
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} onReset={handleReset}>
+      <div>
+        <label>
+          姓名:
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          邮箱:
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          留言:
+          <textarea
+            name="message"
+            value={formData.message}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <button type="submit">提交</button>
+      <button type="reset">重置</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 保存草稿
+
+<CodeBlock>
+
+```jsx
+function AutoSaveForm() {
+  const [formData, setFormData] = useState(
+    () => JSON.parse(localStorage.getItem('formData')) || {
+      title: '',
+      content: ''
+    }
+  );
+
+  // 自动保存到localStorage
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem('formData', JSON.stringify(formData));
+      console.log('草稿已保存');
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [formData]);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const clearDraft = () => {
+    localStorage.removeItem('formData');
+    setFormData({ title: '', content: '' });
+  };
+
+  return (
+    <form>
+      <div>
+        <label>
+          标题:
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+          />
+        </label>
+      </div>
+      <div>
+        <label>
+          内容:
+          <textarea
+            name="content"
+            value={formData.content}
+            onChange={handleChange}
+            rows="10"
+          />
+        </label>
+      </div>
+      <button type="button" onClick={clearDraft}>
+        清除草稿
+      </button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 性能优化
+
+### 7.1 使用useCallback优化事件处理
+
+<CodeBlock>
+
+```jsx
+function OptimizedForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  // 使用useCallback缓存函数
+  const handleChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }, []);
+
+  const handleSubmit = useCallback((e) => {
+    e.preventDefault();
+    console.log(formData);
+  }, [formData]);
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+      />
+      <input
+        type="email"
+        name="email"
+        value={formData.email}
+        onChange={handleChange}
+      />
+      <textarea
+        name="message"
+        value={formData.message}
+        onChange={handleChange}
+      />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 拆分复杂表单
+
+<CodeBlock>
+
+```jsx
+// 将表单拆分为子组件
+function FormSection({ title, children }) {
+  return (
+    <fieldset>
+      <legend>{title}</legend>
+      {children}
+    </fieldset>
+  );
+}
+
+function PersonalInfo({ data, onChange }) {
+  return (
+    <FormSection title="个人信息">
+      <input
+        type="text"
+        value={data.name}
+        onChange={(e) => onChange('name', e.target.value)}
+        placeholder="姓名"
+      />
+      <input
+        type="email"
+        value={data.email}
+        onChange={(e) => onChange('email', e.target.value)}
+        placeholder="邮箱"
+      />
+    </FormSection>
+  );
+}
+
+function AddressInfo({ data, onChange }) {
+  return (
+    <FormSection title="地址信息">
+      <input
+        type="text"
+        value={data.street}
+        onChange={(e) => onChange('street', e.target.value)}
+        placeholder="街道"
+      />
+      <input
+        type="text"
+        value={data.city}
+        onChange={(e) => onChange('city', e.target.value)}
+        placeholder="城市"
+      />
+    </FormSection>
+  );
+}
+
+function ComplexForm() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    street: '',
+    city: ''
+  });
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <form>
+      <PersonalInfo data={formData} onChange={handleChange} />
+      <AddressInfo data={formData} onChange={handleChange} />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 第三方表单库
+
+### 8.1 Formik简介
+
+Formik是一个流行的React表单库，简化表单处理和验证。
+
+<CodeBlock>
+
+```jsx
+// 使用Formik
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+
+// 简单验证函数
+const validate = (values) => {
+  const errors = {};
+  if (!values.email) {
+    errors.email = '必填';
+  } else if (!/\S+@\S+\.\S+/.test(values.email)) {
+    errors.email = '邮箱格式无效';
+  }
+  return errors;
+};
+
+function FormikForm() {
+  return (
+    <Formik
+      initialValues={{ email: '', password: '' }}
+      validate={validate}
+      onSubmit={(values) => {
+        console.log('提交:', values);
+        alert('提交成功！');
+      }}
+    >
+      <Form>
+        <div>
+          <label>邮箱:</label>
+          <Field type="email" name="email" />
+          <ErrorMessage name="email" component="div" style={{ color: 'red' }} />
+        </div>
+        <div>
+          <label>密码:</label>
+          <Field type="password" name="password" />
+          <ErrorMessage name="password" component="div" style={{ color: 'red' }} />
+        </div>
+        <button type="submit">登录</button>
+      </Form>
+    </Formik>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.2 React Hook Form简介
+
+React Hook Form是一个高性能的表单库，性能优异。
+
+<CodeBlock>
+
+```jsx
+// 使用React Hook Form
+import { useForm } from 'react-hook-form';
+
+function HookForm() {
+  const { register, handleSubmit, formState: { errors } } = useForm();
+
+  const onSubmit = (data) => {
+    console.log('提交:', data);
+    alert('提交成功！');
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
+        <label>邮箱:</label>
+        <input
+          type="email"
+          {...register('email', {
+            required: '必填',
+            pattern: {
+              value: /\S+@\S+\.\S+/,
+              message: '邮箱格式无效'
+            }
+          })}
+        />
+        {errors.email && <p style={{ color: 'red' }}>{errors.email.message}</p>}
+      </div>
+
+      <div>
+        <label>密码:</label>
+        <input
+          type="password"
+          {...register('password', {
+            required: '必填',
+            minLength: {
+              value: 6,
+              message: '至少6个字符'
+            }
+          })}
+        />
+        {errors.password && <p style={{ color: 'red' }}>{errors.password.message}</p>}
+      </div>
+
+      <button type="submit">登录</button>
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 9. 实践练习
+
+### 练习1：登录表单
+
+创建一个完整的登录表单，包含验证、加载状态和错误处理。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 邮箱和密码输入
+- 表单验证（必填、邮箱格式、密码长度）
+- 登录按钮loading状态
+- 错误信息显示
+- 表单重置功能
+
+**提示**：
+- 使用受控组件
+- 实现异步验证
+- 使用useState管理加载和错误状态
+
+</Expandable>
+
+### 练习2：用户注册
+
+创建一个用户注册表单，包含多个字段和复杂验证。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 用户名、邮箱、密码、确认密码
+- 用户名唯一性检查（模拟API）
+- 密码强度检查
+- 实时验证反馈
+- 成功提交动画
+
+**数据结构**：
+```javascript
+{
+  username: string,
+  email: string,
+  password: string,
+  confirmPassword: string,
+  acceptTerms: boolean
+}
+```
+
+</Expandable>
+
+### 练习3：产品评价表单
+
+创建一个产品评价表单，支持评分、文字评论和图片上传。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 1-5星评分
+- 文字评论（支持多行）
+- 图片上传预览
+- 匿名评价选项
+- 字数统计
+
+**验证规则**：
+- 评论至少10个字符
+- 至少上传1张图片或填写评论
+
+</Expandable>
+
+### 练习4：搜索筛选器
+
+创建一个高级搜索表单，支持多条件筛选。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 关键字搜索
+- 日期范围选择
+- 多选分类
+- 价格范围滑块
+- 重置筛选器
+- 搜索建议
+
+**状态管理**：
+- 使用URL参数保存筛选状态
+- 支持书签和分享
+
+</Expandable>
+
+---
+
+## 10. 常见错误
+
+### 错误1：忘记使用e.preventDefault()
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 页面会刷新
+function BadForm() {
+  const [value, setValue] = useState('');
+
+  const handleSubmit = () => {
+    console.log(value);  // 会刷新页面
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={value} onChange={(e) => setValue(e.target.value)} />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+
+// ✅ 正确
+function GoodForm() {
+  const [value, setValue] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();  // 阻止默认提交
+    console.log(value);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input value={value} onChange={(e) => setValue(e.target.value)} />
+      <button type="submit">提交</button>
+    </form>
+  );
+}
+```
+
+</ErrorBox>
+
+### 错误2：直接修改state
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+function BadForm() {
+  const [items, setItems] = useState([]);
+
+  const addItem = (item) => {
+    items.push(item);  // 直接修改state！
+    setItems(items);
+  };
+
+  return <button onClick={() => addItem('new')}>添加</button>;
+}
+
+// ✅ 正确
+function GoodForm() {
+  const [items, setItems] = useState([]);
+
+  const addItem = (item) => {
+    setItems([...items, item]);  // 创建新数组
+  };
+
+  return <button onClick={() => addItem('new')}>添加</button>;
+}
+```
+
+</ErrorBox>
+
+### 错误3：混用受控和非受控组件
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 同时使用value和defaultValue
+<input
+  value={value}
+  defaultValue={value}  // 冲突！
+  onChange={handleChange}
+/>
+
+// ✅ 正确 - 只使用一种
+<input
+  value={value}
+  onChange={handleChange}
+/>
+
+// 或者
+<input
+  defaultValue={value}
+  ref={inputRef}
+/>
+```
+
+</ErrorBox>
+
+### 错误4：忘记处理异步状态更新
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+function BadForm() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(count + 1);
+    console.log(count);  // 打印的是旧值！
+  };
+
+  return <button onClick={increment}>计数: {count}</button>;
+}
+
+// ✅ 正确 - 使用回调形式
+function GoodForm() {
+  const [count, setCount] = useState(0);
+
+  const increment = () => {
+    setCount(prevCount => {
+      const newCount = prevCount + 1;
+      console.log(newCount);  // 新值
+      return newCount;
+    });
+  };
+
+  return <button onClick={increment}>计数: {count}</button>;
+}
+```
+
+</ErrorBox>
+
+### 错误5：过度验证
+
+<ErrorBox>
+
+```jsx
+// ❌ 不好 - 每次按键都验证所有字段
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setFormData(prev => ({ ...prev, [name]: value }));
+
+  // 验证所有字段
+  const newErrors = validateAll(formData);
+  setErrors(newErrors);
+};
+
+// ✅ 更好 - 只验证当前字段
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setFormData(prev => ({ ...prev, [name]: value }));
+
+  // 只验证当前字段
+  const error = validateField(name, value);
+  setErrors(prev => ({ ...prev, [name]: error }));
+};
+```
+
+</ErrorBox>
+
+---
+
+## 11. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 受控组件使用state管理表单数据，值与UI同步
+- ✅ 非受控组件使用ref直接访问DOM值
+- ✅ 事件处理函数使用`e.preventDefault()`阻止默认提交
+- ✅ 表单验证可以是同步的（立即反馈）或异步的（API检查）
+- ✅ 复杂表单可以拆分为多个子组件
+- ✅ 使用`useCallback`优化性能，避免不必要的重渲染
+- ✅ 考虑使用Formik或React Hook Form等第三方库
+- ✅ 始终验证所有用户输入，避免XSS攻击
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **优先使用受控组件** - 便于验证和状态管理
+2. **实时验证** - 提供即时反馈改善用户体验
+3. **清晰的错误信息** - 帮助用户快速修正错误
+4. **拆分复杂表单** - 提高可维护性
+5. **性能优化** - 使用`useCallback`和`useMemo`
+6. **测试所有场景** - 包括边界情况和错误处理
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了表单处理，接下来我们将学习：
+
+1. **[状态管理进阶](../hooks/basics/useState)** - 深入理解useState
+2. **[自定义Hooks](../hooks/custom)** - 创建可复用的状态逻辑
+3. **[性能优化](../performance/optimization)** - 提升应用性能
+
+---
+
+## 12. 延伸阅读
+
+### 官方资源
+
+- [表单](https://react.dev/learn/forms) - React官方表单文档
+- [受控组件](https://react.dev/reference/react/Component#specifying-lifecycle-methods) - 受控组件指南
+- [useRef](https://react.dev/reference/react/useRef) - Ref API文档
+
+### 推荐库
+
+- [React Hook Form](https://react-hook-form.com/) - 高性能表单库
+- [Formik](https://formik.org/) - 流行的表单解决方案
+- [Yup](https://github.com/jquense/yup) - 数据验证库
+
+### 工具推荐
+
+- [React Hook Form DevTools](https://react-hook-form.com/dev-tools) - 调试工具
+
+---
+
+[← 上一章：列表渲染与Keys](lists-and-keys) | [基础入门完成！🎉]

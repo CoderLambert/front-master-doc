@@ -1,0 +1,902 @@
+# State与生命周期
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+import { RiReactjsLine } from 'react-icons/ri';
+
+在本章中，我们将深入学习React中State的概念、状态管理机制以及组件的生命周期。理解State是掌握React的核心，它决定了组件如何响应用户交互和数据变化。
+
+## 本章学习目标
+
+- 理解React中State的概念和作用
+- 掌握useState Hook的使用方法
+- 学习状态更新的机制和注意事项
+- 理解组件的生命周期概念
+- 掌握useEffect Hook的基础用法
+- 学会避免常见的State使用错误
+
+---
+
+## 1. 什么是State？
+
+### State简介
+
+**State（状态）**是React组件中用于存储和更新数据的特殊变量。当State发生变化时，组件会自动重新渲染，以反映最新的数据。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 关键概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    State是组件的私有数据，它存在于组件内部，外部无法直接访问或修改。State的变化会触发组件的重新渲染。
+  </p>
+</Box>
+
+### State vs Props
+
+State和Props都是React组件的重要概念，但它们有不同的用途：
+
+<Compare>
+
+```jsx
+// Props - 父组件传递的数据（只读）
+function Welcome(props) {
+  return <h1>Hello, {props.name}</h1>;
+}
+
+// State - 组件内部管理的数据（可修改）
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+</Compare>
+
+| 特性 | Props | State |
+|------|-------|-------|
+| **数据流向** | 父组件 → 子组件 | 组件内部 |
+| **可修改性** | 只读 | 可修改 |
+| **触发渲染** | 父组件更新时 | 状态改变时 |
+| **生命周期** | 组件销毁时丢失 | 组件销毁时丢失 |
+
+---
+
+## 2. useState Hook详解
+
+### 2.1 基本语法
+
+useState是React提供的Hook，用于在函数组件中添加State。
+
+<CodeBlock>
+
+```jsx
+import React, { useState } from 'react';
+
+function MyComponent() {
+  // 声明状态变量
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        增加
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+**语法解析：**
+```javascript
+const [state, setState] = useState(initialValue);
+```
+
+- `state`：当前的状态值
+- `setState`：更新状态的函数
+- `initialValue`：状态的初始值
+
+### 2.2 状态更新机制
+
+状态更新是异步的，React会批量处理多个状态更新以提高性能。
+
+<Example>
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = () => {
+    // ❌ 错误 - 连续调用可能不会按预期工作
+    setCount(count + 1);
+    setCount(count + 1);
+    setCount(count + 1);
+    // 结果：count 只增加 1，而不是 3
+
+    // ✅ 正确 - 使用函数式更新
+    setCount(prev => prev + 1);
+    setCount(prev => prev + 1);
+    setCount(prev => prev + 1);
+    // 结果：count 增加 3
+  };
+
+  return (
+    <button onClick={handleClick}>
+      Count: {count}
+    </button>
+  );
+}
+```
+
+</Example>
+
+<Box style={{ padding: '15px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>💡 提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    当新状态依赖于前一个状态时，应该使用<strong>函数式更新</strong>：<code>setCount(prev => prev + 1)</code>
+  </p>
+</Box>
+
+### 2.3 多个状态变量
+
+一个组件可以拥有多个State，每个State可以是不同的数据类型。
+
+<CodeBlock>
+
+```jsx
+function UserProfile() {
+  const [name, setName] = useState('Alice');
+  const [age, setAge] = useState(25);
+  const [isActive, setIsActive] = useState(true);
+  const [hobbies, setHobbies] = useState(['阅读', '编程']);
+
+  return (
+    <div>
+      <h2>{name}</h2>
+      <p>年龄: {age}</p>
+      <p>状态: {isActive ? '活跃' : '非活跃'}</p>
+      <p>爱好: {hobbies.join(', ')}</p>
+
+      <button onClick={() => setAge(age + 1)}>长大一岁</button>
+      <button onClick={() => setIsActive(!isActive)}>切换状态</button>
+      <button onClick={() => setHobbies([...hobbies, '新爱好'])}>
+        添加爱好
+      </button>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.4 对象类型状态
+
+当State是对象时，需要注意展开运算符的使用。
+
+<CodeBlock>
+
+```jsx
+function UserForm() {
+  const [user, setUser] = useState({
+    name: '',
+    email: '',
+    age: ''
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // ✅ 正确 - 使用展开运算符
+    setUser(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  return (
+    <form>
+      <input
+        name="name"
+        value={user.name}
+        onChange={handleChange}
+        placeholder="姓名"
+      />
+      <input
+        name="email"
+        value={user.email}
+        onChange={handleChange}
+        placeholder="邮箱"
+      />
+      <input
+        name="age"
+        value={user.age}
+        onChange={handleChange}
+        placeholder="年龄"
+      />
+    </form>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. 状态管理模式
+
+### 3.1 状态提升
+
+当多个子组件需要共享状态时，将State提升到最近的共同父组件。
+
+<Example>
+
+```jsx
+// 父组件管理共享状态
+function Parent() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <h1>父组件: {count}</h1>
+      <ChildA count={count} />
+      <ChildB count={count} setCount={setCount} />
+    </div>
+  );
+}
+
+// 子组件A - 仅消费状态
+function ChildA({ count }) {
+  return <p>子组件A: {count}</p>;
+}
+
+// 子组件B - 可以更新状态
+function ChildB({ count, setCount }) {
+  return <button onClick={() => setCount(count + 1)}>增加</button>;
+}
+```
+
+</Example>
+
+### 3.2 状态降维
+
+避免创建过于复杂的嵌套状态，保持状态扁平化。
+
+<Compare>
+
+```jsx
+// ❌ 不好的设计 - 嵌套过深
+const [state, setState] = useState({
+  user: {
+    profile: {
+      personal: {
+        name: '',
+        age: 0
+      }
+    }
+  }
+});
+
+// ✅ 好的设计 - 扁平化
+const [userName, setUserName] = useState('');
+const [userAge, setUserAge] = useState(0);
+```
+
+</Compare>
+
+### 3.3 派生状态
+
+避免存储可以计算得出的值，而是使用计算属性。
+
+<Compare>
+
+```jsx
+function TodoList() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习React', completed: true },
+    { id: 2, text: '构建应用', completed: false }
+  ]);
+
+  // ✅ 好的做法 - 使用计算属性
+  const completedCount = todos.filter(todo => todo.completed).length;
+  const activeCount = todos.length - completedCount;
+
+  return (
+    <div>
+      <p>已完成: {completedCount}</p>
+      <p>进行中: {activeCount}</p>
+    </div>
+  );
+}
+```
+
+</Compare>
+
+---
+
+## 4. 组件生命周期概念
+
+### 4.1 生命周期是什么？
+
+在传统的类组件中，组件有三个主要生命周期阶段：
+- **挂载（Mounting）**：组件被创建并插入DOM
+- **更新（Updating）**：组件接收新的props或state并重新渲染
+- **卸载（Unmounting）**：组件从DOM中移除
+
+<Process>
+
+1. **组件创建与初始化**
+   - constructor
+   - componentDidMount
+
+2. **状态或属性更新**
+   - componentDidUpdate
+
+3. **组件销毁**
+   - componentWillUnmount
+
+</Process>
+
+### 4.2 函数组件的生命周期
+
+函数组件没有类组件的生命周期方法，但可以通过useEffect Hook实现类似功能。
+
+<Diagram>
+
+```
+函数组件生命周期（函数式）
+
+1. 组件首次渲染
+   ├── useState(initial) - 初始化状态
+   └── useEffect(fn) - 执行副作用
+
+2. 状态或属性更新
+   ├── 重新执行组件函数
+   │   ├── useState(prev) - 返回当前值
+   │   └── useEffect(fn) - 检查依赖变化
+   └── useEffect(fn) - 重新执行副作用
+
+3. 组件卸载
+   └── useEffect(() => cleanup) - 清理副作用
+```
+
+</Diagram>
+
+---
+
+## 5. useEffect Hook基础
+
+### 5.1 什么是Effect？
+
+Effect是执行"副作用"操作的地方，副作用是发生在渲染之后、不是UI逻辑的操作，如：
+- 数据获取
+- 设置订阅
+- 手动修改DOM
+- 记录日志
+
+### 5.2 基本语法
+
+<CodeBlock>
+
+```jsx
+import { useEffect } from 'react';
+
+function MyComponent() {
+  useEffect(() => {
+    // 这里写副作用逻辑
+    console.log('组件已挂载');
+
+    // 返回清理函数
+    return () => {
+      console.log('组件将卸载');
+    };
+  }, []); // 依赖数组
+
+  return <div>内容</div>;
+}
+```
+
+</CodeBlock>
+
+### 5.3 依赖数组的作用
+
+依赖数组决定Effect何时重新执行。
+
+<Table>
+
+| 依赖数组 | 执行时机 |
+|---------|----------|
+| `[]` | 组件挂载时执行一次 |
+| `[count]` | 挂载时和count变化时执行 |
+| 无依赖数组 | 每次渲染后都执行 |
+| `[a, b, c]` | 挂载时和任意依赖变化时执行 |
+
+</Table>
+
+<Example>
+
+```jsx
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  // 1. 组件挂载时获取数据
+  useEffect(() => {
+    fetchUser(userId).then(setUser);
+  }, [userId]); // 2. userId变化时重新获取
+
+  // 3. 组件卸载时取消请求
+  return user ? <div>{user.name}</div> : <div>加载中...</div>;
+}
+```
+
+</Example>
+
+### 5.4 常见用例
+
+#### 5.4.1 数据获取
+
+<CodeBlock>
+
+```jsx
+function PostList() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPosts() {
+      try {
+        const response = await fetch('/api/posts');
+        const data = await response.json();
+        setPosts(data);
+      } catch (error) {
+        console.error('获取文章失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadPosts();
+  }, []);
+
+  if (loading) return <div>加载中...</div>;
+
+  return (
+    <div>
+      {posts.map(post => (
+        <article key={post.id}>
+          <h2>{post.title}</h2>
+          <p>{post.summary}</p>
+        </article>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 5.4.2 事件监听
+
+<CodeBlock>
+
+```jsx
+function WindowSize() {
+  const [size, setSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+
+  useEffect(() => {
+    function handleResize() {
+      setSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+    }
+
+    window.addEventListener('resize', handleResize);
+
+    // 清理函数 - 移除事件监听
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  return (
+    <div>
+      <p>窗口宽度: {size.width}px</p>
+      <p>窗口高度: {size.height}px</p>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+#### 5.4.3 定时器
+
+<CodeBlock>
+
+```jsx
+function Timer() {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCount(prev => prev + 1);
+    }, 1000);
+
+    // 清理函数 - 清除定时器
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  return <div>计时器: {count}秒</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 状态与Effect最佳实践
+
+### 6.1 避免不必要的效果
+
+只对必要的依赖创建Effect。
+
+<Compare>
+
+```jsx
+// ❌ 不必要
+function UserForm() {
+  const [name, setName] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem('name', name);
+  }, [name]);
+
+  // 直接在事件处理器中保存
+  const handleChange = (e) => {
+    setName(e.target.value);
+    localStorage.setItem('name', e.target.value);
+  };
+
+  return <input value={name} onChange={handleChange} />;
+}
+```
+
+</Compare>
+
+### 6.2 正确设置依赖
+
+依赖数组中的依赖必须全部列出。
+
+<CodeBlock>
+
+```jsx
+function SearchResults({ query, page }) {
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function search() {
+      setLoading(true);
+      const data = await fetchResults(query, page);
+      if (isMounted) {
+        setResults(data);
+        setLoading(false);
+      }
+    }
+
+    search();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [query, page]); // ✅ 所有依赖都要列出
+
+  if (loading) return <div>搜索中...</div>;
+
+  return (
+    <ul>
+      {results.map(result => (
+        <li key={result.id}>{result.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 条件执行Effect
+
+在Effect内部使用条件语句，而不是在依赖数组中。
+
+<CodeBlock>
+
+```jsx
+function UserProfile({ userId }) {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (userId) {
+      // 只有当userId存在时才获取数据
+      fetchUser(userId).then(setUser);
+    }
+  }, [userId]);
+
+  if (!userId) return <div>请选择用户</div>;
+  if (!user) return <div>加载中...</div>;
+
+  return <div>{user.name}</div>;
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 实践练习
+
+### 练习1：计数器
+
+创建一个计数器组件，支持：
+- 显示当前数值
+- 增加1
+- 减少1
+- 重置为0
+
+<Expandable title="点击查看提示">
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div>
+      <h2>计数器: {count}</h2>
+      <button onClick={() => setCount(count + 1)}>增加</button>
+      <button onClick={() => setCount(count - 1)}>减少</button>
+      <button onClick={() => setCount(0)}>重置</button>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+### 练习2：主题切换
+
+创建一个主题切换组件：
+- 两种主题：明亮/暗黑
+- 使用useState管理主题状态
+- 根据主题动态改变背景色
+
+<Expandable title="点击查看提示">
+
+```jsx
+function ThemeToggle() {
+  const [isDark, setIsDark] = useState(false);
+
+  const theme = {
+    background: isDark ? '#333' : '#fff',
+    color: isDark ? '#fff' : '#333',
+    padding: '20px',
+    borderRadius: '8px'
+  };
+
+  return (
+    <div style={theme}>
+      <h2>当前主题: {isDark ? '暗黑' : '明亮'}</h2>
+      <button onClick={() => setIsDark(!isDark)}>
+        切换主题
+      </button>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+### 练习3：待办事项列表
+
+创建一个基本的待办事项应用：
+- 添加新事项
+- 标记完成/未完成
+- 筛选显示（全部/已完成/未完成）
+- 删除事项
+
+<Expandable title="点击查看提示">
+
+```jsx
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [input, setInput] = useState('');
+
+  const addTodo = () => {
+    if (input.trim()) {
+      setTodos([...todos, {
+        id: Date.now(),
+        text: input,
+        completed: false
+      }]);
+      setInput('');
+    }
+  };
+
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'completed') return todo.completed;
+    if (filter === 'active') return !todo.completed;
+    return true;
+  });
+
+  return (
+    <div>
+      <h2>待办事项</h2>
+      <div>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+        />
+        <button onClick={addTodo}>添加</button>
+      </div>
+      <div>
+        <button onClick={() => setFilter('all')}>全部</button>
+        <button onClick={() => setFilter('active')}>进行中</button>
+        <button onClick={() => setFilter('completed')}>已完成</button>
+      </div>
+      <ul>
+        {filteredTodos.map(todo => (
+          <li key={todo.id}>
+            <span
+              style={{
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleTodo(todo.id)}
+            >
+              {todo.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</Expandable>
+
+---
+
+## 8. 常见错误
+
+### 8.1 直接修改State
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改数组
+const [items, setItems] = useState([]);
+const addItem = () => {
+  items.push(newItem); // 不触发重新渲染
+  setItems(items);
+};
+
+// ✅ 正确
+const addItem = () => {
+  setItems([...items, newItem]);
+};
+```
+
+</ErrorBox>
+
+### 8.2 忘记清理副作用
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 内存泄漏
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCount(count + 1);
+  }, 1000);
+  // 没有清理定时器
+}, []);
+
+// ✅ 正确
+useEffect(() => {
+  const timer = setInterval(() => {
+    setCount(count + 1);
+  }, 1000);
+
+  return () => {
+    clearInterval(timer); // 清理定时器
+  };
+}, []);
+```
+
+</ErrorBox>
+
+### 8.3 循环更新
+
+避免在useEffect中触发导致自身的更新。
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 无限循环
+useEffect(() => {
+  setCount(count + 1); // 每次count变化都触发
+}, [count]);
+
+// ✅ 正确
+useEffect(() => {
+  if (someCondition) {
+    setCount(count + 1); // 在特定条件下更新
+  }
+}, [someCondition]);
+```
+
+</ErrorBox>
+
+---
+
+## 9. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ State是组件内部管理的数据，变化时触发重新渲染
+- ✅ useState返回当前值和更新函数
+- ✅ 状态更新是异步的，依赖前一个状态时使用函数式更新
+- ✅ useEffect用于处理副作用，接受清理函数
+- ✅ 依赖数组决定Effect何时重新执行
+- ✅ 正确设置依赖，避免内存泄漏
+- ✅ 状态提升到共同父组件以共享状态
+- ✅ 保持状态扁平化，使用派生状态
+
+</Checklist>
+
+### 下一步学习
+
+现在你已经掌握了State和生命周期，接下来我们将学习：
+
+1. **[事件处理](events)** - 学习如何处理用户交互
+2. **[条件渲染](conditional-rendering)** - 掌握动态UI渲染技巧
+3. **[useState高级用法](../hooks/basics/useState)** - 深入理解状态管理
+
+---
+
+## 10. 延伸阅读
+
+### 官方资源
+
+- [State管理](https://react.dev/learn/managing-state) - React官方State指南
+- [useState参考](https://react.dev/reference/react/useState) - useState API文档
+- [useEffect参考](https://react.dev/reference/react/useEffect) - useEffect API文档
+- [State生命周期](https://react.dev/learn/state-a-components-memory) - 深入理解State
+
+### 实践建议
+
+1. 多练习使用useState和useEffect
+2. 理解状态更新的异步机制
+3. 掌握useEffect的依赖设置
+4. 学会识别什么应该放在Effect中
+
+---
+
+[← 上一章：组件与Props](components-props) | [下一章：事件处理 →](events)

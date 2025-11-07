@@ -1,0 +1,1144 @@
+# 列表渲染与Keys
+
+import { Tabs, TabItem } from '@docusaurus/theme-common';
+
+列表渲染是React中的核心概念之一，它允许你动态地渲染一组数据。在本章中，我们将学习如何高效地渲染列表、理解Keys的作用，以及避免常见的性能问题。
+
+## 本章学习目标
+
+- 掌握使用`Array.map()`渲染列表
+- 理解Keys的作用和重要性
+- 学会选择合适的Key值
+- 掌握列表的过滤、排序和动态更新
+- 理解虚拟化列表优化性能
+- 避免列表渲染的常见错误
+
+---
+
+## 1. 为什么需要列表渲染？
+
+在React应用中，我们经常需要动态地渲染一组数据，比如用户列表、产品列表、评论列表等。列表渲染让我们可以根据数据动态生成UI元素。
+
+<Box style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#1976d2' }}>💡 核心概念</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    列表渲染将<strong>数据数组</strong>转换为<strong>React元素数组</strong>，每个数据项对应一个UI元素。
+  </p>
+</Box>
+
+<Example>
+
+```jsx
+// 数据数组
+const users = [
+  { id: 1, name: 'Alice' },
+  { id: 2, name: 'Bob' },
+  { id: 3, name: 'Charlie' }
+];
+
+// 转换为React元素数组
+const userList = users.map(user => (
+  <li key={user.id}>{user.name}</li>
+));
+
+// 渲染到DOM
+<ul>{userList}</ul>
+```
+
+</Example>
+
+---
+
+## 2. 基础列表渲染
+
+### 2.1 使用Array.map()
+
+最常见的列表渲染方法是使用`Array.map()`方法，它创建一个新数组，包含对每个元素调用函数后的结果。
+
+<CodeBlock>
+
+```jsx
+function UserList() {
+  const users = [
+    { id: 1, name: 'Alice', email: 'alice@example.com' },
+    { id: 2, name: 'Bob', email: 'bob@example.com' },
+    { id: 3, name: 'Charlie', email: 'charlie@example.com' }
+  ];
+
+  return (
+    <div>
+      <h2>用户列表</h2>
+      <ul>
+        {users.map(user => (
+          <li key={user.id}>
+            <strong>{user.name}</strong>
+            <p>{user.email}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.2 内联渲染
+
+你也可以直接在JSX中内联渲染列表，无需先创建变量。
+
+<CodeBlock>
+
+```jsx
+function ProductList() {
+  const products = [
+    { id: 1, name: 'Laptop', price: 999 },
+    { id: 2, name: 'Phone', price: 699 },
+    { id: 3, name: 'Tablet', price: 399 }
+  ];
+
+  return (
+    <div>
+      <h2>产品列表</h2>
+      {products.map(product => (
+        <div key={product.id} style={{ marginBottom: '20px' }}>
+          <h3>{product.name}</h3>
+          <p>价格: ¥{product.price}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 2.3 复杂列表项
+
+列表项可以是复杂的JSX结构，包含多个元素和条件渲染。
+
+<CodeBlock>
+
+```jsx
+function TaskList({ tasks }) {
+  return (
+    <div>
+      <h2>任务列表</h2>
+      {tasks.map(task => (
+        <div
+          key={task.id}
+          style={{
+            padding: '10px',
+            margin: '10px 0',
+            background: task.completed ? '#e8f5e9' : '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '4px'
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={task.completed}
+            readOnly
+          />
+          <span style={{
+            marginLeft: '10px',
+            textDecoration: task.completed ? 'line-through' : 'none'
+          }}>
+            {task.text}
+          </span>
+          {task.priority === 'high' && (
+            <span style={{ color: 'red', marginLeft: '10px' }}>
+              🔥 高优先级
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 3. Keys的重要性
+
+### 3.1 什么是Keys？
+
+Keys是React用来识别哪些项目发生了变化、添加了或删除了的特殊属性。你需要为列表中的每个元素提供Key，以便React可以跟踪元素。
+
+<Box style={{ padding: '20px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>⚠️ 重要提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Keys是必须的</strong> - 渲染列表时<strong>必须</strong>提供Key属性。缺少Key会导致控制台警告和性能问题。
+  </p>
+</Box>
+
+### 3.2 为什么需要Keys？
+
+React使用Keys来高效地更新DOM。当列表顺序改变时，Keys帮助React确定哪些项目已经移动，而不是完全重新创建。
+
+<Compare>
+
+```jsx
+// ❌ 错误 - 没有Key
+{items.map((item, index) => <div>{item}</div>)}
+
+// ✅ 正确 - 有Key
+{items.map((item, index) => <div key={index}>{item}</div>)}
+
+// ✅ 更好 - 使用唯一ID
+{items.map(item => <div key={item.id}>{item}</div>)}
+```
+
+</Compare>
+
+### 3.3 如何选择Key值
+
+#### 最佳实践：使用唯一ID
+
+<CodeBlock>
+
+```jsx
+// ✅ 最佳 - 使用数据库ID或唯一标识符
+const users = [
+  { id: 'user-123', name: 'Alice' },
+  { id: 'user-456', name: 'Bob' }
+];
+
+return (
+  <ul>
+    {users.map(user => (
+      <li key={user.id}>{user.name}</li>
+    ))}
+  </ul>
+);
+```
+
+</CodeBlock>
+
+#### 次选：使用索引（仅限特定情况）
+
+<CodeBlock>
+
+```jsx
+// ✅ 可接受 - 列表是静态的，不会重新排序
+const colors = ['red', 'blue', 'green'];
+
+return (
+  <ul>
+    {colors.map((color, index) => (
+      <li key={index}>{color}</li>
+    ))}
+  </ul>
+);
+```
+
+</CodeBlock>
+
+<ErrorBox>
+
+```jsx
+// ❌ 避免 - 列表会动态改变，可能导致渲染问题
+const [items, setItems] = useState(initialItems);
+
+return (
+  <ul>
+    {items.map((item, index) => (
+      <li key={index}>{item}</li>  // 索引可能改变
+    ))}
+  </ul>
+);
+```
+
+</ErrorBox>
+
+---
+
+## 4. 动态列表操作
+
+### 4.1 添加列表项
+
+<CodeBlock>
+
+```jsx
+function TodoList() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习React', completed: false }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+
+  const addTodo = () => {
+    if (inputValue.trim()) {
+      setTodos([
+        ...todos,
+        {
+          id: Date.now(), // 简单ID生成
+          text: inputValue,
+          completed: false
+        }
+      ]);
+      setInputValue('');
+    }
+  };
+
+  return (
+    <div>
+      <div>
+        <input
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="添加新任务..."
+        />
+        <button onClick={addTodo}>添加</button>
+      </div>
+      <ul>
+        {todos.map(todo => (
+          <li key={todo.id}>
+            {todo.text}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.2 删除列表项
+
+<CodeBlock>
+
+```jsx
+function ItemList() {
+  const [items, setItems] = useState([
+    { id: 1, name: '苹果' },
+    { id: 2, name: '香蕉' },
+    { id: 3, name: '橙子' }
+  ]);
+
+  const deleteItem = (id) => {
+    setItems(items.filter(item => item.id !== id));
+  };
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li key={item.id}>
+          {item.name}
+          <button
+            onClick={() => deleteItem(item.id)}
+            style={{ marginLeft: '10px' }}
+          >
+            删除
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 4.3 更新列表项
+
+<CodeBlock>
+
+```jsx
+function EditableList() {
+  const [items, setItems] = useState([
+    { id: 1, text: '任务1', completed: false },
+    { id: 2, text: '任务2', completed: true }
+  ]);
+
+  const toggleComplete = (id) => {
+    setItems(items.map(item =>
+      item.id === id
+        ? { ...item, completed: !item.completed }
+        : item
+    ));
+  };
+
+  return (
+    <ul>
+      {items.map(item => (
+        <li
+          key={item.id}
+          style={{
+            textDecoration: item.completed ? 'line-through' : 'none',
+            cursor: 'pointer'
+          }}
+          onClick={() => toggleComplete(item.id)}
+        >
+          {item.text}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 5. 列表过滤与排序
+
+### 5.1 过滤列表
+
+<CodeBlock>
+
+```jsx
+function ProductFilter() {
+  const [products] = useState([
+    { id: 1, name: 'Laptop', category: 'Electronics', price: 999 },
+    { id: 2, name: 'Shirt', category: 'Clothing', price: 29 },
+    { id: 3, name: 'Phone', category: 'Electronics', price: 699 },
+    { id: 4, name: 'Pants', category: 'Clothing', price: 59 }
+  ]);
+  const [filter, setFilter] = useState('All');
+
+  const filteredProducts = filter === 'All'
+    ? products
+    : products.filter(p => p.category === filter);
+
+  return (
+    <div>
+      <div>
+        <button onClick={() => setFilter('All')}>全部</button>
+        <button onClick={() => setFilter('Electronics')}>电子产品</button>
+        <button onClick={() => setFilter('Clothing')}>服装</button>
+      </div>
+      <ul>
+        {filteredProducts.map(product => (
+          <li key={product.id}>
+            {product.name} - ¥{product.price}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.2 排序列表
+
+<CodeBlock>
+
+```jsx
+function SortedList() {
+  const [sortBy, setSortBy] = useState('name'); // 'name' or 'age'
+  const [people] = useState([
+    { id: 1, name: 'Alice', age: 25 },
+    { id: 2, name: 'Bob', age: 30 },
+    { id: 3, name: 'Charlie', age: 20 }
+  ]);
+
+  const sortedPeople = [...people].sort((a, b) => {
+    if (sortBy === 'name') {
+      return a.name.localeCompare(b.name);
+    } else {
+      return a.age - b.age;
+    }
+  });
+
+  return (
+    <div>
+      <div>
+        <button onClick={() => setSortBy('name')}>按名字排序</button>
+        <button onClick={() => setSortBy('age')}>按年龄排序</button>
+      </div>
+      <ul>
+        {sortedPeople.map(person => (
+          <li key={person.id}>
+            {person.name} - {person.age}岁
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 5.3 复杂过滤与排序
+
+<CodeBlock>
+
+```jsx
+function AdvancedFilter() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [minPrice, setMinPrice] = useState(0);
+  const [sortBy, setSortBy] = useState('name');
+
+  const products = [
+    { id: 1, name: 'Laptop', price: 999, category: 'Electronics' },
+    { id: 2, name: 'Shirt', price: 29, category: 'Clothing' },
+    { id: 3, name: 'Phone', price: 699, category: 'Electronics' }
+  ];
+
+  // 过滤
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPrice = p.price >= minPrice;
+    return matchesSearch && matchesPrice;
+  });
+
+  // 排序
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'price') {
+      return a.price - b.price;
+    }
+    return a.name.localeCompare(b.name);
+  });
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="搜索产品..."
+      />
+      <input
+        type="number"
+        value={minPrice}
+        onChange={(e) => setMinPrice(Number(e.target.value))}
+        placeholder="最低价格"
+      />
+      <ul>
+        {sortedProducts.map(product => (
+          <li key={product.id}>
+            {product.name} - ¥{product.price}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 6. 条件列表渲染
+
+### 6.1 空列表处理
+
+<CodeBlock>
+
+```jsx
+function UserList({ users }) {
+  return (
+    <div>
+      <h2>用户列表</h2>
+      {users.length === 0 ? (
+        <p>暂无用户</p>
+      ) : (
+        <ul>
+          {users.map(user => (
+            <li key={user.id}>{user.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.2 加载状态
+
+<CodeBlock>
+
+```jsx
+function DataList({ data, loading, error }) {
+  if (loading) {
+    return <div>加载中...</div>;
+  }
+
+  if (error) {
+    return <div>错误: {error}</div>;
+  }
+
+  return (
+    <ul>
+      {data.map(item => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 6.3 条件显示列表项
+
+<CodeBlock>
+
+```jsx
+function FilteredUserList({ users, showActiveOnly }) {
+  return (
+    <ul>
+      {users
+        .filter(user => !showActiveOnly || user.isActive)
+        .map(user => (
+          <li key={user.id}>
+            {user.name}
+            {user.isActive && <span style={{ color: 'green' }}>✓</span>}
+          </li>
+        ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 7. 嵌套列表
+
+### 7.1 二维列表
+
+<CodeBlock>
+
+```jsx
+function CategoryList({ categories }) {
+  return (
+    <div>
+      {categories.map(category => (
+        <div key={category.id} style={{ marginBottom: '20px' }}>
+          <h3>{category.name}</h3>
+          <ul>
+            {category.items.map(item => (
+              <li key={item.id}>
+                {item.name}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+### 7.2 嵌套动态更新
+
+<CodeBlock>
+
+```jsx
+function ExpandableList({ data }) {
+  const [expandedItems, setExpandedItems] = useState([]);
+
+  const toggleExpand = (id) => {
+    setExpandedItems(prev =>
+      prev.includes(id)
+        ? prev.filter(item => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  return (
+    <ul>
+      {data.map(item => (
+        <li key={item.id}>
+          <div onClick={() => toggleExpand(item.id)}>
+            {item.name} {expandedItems.includes(item.id) ? '▼' : '▶'}
+          </div>
+          {expandedItems.includes(item.id) && (
+            <ul style={{ marginLeft: '20px' }}>
+              {item.children.map(child => (
+                <li key={child.id}>{child.name}</li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+---
+
+## 8. 性能优化
+
+### 8.1 使用React.memo
+
+对于大型列表，使用`React.memo`来避免不必要的重渲染。
+
+<CodeBlock>
+
+```jsx
+// 包装列表项组件
+const ListItem = React.memo(({ item }) => {
+  return <div>{item.name}</div>;
+});
+
+function ItemList({ items }) {
+  return (
+    <ul>
+      {items.map(item => (
+        <ListItem key={item.id} item={item} />
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.2 使用useMemo优化过滤
+
+<CodeBlock>
+
+```jsx
+function OptimizedList({ items, filter }) {
+  const filteredItems = useMemo(() => {
+    return items.filter(item => item.category === filter);
+  }, [items, filter]);
+
+  return (
+    <ul>
+      {filteredItems.map(item => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</CodeBlock>
+
+### 8.3 虚拟化（针对超长列表）
+
+对于包含成千上万项的列表，考虑使用虚拟化技术。
+
+<CodeBlock>
+
+```jsx
+// 简化的虚拟化示例
+function VirtualizedList({ items, itemHeight = 50, visibleCount = 10 }) {
+  const [scrollTop, setScrollTop] = useState(0);
+
+  const startIndex = Math.floor(scrollTop / itemHeight);
+  const endIndex = Math.min(startIndex + visibleCount, items.length);
+  const visibleItems = items.slice(startIndex, endIndex);
+
+  return (
+    <div
+      style={{ height: items.length * itemHeight, position: 'relative' }}
+      onScroll={(e) => setScrollTop(e.target.scrollTop)}
+    >
+      <div style={{ transform: `translateY(${startIndex * itemHeight}px)` }}>
+        {visibleItems.map(item => (
+          <div key={item.id} style={{ height: itemHeight }}>
+            {item.name}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+</CodeBlock>
+
+<Box style={{ padding: '15px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 性能提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    对于大型列表（>100项），考虑使用专门的虚拟化库如<strong>react-window</strong>或<strong>react-virtualized</strong>。
+  </p>
+</Box>
+
+---
+
+## 9. Keys的最佳实践
+
+### 9.1 Key值规则
+
+<Rules>
+
+1. **Key值必须唯一**
+   ```jsx
+   // ✅ 正确 - 每个key唯一
+   items.map(item => <div key={item.id}>...</div>)
+   ```
+
+2. **Key值应该是稳定的**
+   ```jsx
+   // ✅ 稳定 - ID不会改变
+   items.map(item => <div key={item.id}>...</div>)
+
+   // ❌ 不稳定 - 索引可能改变
+   items.map((item, index) => <div key={index}>...</div>)
+   ```
+
+3. **Key值应该是可预测的**
+   ```jsx
+   // ✅ 可预测 - 基于数据的内在标识
+   items.map(item => <div key={`item-${item.id}`}>...</div>)
+   ```
+
+</Rules>
+
+### 9.2 常见错误
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误1 - 重复Key
+items.map(item => <div key={item.id}>{item.name}</div>)
+items.map(item => <div key={item.id}>{item.name}</div>) // 重复！
+
+// ❌ 错误2 - 使用随机值作为Key
+items.map(item => <div key={Math.random()}>{item.name}</div>)
+
+// ❌ 错误3 - 使用Index作为动态列表的Key
+const [items, setItems] = useState(initialItems);
+return items.map((item, index) => <div key={index}>{item}</div>)
+```
+
+</ErrorBox>
+
+### 9.3 特殊场景的Key选择
+
+<Compare>
+
+```jsx
+// 场景1: 静态列表（推荐使用Index）
+const colors = ['red', 'blue', 'green'];
+colors.map((color, index) => <li key={index}>{color}</li>)
+
+// 场景2: 有唯一ID的动态列表（必须使用ID）
+const users = [{ id: 1, name: 'Alice' }, { id: 2, name: 'Bob' }];
+users.map(user => <li key={user.id}>{user.name}</li>)
+
+// 场景3: 没有唯一ID但需要稳定Key
+const [items, setItems] = useState(initialItems);
+const getStableId = (item) => {
+  // 基于内容生成稳定ID
+  return `${item.type}-${item.name}`;
+};
+items.map(item => <li key={getStableId(item)}>{item.name}</li>)
+```
+
+</Compare>
+
+---
+
+## 10. 实践练习
+
+### 练习1：待办事项管理器
+
+创建一个功能完整的待办事项列表，支持添加、删除、完成和过滤。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 显示待办事项列表
+- 添加新事项
+- 删除事项
+- 标记完成/未完成
+- 过滤显示（全部/已完成/未完成）
+- 统计信息
+
+**数据结构**：
+```javascript
+{
+  id: number,
+  text: string,
+  completed: boolean,
+  createdAt: Date
+}
+```
+
+</Expandable>
+
+### 练习2：用户搜索系统
+
+创建一个用户列表，支持搜索、排序和分页。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 显示用户列表
+- 实时搜索（按姓名）
+- 按年龄排序
+- 分页显示（每页5条）
+- 显示总数和当前页
+
+**数据结构**：
+```javascript
+{
+  id: number,
+  name: string,
+  email: string,
+  age: number,
+  avatar: string
+}
+```
+
+</Expandable>
+
+### 练习3：产品目录
+
+创建一个产品目录，支持分类过滤、价格范围和排序。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 产品列表展示
+- 分类过滤（全部/电子产品/服装/家居）
+- 价格范围过滤
+- 按价格排序（升序/降序）
+- 按名称排序
+- 响应式卡片布局
+
+**数据结构**：
+```javascript
+{
+  id: number,
+  name: string,
+  price: number,
+  category: string,
+  image: string,
+  inStock: boolean
+}
+```
+
+</Expandable>
+
+### 练习4：评论线程
+
+创建一个嵌套的评论系统，支持回复和折叠。
+
+<Expandable title="点击查看要求">
+
+**功能要求**：
+- 嵌套评论显示
+- 回复评论
+- 折叠/展开评论线程
+- 点赞功能
+- 时间显示
+
+**数据结构**：
+```javascript
+{
+  id: number,
+  author: string,
+  content: string,
+  timestamp: Date,
+  replies: Comment[],
+  likes: number
+}
+```
+
+</Expandable>
+
+---
+
+## 11. 常见错误
+
+### 错误1：忘记添加Key
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+{items.map(item => <div>{item.name}</div>)}
+
+// ✅ 正确
+{items.map(item => <div key={item.id}>{item.name}</div>)}
+```
+
+</ErrorBox>
+
+### 错误2：使用Index作为动态列表的Key
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 当列表项可以重新排序时
+function List({ items, onReorder }) {
+  return (
+    <ul>
+      {items.map((item, index) => (
+        <li key={index}>{item.name}</li>  // Index会改变！
+      ))}
+    </ul>
+  );
+}
+
+// ✅ 正确 - 使用唯一ID
+function List({ items, onReorder }) {
+  return (
+    <ul>
+      {items.map(item => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+</ErrorBox>
+
+### 错误3：Key值不唯一
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误
+const categories = [
+  { id: 1, name: 'A' },
+  { id: 1, name: 'B' }  // 重复ID！
+];
+
+return (
+  <ul>
+    {categories.map(cat => (
+      <li key={cat.id}>{cat.name}</li>  // Key不唯一！
+    ))}
+  </ul>
+);
+
+// ✅ 正确
+const categories = [
+  { id: 1, name: 'A' },
+  { id: 2, name: 'B' }  // 唯一ID
+];
+```
+
+</ErrorBox>
+
+### 错误4：修改原数组
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 直接修改state
+function List({ items }) {
+  const [list, setList] = useState(items);
+
+  const sort = () => {
+    list.sort();  // 修改原数组！
+    setList(list);
+  };
+
+  return <button onClick={sort}>排序</button>;
+}
+
+// ✅ 正确 - 创建副本
+function List({ items }) {
+  const [list, setList] = useState(items);
+
+  const sort = () => {
+    const sorted = [...list].sort();  // 创建副本
+    setList(sorted);
+  };
+
+  return <button onClick={sort}>排序</button>;
+}
+```
+
+</ErrorBox>
+
+### 错误5：错误的Key更新逻辑
+
+<ErrorBox>
+
+```jsx
+// ❌ 错误 - 添加项时Key可能冲突
+const addItem = (newItem) => {
+  setItems([...items, newItem]);  // newItem可能没有ID
+};
+
+// ✅ 正确 - 确保新项有唯一ID
+const addItem = (newItem) => {
+  const itemWithId = {
+    ...newItem,
+    id: Date.now()  // 生成唯一ID
+  };
+  setItems([...items, itemWithId]);
+};
+```
+
+</ErrorBox>
+
+---
+
+## 12. 本章小结
+
+### 关键要点
+
+<Checklist>
+
+- ✅ 使用`Array.map()`渲染列表
+- ✅ 列表中的每个元素**必须**提供Key属性
+- ✅ 优先使用数据的唯一ID作为Key
+- ✅ 仅在列表静态且不会重新排序时使用索引作为Key
+- ✅ 使用`filter()`和`sort()`进行列表过滤和排序
+- ✅ 使用展开运算符`...`操作列表，避免修改原数组
+- ✅ 处理空列表、加载状态和错误状态
+- ✅ 对于大型列表，考虑使用`React.memo`或虚拟化
+
+</Checklist>
+
+### 最佳实践
+
+<BestPractices>
+
+1. **保持Key的稳定性** - Key值应该在组件的整个生命周期中保持一致
+2. **避免使用随机值** - 不要使用`Math.random()`或时间戳作为Key
+3. **优化大型列表** - 对于超过100项的列表，使用虚拟化或分页
+4. **合理的组件拆分** - 将复杂的列表项拆分为单独的组件
+5. **使用条件渲染** - 总是处理空列表和加载状态
+
+</BestPractices>
+
+### 下一步学习
+
+现在你已经掌握了列表渲染与Keys，接下来我们将学习：
+
+1. **[表单处理](forms)** - 掌握用户输入和表单交互
+2. **[状态管理进阶](../hooks/basics/useState)** - 深入理解状态
+3. **[自定义Hooks](../hooks/custom)** - 创建可复用的状态逻辑
+
+---
+
+## 13. 延伸阅读
+
+### 官方资源
+
+- [列表与Keys](https://react.dev/learn/rendering-lists) - React官方列表渲染指南
+- [Keys的说明](https://react.dev/reference/react/Key) - Keys API文档
+- [性能优化](https://react.dev/learn/render-and-commit) - 渲染和性能优化
+
+### 推荐库
+
+- [react-window](https://react-window.now.sh/) - 高效渲染大型列表
+- [react-virtualized](https://bvaughn.github.io/react-virtualized/) - 功能完整的虚拟化库
+
+### 工具推荐
+
+- [React Developer Tools](https://react.dev/learn/react-developer-tools) - 调试React组件
+
+---
+
+[← 上一章：条件渲染](conditional-rendering) | [下一章：表单处理 →](forms)
