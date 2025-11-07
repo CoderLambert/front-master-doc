@@ -100,12 +100,16 @@ const sidebars = {
         }
       ]
     },
-    // {
-    //   type: 'category',
-    //   label: '⚡ 性能优化',
-    //   collapsed: true,
-    //   items: []
-    // }
+    {
+      type: 'category',
+      label: '⚡ 性能优化',
+      collapsed: true,
+      items: [
+        'performance/basics/react-memo',
+        'performance/basics/virtualization',
+        'performance/basics/code-splitting',
+      ]
+    }
   ],
 
   // Legacy sidebar for backward compatibility
@@ -159,6 +163,15 @@ const sidebars = {
         'state-management/intermediate/redux-fundamentals',
         'state-management/intermediate/zustand',
         'state-management/intermediate/jotai',
+      ]
+    },
+    {
+      type: 'category',
+      label: '性能优化',
+      items: [
+        'performance/basics/react-memo',
+        'performance/basics/virtualization',
+        'performance/basics/code-splitting',
       ]
     }
   ]
