@@ -50,6 +50,9 @@ root.render(<App />);`,
   };
 }
 
+
+const renderRegex = /render\s*\(\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\)/;
+
 /**
  * 为 LiveCode 创建单文件代码
  * @param {string} componentCode - 组件代码
@@ -58,9 +61,10 @@ root.render(<App />);`,
  */
 export function createLiveCode(componentCode, componentName = 'App') {
   let code = componentCode;
+  const hasRender = renderRegex.test(componentCode);
   // 如果没有 export default，添加它
-  if (!code.includes('/`render(*`/')) {
-    code = `${code}\n\nrender(<${componentName} />);`;
+  if (!hasRender) {
+    code = `${code}\nrender(<${componentName} />);`;
   }
 
   return code;

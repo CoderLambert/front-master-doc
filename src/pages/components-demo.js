@@ -102,7 +102,8 @@ function ComponentsDemo() {
           <p>noInline={true} 时必须使用 render 渲染组件</p>
           <LiveCode
             noInline={true}
-            code={`${TodoListCode}`}
+            code={`${createLiveCode(TodoListCode, 'TodoList')};
+            `}
           />
         </section>
       </div>
