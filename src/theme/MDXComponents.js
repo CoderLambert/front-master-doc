@@ -219,8 +219,8 @@ const MDXComponents = {
     );
   },
 
-  // Highlight组件 - 高亮显示文本
-  Highlight: ({ children }) => (
+  // Highlighter组件 - 高亮显示文本
+  Highlighter: ({ children }) => (
     <div
       style={{
         margin: '20px 0',
