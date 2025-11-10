@@ -8,9 +8,9 @@ const InteractiveExercise = ({
   solution,
   instructions,
   difficulty = 'beginner',
-  showSolution = false,
+  initialShowSolution = false,
 }) => {
-  const [showSolution, setShowSolution] = useState(false);
+  const [showSolution, setShowSolution] = useState(initialShowSolution);
   const [showCode, setShowCode] = useState(false);
 
   const getDifficultyColor = (level) => {
