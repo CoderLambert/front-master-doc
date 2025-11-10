@@ -251,14 +251,39 @@ function ResponsiveComponent() {
 
 ### 2.3 表单处理Hook
 
+:::warning 重要说明
+**为什么需要改进？**
+
+原始的 `useForm` Hook 有一个致命缺陷：
+
+```javascript
+// ❌ 错误的实现
+isValid: Object.keys(errors).length === 0
+```
+
+**问题所在：**
+- 如果一个字段从未被用户"触碰"过，它就不会有错误记录在 `errors` 中
+- 因此 `isValid` 可能错误地返回 `true`，导致空表单也能提交
+- 按钮状态不可靠，可能误导用户
+
+**解决方案：**
+1. 添加 `isSubmitting` 状态来控制提交过程
+2. 添加 `validateAllFields()` 方法，在提交时强制验证所有字段
+3. 添加 `submit()` 方法，内置完整的验证和提交流程
+4. 改进 `isValid` 逻辑，确保所有字段都经过验证
+
+这样可以确保只有所有字段都真正有效时，表单才能提交。
+:::
+
 <CodeBlock>
 
 ```jsx
-// 表单Hook
+// 改进的表单Hook - 解决isValid缺陷
 function useForm(initialValues = {}, validationRules = {}) {
   const [values, setValues] = useState(initialValues);
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false); // 新增：提交状态
 
   // 验证单个字段
   const validateField = (name, value) => {
@@ -280,6 +305,22 @@ function useForm(initialValues = {}, validationRules = {}) {
     return '';
   };
 
+  // 验证所有字段 - 新增：全量验证方法
+  const validateAllFields = () => {
+    const newErrors = {};
+    let isValid = true;
+    for (const fieldName in validationRules) {
+      const error = validateField(fieldName, values[fieldName]);
+      if (error) {
+        newErrors[fieldName] = error;
+        isValid = false;
+      }
+    }
+    setErrors(newErrors);
+    setTouched(Object.keys(validationRules).reduce((acc, key) => ({ ...acc, [key]: true }), {}));
+    return isValid;
+  };
+
   // 处理输入变化
   const handleChange = (name) => (e) => {
     const value = e.target.value;
@@ -297,11 +338,23 @@ function useForm(initialValues = {}, validationRules = {}) {
     setErrors(prev => ({ ...prev, [name]: error }));
   };
 
+  // 新增：智能提交方法
+  const submit = (callback) => {
+    setIsSubmitting(true);
+    const isFormValid = validateAllFields();
+    if (isFormValid) {
+      // 验证通过，执行回调
+      callback(values);
+    }
+    setIsSubmitting(false);
+  };
+
   // 重置表单
   const reset = () => {
     setValues(initialValues);
     setErrors({});
     setTouched({});
+    setIsSubmitting(false);
   };
 
   return {
@@ -311,11 +364,13 @@ function useForm(initialValues = {}, validationRules = {}) {
     handleChange,
     handleBlur,
     reset,
-    isValid: Object.keys(errors).length === 0
+    submit,           // 返回新的submit方法
+    isSubmitting,     // 返回提交状态
+    isValid: Object.keys(errors).every(key => !errors[key]) // 改进：检查所有字段是否无错误
   };
 }
 
-// 使用
+// 改进后的使用方式
 function RegistrationForm() {
   const {
     values,
@@ -324,7 +379,8 @@ function RegistrationForm() {
     handleChange,
     handleBlur,
     reset,
-    isValid
+    submit,       // 使用新的submit方法
+    isSubmitting  // 使用新的isSubmitting状态
   } = useForm(
     { name: '', email: '', password: '' },
     {
@@ -334,11 +390,14 @@ function RegistrationForm() {
     }
   );
 
+  // 使用新的submit方法提交表单
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (isValid) {
-      console.log('提交数据:', values);
-    }
+    // 调用submit方法，传入提交成功后的回调
+    submit((submittedValues) => {
+      console.log('提交数据:', submittedValues);
+      // 这里可以跳转页面、显示成功消息等
+    });
   };
 
   return (
@@ -379,10 +438,11 @@ function RegistrationForm() {
         {touched.password && errors.password && <p>{errors.password}</p>}
       </div>
 
-      <button type="submit" disabled={!isValid}>
-        注册
+      {/* 按钮状态由isSubmitting控制 */}
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? '注册中...' : '注册'}
       </button>
-      <button type="button" onClick={reset}>
+      <button type="button" onClick={reset} disabled={isSubmitting}>
         重置
       </button>
     </form>
