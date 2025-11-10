@@ -30,8 +30,10 @@
 }
 
 /* 修复内联代码样式问题 - 确保代码在行内正确显示 */
+
+/* 所有code元素默认内联显示 */
 code {
-  font-family: 'Monaco, Menlo, "Ubuntu Mono", Consolas, source-code-pro, monospace';
+  font-family: 'Monaco, Menlo', 'Ubuntu Mono', Consolas, source-code-pro, monospace;
   font-size: 0.875em;
   padding: 0.2rem 0.4rem;
   border-radius: 0.25rem;
@@ -39,6 +41,7 @@ code {
   color: #e83e8c;
   white-space: nowrap;
   display: inline;
+  vertical-align: baseline;
 }
 
 [data-theme='dark'] code {
@@ -53,10 +56,22 @@ pre code {
   white-space: pre;
   display: block;
   color: inherit;
+  border-radius: 0;
 }
 
 /* 确保段落内的内联代码正确显示 */
 p code {
   display: inline;
   white-space: nowrap;
+}
+
+/* 强制内联代码在行内显示 - 针对可能覆盖的情况 */
+:not(pre) > code {
+  display: inline;
+  white-space: nowrap;
+  background-color: rgba(200, 200, 200, 0.15);
+}
+
+[data-theme='dark'] :not(pre) > code {
+  background-color: rgba(255, 255, 255, 0.1);
 }
