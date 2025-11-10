@@ -1,0 +1,909 @@
+# 实战项目：待办事项应用 (Todo App)
+
+import { CodePlayground } from '@components';
+
+## 项目概述
+
+在这个实战项目中，我们将构建一个功能完整的待办事项应用。这个项目将帮助您掌握：
+
+- useState Hook 的使用
+- 数组的状态管理
+- 事件处理
+- 条件渲染
+- 列表渲染和 key 的使用
+- 表单处理
+
+## 功能需求
+
+我们的待办事项应用将包含以下功能：
+
+1. ✅ 添加新的待办事项
+2. ✅ 标记待办事项为已完成/未完成
+3. ✅ 删除待办事项
+4. ✅ 过滤显示（全部/已完成/未完成）
+5. ✅ 统计显示（总数、已完成数量）
+6. ✅ 清除所有已完成的待办事项
+
+## 第一步：基础结构
+
+让我们从一个简单的待办事项列表开始：
+
+<CodePlayground
+  files={{
+    '/App.js': `
+import React, { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习 React', completed: false },
+    { id: 2, text: '构建待办应用', completed: true },
+    { id: 3, text: '部署到生产环境', completed: false }
+  ]);
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '40px auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ textAlign: 'center', color: '#333' }}>
+        📝 我的待办事项
+      </h1>
+
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            style={{
+              padding: '15px',
+              margin: '10px 0',
+              backgroundColor: todo.completed ? '#e8f5e9' : '#fff',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+          >
+            <span style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              color: todo.completed ? '#666' : '#333',
+              flex: 1
+            }}>
+              {todo.text}
+            </span>
+            <span style={{
+              padding: '4px 12px',
+              backgroundColor: todo.completed ? '#4caf50' : '#ff9800',
+              color: 'white',
+              borderRadius: '12px',
+              fontSize: '12px'
+            }}>
+              {todo.completed ? '已完成' : '进行中'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
+    `
+  }}
+  editorHeight={500}
+/>
+
+## 第二步：添加新待办事项
+
+现在让我们添加添加新待办事项的功能：
+
+<CodePlayground
+  files={{
+    '/App.js': `
+import React, { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习 React', completed: false },
+    { id: 2, text: '构建待办应用', completed: true }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+
+  // 添加新待办事项
+  const addTodo = () => {
+    if (inputValue.trim() === '') return;
+
+    const newTodo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false
+    };
+
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+  };
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '40px auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ textAlign: 'center', color: '#333' }}>
+        📝 我的待办事项
+      </h1>
+
+      {/* 输入框 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="输入新的待办事项..."
+          style={{
+            flex: 1,
+            padding: '12px',
+            fontSize: '16px',
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            outline: 'none'
+          }}
+        />
+        <button
+          onClick={addTodo}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          添加
+        </button>
+      </div>
+
+      {/* 待办事项列表 */}
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            style={{
+              padding: '15px',
+              margin: '10px 0',
+              backgroundColor: todo.completed ? '#e8f5e9' : '#fff',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}
+          >
+            <span style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              color: todo.completed ? '#666' : '#333',
+              flex: 1
+            }}>
+              {todo.text}
+            </span>
+            <span style={{
+              padding: '4px 12px',
+              backgroundColor: todo.completed ? '#4caf50' : '#ff9800',
+              color: 'white',
+              borderRadius: '12px',
+              fontSize: '12px'
+            }}>
+              {todo.completed ? '已完成' : '进行中'}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
+    `
+  }}
+  editorHeight={600}
+/>
+
+## 第三步：标记完成/未完成
+
+接下来添加切换待办事项状态的功能：
+
+<CodePlayground
+  files={{
+    '/App.js': `
+import React, { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习 React', completed: false },
+    { id: 2, text: '构建待办应用', completed: true },
+    { id: 3, text: '部署到生产环境', completed: false }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+
+  // 添加新待办事项
+  const addTodo = () => {
+    if (inputValue.trim() === '') return;
+
+    const newTodo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false
+    };
+
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+  };
+
+  // 切换待办事项状态
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo =>
+      todo.id === id
+        ? { ...todo, completed: !todo.completed }
+        : todo
+    ));
+  };
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '40px auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ textAlign: 'center', color: '#333' }}>
+        📝 我的待办事项
+      </h1>
+
+      {/* 输入框 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="输入新的待办事项..."
+          style={{
+            flex: 1,
+            padding: '12px',
+            fontSize: '16px',
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            outline: 'none'
+          }}
+        />
+        <button
+          onClick={addTodo}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          添加
+        </button>
+      </div>
+
+      {/* 待办事项列表 */}
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            style={{
+              padding: '15px',
+              margin: '10px 0',
+              backgroundColor: todo.completed ? '#e8f5e9' : '#fff',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onClick={() => toggleTodo(todo.id)}
+          >
+            <div style={{
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              border: '2px solid ' + (todo.completed ? '#4caf50' : '#ddd'),
+              backgroundColor: todo.completed ? '#4caf50' : 'transparent',
+              marginRight: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '14px'
+            }}>
+              {todo.completed ? '✓' : ''}
+            </div>
+            <span style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              color: todo.completed ? '#666' : '#333',
+              flex: 1,
+              fontSize: '16px'
+            }}>
+              {todo.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
+    `
+  }}
+  editorHeight={650}
+/>
+
+## 第四步：删除功能
+
+现在添加删除待办事项的功能：
+
+<CodePlayground
+  files={{
+    '/App.js': `
+import React, { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习 React', completed: false },
+    { id: 2, text: '构建待办应用', completed: true }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+
+  // 添加新待办事项
+  const addTodo = () => {
+    if (inputValue.trim() === '') return;
+
+    const newTodo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false
+    };
+
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+  };
+
+  // 切换待办事项状态
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo =>
+      todo.id === id
+        ? { ...todo, completed: !todo.completed }
+        : todo
+    ));
+  };
+
+  // 删除待办事项
+  const deleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '40px auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ textAlign: 'center', color: '#333' }}>
+        📝 我的待办事项
+      </h1>
+
+      {/* 输入框 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="输入新的待办事项..."
+          style={{
+            flex: 1,
+            padding: '12px',
+            fontSize: '16px',
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            outline: 'none'
+          }}
+        />
+        <button
+          onClick={addTodo}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          添加
+        </button>
+      </div>
+
+      {/* 待办事项列表 */}
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            style={{
+              padding: '15px',
+              margin: '10px 0',
+              backgroundColor: todo.completed ? '#e8f5e9' : '#fff',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            <div
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: '50%',
+                border: '2px solid ' + (todo.completed ? '#4caf50' : '#ddd'),
+                backgroundColor: todo.completed ? '#4caf50' : 'transparent',
+                marginRight: '15px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleTodo(todo.id)}
+            >
+              {todo.completed ? '✓' : ''}
+            </div>
+            <span
+              style={{
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                color: todo.completed ? '#666' : '#333',
+                flex: 1,
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}
+              onClick={() => toggleTodo(todo.id)}
+            >
+              {todo.text}
+            </span>
+            <button
+              onClick={() => deleteTodo(todo.id)}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              删除
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;
+    `
+  }}
+  editorHeight={700}
+/>
+
+## 第五步：过滤和统计
+
+现在添加过滤功能和统计信息：
+
+<CodePlayground
+  files={{
+    '/App.js': `
+import React, { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习 React', completed: false },
+    { id: 2, text: '构建待办应用', completed: true },
+    { id: 3, text: '部署到生产环境', completed: false }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [filter, setFilter] = useState('all'); // 'all', 'active', 'completed'
+
+  // 添加新待办事项
+  const addTodo = () => {
+    if (inputValue.trim() === '') return;
+
+    const newTodo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false
+    };
+
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+  };
+
+  // 切换待办事项状态
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo =>
+      todo.id === id
+        ? { ...todo, completed: !todo.completed }
+        : todo
+    ));
+  };
+
+  // 删除待办事项
+  const deleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  // 清除所有已完成的待办事项
+  const clearCompleted = () => {
+    setTodos(todos.filter(todo => !todo.completed));
+  };
+
+  // 过滤待办事项
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'active') return !todo.completed;
+    if (filter === 'completed') return todo.completed;
+    return true;
+  });
+
+  // 统计信息
+  const totalTodos = todos.length;
+  const completedTodos = todos.filter(todo => todo.completed).length;
+  const activeTodos = totalTodos - completedTodos;
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '40px auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ textAlign: 'center', color: '#333', marginBottom: '30px' }}>
+        📝 我的待办事项
+      </h1>
+
+      {/* 输入框 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="输入新的待办事项..."
+          style={{
+            flex: 1,
+            padding: '12px',
+            fontSize: '16px',
+            border: '2px solid #ddd',
+            borderRadius: '8px',
+            outline: 'none'
+          }}
+        />
+        <button
+          onClick={addTodo}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          添加
+        </button>
+      </div>
+
+      {/* 统计信息 */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-around',
+        marginBottom: '20px',
+        padding: '15px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>
+            {totalTodos}
+          </div>
+          <div style={{ fontSize: '14px', color: '#666' }}>总计</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#ff9800' }}>
+            {activeTodos}
+          </div>
+          <div style={{ fontSize: '14px', color: '#666' }}>进行中</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4caf50' }}>
+            {completedTodos}
+          </div>
+          <div style={{ fontSize: '14px', color: '#666' }}>已完成</div>
+        </div>
+      </div>
+
+      {/* 过滤按钮 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button
+          onClick={() => setFilter('all')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            backgroundColor: filter === 'all' ? '#2196f3' : '#fff',
+            color: filter === 'all' ? '#fff' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          全部
+        </button>
+        <button
+          onClick={() => setFilter('active')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            backgroundColor: filter === 'active' ? '#ff9800' : '#fff',
+            color: filter === 'active' ? '#fff' : '#333',
+            border: '2px solid #ff9800',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          进行中
+        </button>
+        <button
+          onClick={() => setFilter('completed')}
+          style={{
+            flex: 1,
+            padding: '10px',
+            backgroundColor: filter === 'completed' ? '#4caf50' : '#fff',
+            color: filter === 'completed' ? '#fff' : '#333',
+            border: '2px solid #4caf50',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          已完成
+        </button>
+      </div>
+
+      {/* 待办事项列表 */}
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {filteredTodos.length === 0 ? (
+          <li style={{
+            textAlign: 'center',
+            padding: '40px',
+            color: '#999',
+            fontSize: '16px'
+          }}>
+            暂无待办事项
+          </li>
+        ) : (
+          filteredTodos.map(todo => (
+            <li
+              key={todo.id}
+              style={{
+                padding: '15px',
+                margin: '10px 0',
+                backgroundColor: todo.completed ? '#e8f5e9' : '#fff',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  border: '2px solid ' + (todo.completed ? '#4caf50' : '#ddd'),
+                  backgroundColor: todo.completed ? '#4caf50' : 'transparent',
+                  marginRight: '15px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '14px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => toggleTodo(todo.id)}
+              >
+                {todo.completed ? '✓' : ''}
+              </div>
+              <span
+                style={{
+                  textDecoration: todo.completed ? 'line-through' : 'none',
+                  color: todo.completed ? '#666' : '#333',
+                  flex: 1,
+                  fontSize: '16px',
+                  cursor: 'pointer'
+                }}
+                onClick={() => toggleTodo(todo.id)}
+              >
+                {todo.text}
+              </span>
+              <button
+                onClick={() => deleteTodo(todo.id)}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                删除
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+
+      {/* 清除已完成按钮 */}
+      {completedTodos > 0 && (
+        <button
+          onClick={clearCompleted}
+          style={{
+            width: '100%',
+            padding: '12px',
+            marginTop: '20px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          清除所有已完成的待办事项
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default App;
+    `
+  }}
+  editorHeight={800}
+/>
+
+## 完整代码
+
+下面是完整的待办事项应用代码：
+
+```jsx
+import React, { useState } from 'react';
+
+function App() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: '学习 React', completed: false },
+    { id: 2, text: '构建待办应用', completed: true }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [filter, setFilter] = useState('all');
+
+  // 添加新待办事项
+  const addTodo = () => {
+    if (inputValue.trim() === '') return;
+
+    const newTodo = {
+      id: Date.now(),
+      text: inputValue,
+      completed: false
+    };
+
+    setTodos([...todos, newTodo]);
+    setInputValue('');
+  };
+
+  // 切换待办事项状态
+  const toggleTodo = (id) => {
+    setTodos(todos.map(todo =>
+      todo.id === id
+        ? { ...todo, completed: !todo.completed }
+        : todo
+    ));
+  };
+
+  // 删除待办事项
+  const deleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
+
+  // 清除所有已完成的待办事项
+  const clearCompleted = () => {
+    setTodos(todos.filter(todo => !todo.completed));
+  };
+
+  // 过滤待办事项
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'active') return !todo.completed;
+    if (filter === 'completed') return todo.completed;
+    return true;
+  });
+
+  // 统计信息
+  const totalTodos = todos.length;
+  const completedTodos = todos.filter(todo => todo.completed).length;
+  const activeTodos = totalTodos - completedTodos;
+
+  return (
+    <div style={{ /* 样式代码 */ }}>
+      {/* JSX 代码 */}
+    </div>
+  );
+}
+
+export default App;
+```
+
+## 学习要点
+
+在这个项目中，您学到了：
+
+1. **useState Hook** - 管理组件状态
+2. **数组操作** - 添加、删除、更新数组元素
+3. **事件处理** - 处理用户输入和点击事件
+4. **条件渲染** - 根据状态显示不同内容
+5. **列表渲染** - 使用 map 方法渲染列表
+6. **Key 的使用** - 帮助 React 识别哪些元素发生了变化
+7. **状态提升** - 集中管理状态
+
+## 扩展挑战
+
+尝试自己实现以下功能：
+
+1. 🎨 添加样式和动画效果
+2. 📱 使应用响应式
+3. 💾 添加本地存储功能
+4. ✏️ 添加编辑待办事项功能
+5. 📊 添加进度条显示
+6. 🏷️ 添加标签/分类功能
+
+## 下一步
+
+恭喜您完成了待办事项应用！接下来可以学习：
+
+- [React Hooks 深入](docs/hooks/basics/useState)
+- [状态管理](docs/state-management/basics/context-api)
+- [性能优化](docs/performance/basics/react-memo)

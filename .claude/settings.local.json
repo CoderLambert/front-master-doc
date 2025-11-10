@@ -115,7 +115,14 @@
       "Bash(curl -s -o /dev/null -w \"virtualization: %{http_code}\\n\" http://localhost:3011/docs/performance/basics/virtualization)",
       "Bash(curl -s -o /dev/null -w \"code-splitting: %{http_code}\\n\" http://localhost:3011/docs/performance/basics/code-splitting)",
       "Bash(git add docs/)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push -u origin main)",
+      "Bash(git push:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(netstat:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

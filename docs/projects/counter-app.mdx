@@ -1,0 +1,243 @@
+# 实战项目：计数器应用 (Counter)
+
+import { LiveCode } from '@components';
+
+## 项目概述
+
+计数器是最简单的 React 应用，但也是学习 React 核心概念的绝佳起点。本项目将帮助您掌握：
+
+- useState Hook 的使用
+- 事件处理
+- 条件渲染
+- 状态更新
+- 组件设计
+
+## 基础版本
+
+<LiveCode
+  code={`
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    <div style={{
+      padding: '40px',
+      textAlign: 'center',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ color: '#333' }}>计数器</h1>
+      <div style={{ fontSize: '72px', fontWeight: 'bold', color: '#2196f3', margin: '20px 0' }}>
+        {count}
+      </div>
+      <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+        <button
+          onClick={() => setCount(count - 1)}
+          style={{
+            padding: '15px 30px',
+            fontSize: '24px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          -
+        </button>
+        <button
+          onClick={() => setCount(0)}
+          style={{
+            padding: '15px 30px',
+            fontSize: '24px',
+            backgroundColor: '#9e9e9e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          重置
+        </button>
+        <button
+          onClick={() => setCount(count + 1)}
+          style={{
+            padding: '15px 30px',
+            fontSize: '24px',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+`}
+/>
+
+## 增强版本
+
+<LiveCode
+  code={`
+function Counter() {
+  const [count, setCount] = useState(0);
+  const [step, setStep] = useState(1);
+  const [history, setHistory] = useState([]);
+
+  const updateCount = (value) => {
+    setCount(value);
+    setHistory([...history, value]);
+  };
+
+  const undo = () => {
+    if (history.length > 0) {
+      const newHistory = [...history];
+      newHistory.pop();
+      setHistory(newHistory);
+      setCount(newHistory[newHistory.length - 1] || 0);
+    }
+  };
+
+  return (
+    <div style={{
+      padding: '40px',
+      textAlign: 'center',
+      fontFamily: 'Arial, sans-serif',
+      maxWidth: '600px',
+      margin: '0 auto'
+    }}>
+      <h1 style={{ color: '#333', marginBottom: '30px' }}>智能计数器</h1>
+
+      <div style={{
+        fontSize: '96px',
+        fontWeight: 'bold',
+        color: count > 0 ? '#4caf50' : count < 0 ? '#f44336' : '#2196f3',
+        margin: '20px 0',
+        textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
+      }}>
+        {count}
+      </div>
+
+      <div style={{
+        padding: '15px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px',
+        marginBottom: '20px'
+      }}>
+        <p style={{ margin: '0 0 10px 0', color: '#666' }}>
+          步长: {step}
+        </p>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={step}
+          onChange={(e) => setStep(Number(e.target.value))}
+          style={{ width: '100%' }}
+        />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '20px' }}>
+        <button
+          onClick={() => updateCount(count - step)}
+          style={{
+            padding: '20px',
+            fontSize: '24px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            transition: 'transform 0.1s'
+          }}
+        >
+          -{step}
+        </button>
+        <button
+          onClick={() => updateCount(0)}
+          style={{
+            padding: '20px',
+            fontSize: '24px',
+            backgroundColor: '#9e9e9e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          重置
+        </button>
+        <button
+          onClick={() => updateCount(count + step)}
+          style={{
+            padding: '20px',
+            fontSize: '24px',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          +{step}
+        </button>
+      </div>
+
+      <button
+        onClick={undo}
+        disabled={history.length === 0}
+        style={{
+          width: '100%',
+          padding: '12px',
+          fontSize: '16px',
+          backgroundColor: history.length > 0 ? '#2196f3' : '#e0e0e0',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          cursor: history.length > 0 ? 'pointer' : 'not-allowed',
+          marginBottom: '20px'
+        }}
+      >
+        撤销 (历史: {history.length})
+      </button>
+
+      {history.length > 0 && (
+        <div style={{
+          textAlign: 'left',
+          backgroundColor: '#f5f5f5',
+          padding: '15px',
+          borderRadius: '8px',
+          maxHeight: '200px',
+          overflowY: 'auto'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>历史记录:</h4>
+          <p style={{ margin: '0', fontSize: '14px', color: '#666' }}>
+            {history.join(' → ')}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+`}
+/>
+
+## 学习要点
+
+1. **useState** - 管理组件状态
+2. **事件处理** - onClick、onChange 事件
+3. **条件渲染** - 根据状态显示不同内容
+4. **状态更新** - 使用函数式更新
+5. **组件设计** - 单一职责原则
+
+## 扩展挑战
+
+1. 添加多个计数器
+2. 保存历史记录到 localStorage
+3. 添加键盘快捷键支持
+4. 使用 useReducer 重构
+5. 添加动画效果

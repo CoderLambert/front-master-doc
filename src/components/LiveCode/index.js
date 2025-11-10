@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LiveProvider, LiveEditor, LivePreview, LiveError } from 'react-live';
-import { FiEdit2, FiEye } from 'react-icons/fi';
+import { FiEdit2, FiEye, FiRotateCw, FiShare } from 'react-icons/fi';
 import { FaCopy, FaCheck } from 'react-icons/fa';
 import { useColorMode } from '@docusaurus/theme-common';
 import * as ReactModule from 'react';
@@ -20,10 +20,85 @@ const LiveCode = ({
   onSuccess,
   style = {},
   className = '',
+  // 新增属性
+  autoSave = true,
+  enableShare = true,
+  enableReset = true,
+  storageKey = null,
 }) => {
   const { colorMode } = useColorMode();
   const [copied, setCopied] = useState(false);
   const [showEditorState, setShowEditor] = useState(false);
+  const [currentCode, setCurrentCode] = useState(code);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // 生成唯一存储键
+  const key = storageKey || `livecode_${code.substring(0, 50)}`;
+
+  // 从localStorage加载保存的代码
+  useEffect(() => {
+    if (!autoSave) return;
+    try {
+      const saved = localStorage.getItem(`saved_${key}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 30 * 24 * 60 * 60 * 1000) {
+          setCurrentCode(parsed.code);
+          setHasUnsavedChanges(true);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load saved code:', err);
+    }
+  }, [key, autoSave]);
+
+  // 保存代码到localStorage
+  const saveCode = (newCode) => {
+    if (!autoSave) return;
+    try {
+      localStorage.setItem(`saved_${key}`, JSON.stringify({
+        code: newCode,
+        timestamp: Date.now()
+      }));
+      setHasUnsavedChanges(true);
+    } catch (err) {
+      console.warn('Failed to save code:', err);
+    }
+  };
+
+  // 重置代码
+  const handleReset = () => {
+    if (!enableReset) return;
+    localStorage.removeItem(`saved_${key}`);
+    setCurrentCode(code);
+    setHasUnsavedChanges(false);
+  };
+
+  // 分享代码
+  const handleShare = async () => {
+    if (!enableShare) return;
+    const shareData = {
+      code: currentCode,
+      scope: Object.keys(scope),
+      timestamp: Date.now()
+    };
+    const encoded = btoa(JSON.stringify(shareData));
+    const url = `${window.location.origin}${window.location.pathname}#livecode=${encoded}`;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('分享链接已复制到剪贴板！');
+    } catch (err) {
+      console.error('Failed to share:', err);
+      prompt('请复制此链接:', url);
+    }
+  };
+
+  // 处理代码变化
+  const handleCodeChange = (newCode) => {
+    setCurrentCode(newCode);
+    saveCode(newCode);
+  };
 
   // 默认scope包含React
   const defaultScope = {
@@ -104,7 +179,55 @@ const LiveCode = ({
         <div style={{
           display: 'flex',
           gap: '8px',
+          alignItems: 'center',
         }}>
+          {/* 重置按钮 */}
+          {enableReset && (
+            <button
+              onClick={handleReset}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid var(--ifm-toc-border-color)',
+                background: 'transparent',
+                color: 'var(--ifm-font-color-base)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+              title="重置为初始代码"
+            >
+              <FiRotateCw />
+              重置
+            </button>
+          )}
+
+          {/* 分享按钮 */}
+          {enableShare && (
+            <button
+              onClick={handleShare}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid var(--ifm-toc-border-color)',
+                background: 'transparent',
+                color: 'var(--ifm-font-color-base)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+              title="分享代码"
+            >
+              <FiShare />
+              分享
+            </button>
+          )}
+
+          {/* 显示/隐藏编辑器 */}
           {showEditor && (
             <button
               onClick={() => setShowEditor(!showEditorState)}
@@ -126,6 +249,7 @@ const LiveCode = ({
             </button>
           )}
 
+          {/* 复制按钮 */}
           <button
             onClick={handleCopy}
             style={{
@@ -149,7 +273,7 @@ const LiveCode = ({
 
       {/* Live Provider */}
       <LiveProvider
-        code={transformCodeFn(code)}
+        code={transformCodeFn(currentCode)}
         scope={defaultScope}
         theme={reactLiveTheme}
         noInline={noInline}
@@ -165,6 +289,8 @@ const LiveCode = ({
             position: 'relative',
           }}>
             <LiveEditor
+              code={currentCode}
+              onChange={handleCodeChange}
               style={{
                 fontSize: '14px',
                 fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
@@ -203,6 +329,26 @@ const LiveCode = ({
           />
         )}
       </LiveProvider>
+
+      {/* 未保存更改提示 */}
+      {hasUnsavedChanges && (
+        <div style={{
+          position: 'absolute',
+          bottom: '10px',
+          right: '10px',
+          background: '#3b82f6',
+          color: 'white',
+          padding: '6px 12px',
+          borderRadius: '6px',
+          fontSize: '11px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+        }}>
+          <span>已保存</span>
+        </div>
+      )}
     </div>
   );
 };
