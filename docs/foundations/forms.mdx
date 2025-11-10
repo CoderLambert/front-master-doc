@@ -70,90 +70,327 @@ import { Tabs, TabItem } from '@docusaurus/theme-common';
 
 在受控组件中，表单元素的值由React state控制，每次输入都会更新state。
 
-<CodeBlock>
-
-```jsx
-function SimpleForm() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+<LiveCode
+  code={`
+function SimpleFormDemo() {
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [submitted, setSubmitted] = React.useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setSubmitted(true);
     console.log('提交的数据:', { name, email });
-    alert(`Hello ${name}! Your email: ${email}`);
+  };
+
+  const handleReset = () => {
+    setName('');
+    setEmail('');
+    setSubmitted(false);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>
-          姓名:
+    <div style={{ padding: '20px', maxWidth: '500px' }}>
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+            👤 姓名:
+          </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="请输入姓名"
+            placeholder="请输入您的姓名"
+            style={{
+              width: '100%',
+              padding: '12px',
+              fontSize: '16px',
+              border: '2px solid #ddd',
+              borderRadius: '6px',
+              boxSizing: 'border-box'
+            }}
           />
-        </label>
-      </div>
-      <div>
-        <label>
-          邮箱:
+          {name && (
+            <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#4caf50' }}>
+              ✅ 输入了 {name.length} 个字符
+            </p>
+          )}
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+            📧 邮箱:
+          </label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="请输入邮箱"
+            placeholder="请输入您的邮箱"
+            style={{
+              width: '100%',
+              padding: '12px',
+              fontSize: '16px',
+              border: '2px solid #ddd',
+              borderRadius: '6px',
+              boxSizing: 'border-box'
+            }}
           />
-        </label>
+          {email && (
+            <p style={{ margin: '5px 0 0 0', fontSize: '14px', color: '#4caf50' }}>
+              ✅ 邮箱格式: {email}
+            </p>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            type="submit"
+            style={{
+              flex: 1,
+              padding: '12px',
+              fontSize: '16px',
+              background: '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🚀 提交表单
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            style={{
+              flex: 1,
+              padding: '12px',
+              fontSize: '16px',
+              background: '#f5f5f5',
+              color: '#333',
+              border: '2px solid #ddd',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 重置
+          </button>
+        </div>
+      </form>
+
+      {submitted && (
+        <div style={{
+          marginTop: '20px',
+          padding: '20px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          border: '2px solid #4caf50'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✅ 表单提交成功！</h4>
+          <div style={{ fontSize: '16px', lineHeight: '1.6' }}>
+            <p style={{ margin: '8px 0' }}>
+              <strong>姓名:</strong> {name}
+            </p>
+            <p style={{ margin: '8px 0' }}>
+              <strong>邮箱:</strong> {email}
+            </p>
+          </div>
+          <button
+            onClick={() => setSubmitted(false)}
+            style={{
+              marginTop: '10px',
+              padding: '8px 16px',
+              background: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            继续填写
+          </button>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        fontSize: '14px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>💡 受控组件说明</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>输入值存储在 <code>state</code> 中</li>
+          <li>每次输入都触发 <code>onChange</code> 事件</li>
+          <li>状态更新驱动UI重新渲染</li>
+          <li>可以实时验证和格式化输入</li>
+        </ul>
       </div>
-      <button type="submit">提交</button>
-    </form>
+    </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.2 textarea元素
 
 在React中，`textarea`使用`value`属性而不是`children`。
 
-<CodeBlock>
+<LiveCode
+  code={`
+function TextareaFormDemo() {
+  const [message, setMessage] = React.useState('');
+  const [charCount, setCharCount] = React.useState(0);
+  const maxLength = 200;
 
-```jsx
-function TextareaForm() {
-  const [message, setMessage] = useState('');
+  const handleChange = (e) => {
+    const value = e.target.value;
+    setMessage(value);
+    setCharCount(value.length);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('消息:', message);
+    alert(\`消息已发送！\n\n内容: ${message}\n字数: ${charCount}\`);
+  };
+
+  const getProgressColor = () => {
+    const percentage = (charCount / maxLength) * 100;
+    if (percentage >= 90) return '#f44336';
+    if (percentage >= 75) return '#ff9800';
+    return '#4caf50';
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>
-          留言:
+    <div style={{ padding: '20px', maxWidth: '600px' }}>
+      <h3 style={{ marginTop: 0 }}>💬 留言板</h3>
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+            ✍️ 请输入您的留言:
+          </label>
           <textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="请输入留言..."
-            rows="4"
-            cols="50"
+            onChange={handleChange}
+            placeholder="在这里写下您的想法..."
+            rows="6"
+            maxLength={maxLength}
+            style={{
+              width: '100%',
+              padding: '12px',
+              fontSize: '16px',
+              border: '2px solid #ddd',
+              borderRadius: '6px',
+              boxSizing: 'border-box',
+              fontFamily: 'inherit',
+              resize: 'vertical'
+            }}
           />
-        </label>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '15px',
+          padding: '10px',
+          background: '#f5f5f5',
+          borderRadius: '6px'
+        }}>
+          <span style={{ fontSize: '14px', color: '#666' }}>
+            当前字数: <strong>{charCount}</strong> / {maxLength}
+          </span>
+          <div style={{
+            flex: 1,
+            margin: '0 15px',
+            height: '8px',
+            background: '#e0e0e0',
+            borderRadius: '4px',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              height: '100%',
+              width: \`${(charCount / maxLength) * 100}%\`,
+              background: getProgressColor(),
+              transition: 'all 0.3s'
+            }} />
+          </div>
+          <span style={{
+            fontSize: '14px',
+            fontWeight: 'bold',
+            color: getProgressColor()
+          }}>
+            {Math.round((charCount / maxLength) * 100)}%
+          </span>
+        </div>
+
+        <button
+          type="submit"
+          disabled={charCount === 0}
+          style={{
+            width: '100%',
+            padding: '12px',
+            fontSize: '16px',
+            background: charCount === 0 ? '#ccc' : '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: charCount === 0 ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold',
+            transition: 'background 0.2s'
+          }}
+        >
+          {charCount === 0 ? '✏️ 请先输入内容' : '🚀 发送留言'}
+        </button>
+      </form>
+
+      {charCount > 0 && (
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>📝 预览</h4>
+          <div style={{
+            padding: '12px',
+            background: 'white',
+            borderRadius: '4px',
+            minHeight: '60px',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
+          }}>
+            {message || '（空）'}
+          </div>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '6px',
+        fontSize: '14px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 React中textarea的特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>使用 <code>value</code> 属性而不是 <code>children</code></li>
+          <li>通过 <code>onChange</code> 事件更新状态</li>
+          <li>可以设置 <code>maxLength</code> 限制字数</li>
+          <li>支持 <code>resize</code> 属性控制调整大小</li>
+        </ul>
       </div>
-      <div>
-        <p>当前字数: {message.length}</p>
-      </div>
-      <button type="submit">发送</button>
-    </form>
+    </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.3 select元素
 

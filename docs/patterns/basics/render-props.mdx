@@ -28,47 +28,296 @@ import { Tabs, TabItem } from '@docusaurus/theme-common';
   </p>
 </Box>
 
-<CodeBlock>
+<LiveCode
+  code={`
+function BasicRenderPropsDemo() {
+  // 实现一个简单的DataProvider组件
+  const DataProvider = ({ children, render }) => {
+    const [data, setData] = React.useState({
+      user: { name: 'Alice', age: 25, role: 'Admin' },
+      loading: false
+    });
 
-```jsx
-// 基础Render Props模式
-<DataProvider
-  render={(data) => <UserProfile data={data} />}
+    return children ? children(data) : render && render(data);
+  };
+
+  // 使用方式1: children函数
+  const Example1 = () => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#e8f5e9',
+        border: '2px solid #4caf50',
+        borderRadius: '8px',
+        marginBottom: '15px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>方式1: children函数</h4>
+        <DataProvider>
+          {({ user, loading }) => (
+            loading ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>加载中...</div>
+            ) : (
+              <div style={{
+                padding: '15px',
+                background: 'white',
+                borderRadius: '6px',
+                border: '1px solid #4caf50'
+              }}>
+                <h4 style={{ margin: '0 0 5px 0' }}>姓名: {user.name}</h4>
+                <p style={{ margin: '5px 0', color: '#666' }}>年龄: {user.age}</p>
+                <p style={{ margin: '5px 0', color: '#666' }}>角色: {user.role}</p>
+              </div>
+            )
+          )}
+        </DataProvider>
+      </div>
+    );
+  };
+
+  // 使用方式2: render属性
+  const Example2 = () => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        border: '2px solid #2196f3',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>方式2: render属性</h4>
+        <DataProvider
+          render={({ user, loading }) => (
+            loading ? (
+              <div style={{ padding: '20px', textAlign: 'center' }}>加载中...</div>
+            ) : (
+              <div style={{
+                padding: '15px',
+                background: 'white',
+                borderRadius: '6px',
+                border: '1px solid #2196f3'
+              }}>
+                <h4 style={{ margin: '0 0 5px 0' }}>姓名: {user.name}</h4>
+                <p style={{ margin: '5px 0', color: '#666' }}>年龄: {user.age}</p>
+                <p style={{ margin: '5px 0', color: '#666' }}>角色: {user.role}</p>
+              </div>
+            )
+          )}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎯 基础Render Props模式</h3>
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>DataProvider</strong> - 负责数据处理和状态管理</li>
+          <li><strong>children/render</strong> - 接收数据的函数，決定如何渲染</li>
+          <li><strong>职责分离</strong> - 逻辑与UI完全分离</li>
+          <li><strong>高度灵活</strong> - 相同的逻辑，不同的渲染方式</li>
+        </ul>
+      </div>
+
+      <Example1 />
+      <Example2 />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        fontSize: '13px'
+      }}>
+        <strong>关键区别：</strong>
+        <ul style={{ margin: '5px 0 0 20px' }}>
+          <li><code>children</code>: 通过children prop传递函数（React推荐）</li>
+          <li><code>render</code>: 通过render prop传递函数（更显式）</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
 />
-
-// 等同于
-<DataProvider>
-  {(data) => <UserProfile data={data} />}
-</DataProvider>
-```
-
-</CodeBlock>
 
 ### 1.1 核心思想
 
-<CodeBlock>
+<LiveCode
+  code={`
+function CoreConceptDemo() {
+  // 类组件版本 - 展示传统Render Props
+  class DataProviderClass extends React.Component {
+    state = {
+      data: { title: 'React学习指南', author: '张三', views: 1234 },
+      loading: false
+    };
 
-```jsx
-// 组件提供数据和逻辑
-class DataProvider extends React.Component {
-  state = { data: null, loading: true };
-
-  render() {
-    // 将数据传递给render函数
-    return this.props.render(this.state);
+    render() {
+      // 将状态传递给render prop
+      return this.props.render(this.state);
+    }
   }
+
+  // 函数组件版本 - 展示现代Render Props
+  const DataProviderFunction = ({ children, render }) => {
+    const [data, setData] = React.useState({
+      title: 'React学习指南',
+      author: '李四',
+      views: 5678
+    });
+    const [loading, setLoading] = React.useState(false);
+
+    return children ? children({ data, loading }) : render({ data, loading });
+  };
+
+  // 示例1: 使用类组件版本
+  const Example1 = () => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        border: '2px solid #ff9800',
+        borderRadius: '8px',
+        marginBottom: '15px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          示例1: 类组件Render Props
+        </h4>
+        <DataProviderClass
+          render={({ data, loading }) => {
+            if (loading) {
+              return (
+                <div style={{
+                  padding: '20px',
+                  textAlign: 'center',
+                  background: '#fff',
+                  borderRadius: '6px'
+                }}>
+                  ⏳ 加载中...
+                </div>
+              );
+            }
+            return (
+              <div style={{
+                padding: '15px',
+                background: '#fff',
+                borderRadius: '6px',
+                border: '1px solid #ff9800'
+              }}>
+                <h4 style={{ margin: '0 0 5px 0', color: '#e65100' }}>
+                  {data.title}
+                </h4>
+                <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                  作者: {data.author}
+                </p>
+                <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                  浏览: {data.views.toLocaleString()}
+                </p>
+              </div>
+            );
+          }}
+        />
+      </div>
+    );
+  };
+
+  // 示例2: 使用函数组件版本
+  const Example2 = () => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#e8f5e9',
+        border: '2px solid #4caf50',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>
+          示例2: 函数组件Render Props (推荐)
+        </h4>
+        <DataProviderFunction
+          render={({ data, loading }) => {
+            if (loading) {
+              return (
+                <div style={{
+                  padding: '20px',
+                  textAlign: 'center',
+                  background: '#fff',
+                  borderRadius: '6px'
+                }}>
+                  ⏳ 加载中...
+                </div>
+              );
+            }
+            return (
+              <div style={{
+                padding: '15px',
+                background: '#fff',
+                borderRadius: '6px',
+                border: '1px solid #4caf50'
+              }}>
+                <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>
+                  {data.title}
+                </h4>
+                <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                  作者: {data.author}
+                </p>
+                <p style={{ margin: '5px 0', color: '#666', fontSize: '14px' }}>
+                  浏览: {data.views.toLocaleString()}
+                </p>
+              </div>
+            );
+          }}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>💡 核心思想: 逻辑与渲染分离</h3>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>工作流程</h4>
+        <ol style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>DataProvider</strong> - 负责获取数据、管理状态</li>
+          <li><strong>render prop</strong> - 接收数据的函数，決定UI渲染</li>
+          <li><strong>职责分离</strong> - 逻辑与UI完全解耦</li>
+          <li><strong>高度复用</strong> - 相同的逻辑，不同的渲染</li>
+        </ol>
+      </div>
+
+      <Example1 />
+      <Example2 />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        fontSize: '13px'
+      }}>
+        <strong>💡 提示：</strong>函数组件版本更简洁，推荐在现代React项目中使用
+      </div>
+    </div>
+  );
 }
-
-// 使用组件 - 控制如何渲染
-<DataProvider
-  render={({ data, loading }) => {
-    if (loading) return <div>Loading...</div>;
-    return <div>{data.title}</div>;
-  }}
+`}
+  scope={{ React }}
 />
-```
-
-</CodeBlock>
 
 ### 1.2 与HOC对比
 
@@ -98,109 +347,611 @@ const EnhancedComponent = withData(WrappedComponent);
 
 ### 2.1 简单的Data Provider
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DataProviderDemo() {
+  // 模拟DataProvider组件
+  const [state, setState] = React.useState({
+    data: null,
+    loading: false,
+    error: null
+  });
 
-```jsx
-// 类组件实现
-class DataProvider extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      data: null,
-      loading: false,
-      error: null
-    };
-  }
+  const { data, loading, error } = state;
 
-  render() {
-    const { render } = this.props;
-    const { data, loading, error } = this.state;
+  const fetchData = () => {
+    setState({ data: null, loading: true, error: null });
 
-    return render({ data, loading, error });
-  }
+    // 模拟API调用
+    setTimeout(() => {
+      const success = Math.random() > 0.3;
+      if (success) {
+        setState({
+          data: { id: 1, name: '用户数据', timestamp: new Date().toLocaleTimeString() },
+          loading: false,
+          error: null
+        });
+      } else {
+        setState({
+          data: null,
+          loading: false,
+          error: { message: '获取数据失败' }
+        });
+      }
+    }, 1000);
+  };
+
+  // 模拟使用DataProvider的渲染函数
+  const renderContent = ({ data, loading, error }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#e3f2fd',
+          borderRadius: '8px',
+          textAlign: 'center',
+          border: '2px solid #2196f3'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+          <p style={{ margin: 0, color: '#1976d2' }}>正在加载数据...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          textAlign: 'center',
+          border: '2px solid #f44336'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>❌</div>
+          <p style={{ margin: 0, color: '#c62828' }}>错误: {error.message}</p>
+        </div>
+      );
+    }
+
+    if (data) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          border: '2px solid #4caf50'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✅ 数据加载成功</h4>
+          <p style={{ margin: '5px 0' }}><strong>ID:</strong> {data.id}</p>
+          <p style={{ margin: '5px 0' }}><strong>名称:</strong> {data.name}</p>
+          <p style={{ margin: '5px 0' }}><strong>时间:</strong> {data.timestamp}</p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        textAlign: 'center',
+        border: '2px solid #ddd'
+      }}>
+        <p style={{ margin: 0, color: '#999' }}>点击按钮获取数据</p>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📡 简单Data Provider示例</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          style={{
+            padding: '10px 20px',
+            background: loading ? '#ccc' : '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            transition: 'all 0.3s'
+          }}
+        >
+          {loading ? '加载中...' : '🚀 获取数据'}
+        </button>
+      </div>
+
+      {renderContent({ data, loading, error })}
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>DataProvider管理数据状态（data, loading, error）</li>
+          <li>通过render prop传递状态给渲染函数</li>
+          <li>渲染函数决定如何显示这些状态</li>
+          <li>实现了逻辑复用和视图分离</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-<DataProvider
-  render={({ data, loading, error }) => {
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error.message}</div>;
-    return <div>Data: {data}</div>;
-  }}
+`}
+  scope={{ React }}
 />
-```
-
-</CodeBlock>
 
 ### 2.2 函数组件实现
 
-<CodeBlock>
+<LiveCode
+  code={`
+function FunctionDataProviderDemo() {
+  // 模拟数据获取函数
+  const fetchUser = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ name: 'Alice', email: 'alice@example.com', role: 'Developer' });
+      }, 1000);
+    });
+  };
 
-```jsx
-// 函数组件实现
-function DataProvider({ render, fetcher }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // 实现DataProvider（函数组件版本）
+  const DataProvider = ({ render, fetcher }) => {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState(null);
 
-  useEffect(() => {
-    setLoading(true);
-    fetcher()
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [fetcher]);
+    React.useEffect(() => {
+      setLoading(true);
+      setError(null);
 
-  return render({ data, loading, error });
+      fetcher()
+        .then((result) => {
+          setData(result);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err);
+          setLoading(false);
+        });
+    }, [fetcher]);
+
+    // 传递数据给render函数
+    return render({ data, loading, error });
+  };
+
+  // 模拟用户界面
+  const UserProfile = ({ data, loading, error }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          textAlign: 'center',
+          border: '2px solid #ff9800'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+          <p style={{ margin: 0, color: '#e65100' }}>正在加载用户信息...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          textAlign: 'center',
+          border: '2px solid #f44336'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>❌</div>
+          <p style={{ margin: 0, color: '#c62828' }}>加载失败: {error.message}</p>
+        </div>
+      );
+    }
+
+    if (data) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          border: '2px solid #4caf50'
+        }}>
+          <h4 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>✅ 成功加载</h4>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              background: '#4caf50',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '24px',
+              marginRight: '15px'
+            }}>
+              {data.name.charAt(0)}
+            </div>
+            <div>
+              <h3 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>{data.name}</h3>
+              <p style={{ margin: 0, color: '#666' }}>{data.email}</p>
+            </div>
+          </div>
+          <div style={{
+            marginTop: '10px',
+            padding: '8px',
+            background: 'white',
+            borderRadius: '4px',
+            display: 'inline-block'
+          }}>
+            <span style={{ color: '#666', fontSize: '14px' }}>角色: </span>
+            <span style={{ color: '#4caf50', fontWeight: 'bold' }}>{data.role}</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        textAlign: 'center',
+        border: '2px solid #ddd'
+      }}>
+        <p style={{ margin: 0, color: '#999' }}>点击按钮加载数据</p>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔄 函数组件DataProvider演示</h3>
+
+      <DataProvider
+        fetcher={fetchUser}
+        render={({ data, loading, error }) => {
+          return <UserProfile data={data} loading={loading} error={error} />;
+        }}
+      />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 函数式实现特点</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>使用<strong>useState</strong>管理状态</li>
+          <li>使用<strong>useEffect</strong>处理副作用</li>
+          <li>将状态通过render prop传递给渲染函数</li>
+          <li>函数组件更简洁，易于测试</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-<DataProvider
-  fetcher={fetchUser}
-  render={({ data, loading, error }) => {
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error.message}</div>;
-    return <div>Welcome, {data.name}</div>;
-  }}
+`}
+  scope={{ React }}
 />
-```
-
-</CodeBlock>
 
 ### 2.3 使用children作为函数
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ChildrenAsFunctionDemo() {
+  // 模拟数据获取
+  const fetchUserData = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          id: 1,
+          name: 'Alice Johnson',
+          email: 'alice@example.com',
+          role: 'Administrator',
+          joinDate: '2022-03-15',
+          avatar: '👩‍💻'
+        });
+      }, 1200);
+    });
+  };
 
-```jsx
-// 使用children prop
-function DataProvider({ fetcher, children }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // 使用children作为函数的DataProvider
+  const DataProvider = ({ fetcher, children }) => {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState(null);
 
-  useEffect(() => {
-    setLoading(true);
-    fetcher()
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [fetcher]);
+    React.useEffect(() => {
+      setLoading(true);
+      fetcher()
+        .then((result) => {
+          setData(result);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err);
+          setLoading(false);
+        });
+    }, [fetcher]);
 
-  // children是一个函数
-  return children({ data, loading, error });
+    // children是一个函数
+    return children({ data, loading, error });
+  };
+
+  // 定义一个复杂的用户展示组件作为children
+  const userProfile = ({ data, loading, error }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '30px',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '32px', marginBottom: '15px' }}>⏳</div>
+          <h3 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+            正在加载用户信息...
+          </h3>
+          <p style={{ margin: 0, color: '#666' }}>
+            正在从服务器获取最新数据
+          </p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '30px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '32px', marginBottom: '15px' }}>❌</div>
+          <h3 style={{ margin: '0 0 10px 0', color: '#c62828' }}>
+            加载失败
+          </h3>
+          <p style={{ margin: '5px 0', color: '#666' }}>
+            错误类型: {error.name}
+          </p>
+          <p style={{ margin: '5px 0 15px 0', color: '#666' }}>
+            {error.message}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            style={{
+              padding: '8px 16px',
+              background: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            🔄 重试
+          </button>
+        </div>
+      );
+    }
+
+    if (data) {
+      return (
+        <div style={{
+          padding: '30px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          border: '2px solid #4caf50',
+          maxWidth: '500px',
+          margin: '0 auto'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '20px',
+            paddingBottom: '20px',
+            borderBottom: '2px solid #4caf50'
+          }}>
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              background: '#4caf50',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '40px',
+              marginRight: '20px',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+            }}>
+              {data.avatar}
+            </div>
+            <div>
+              <h2 style={{ margin: '0 0 8px 0', color: '#2e7d32' }}>
+                {data.name}
+              </h2>
+              <p style={{ margin: '0 0 5px 0', color: '#666' }}>
+                📧 {data.email}
+              </p>
+              <div style={{
+                display: 'inline-block',
+                padding: '4px 12px',
+                background: data.role === 'Administrator' ? '#f44336' : '#2196f3',
+                color: 'white',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                textTransform: 'uppercase'
+              }}>
+                {data.role}
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '15px'
+          }}>
+            <div style={{
+              padding: '12px',
+              background: 'white',
+              borderRadius: '6px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}>
+              <div style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>
+                用户ID
+              </div>
+              <div style={{ fontWeight: 'bold', color: '#333' }}>
+                #{data.id}
+              </div>
+            </div>
+            <div style={{
+              padding: '12px',
+              background: 'white',
+              borderRadius: '6px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}>
+              <div style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>
+                加入日期
+              </div>
+              <div style={{ fontWeight: 'bold', color: '#333' }}>
+                {data.joinDate}
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '20px',
+            padding: '15px',
+            background: 'white',
+            borderRadius: '6px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+            textAlign: 'center'
+          }}>
+            <p style={{ margin: 0, color: '#2e7d32', fontSize: '14px' }}>
+              ✅ 数据加载完成！欢迎使用React学习中心
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{
+        padding: '30px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        textAlign: 'center',
+        border: '2px dashed #ccc'
+      }}>
+        <p style={{ margin: 0, color: '#999' }}>
+          点击"获取用户数据"开始加载
+        </p>
+      </div>
+    );
+  };
+
+  // 手动触发数据获取
+  const [shouldFetch, setShouldFetch] = React.useState(false);
+
+  const handleFetch = () => {
+    setShouldFetch(true);
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔄 children作为函数模式演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>
+          💡 children as function 模式
+        </h4>
+        <p style={{ margin: '5px 0', fontSize: '14px', lineHeight: '1.6' }}>
+          这种模式将 <strong>children</strong> 作为函数使用，提供了更自然、简洁的API。
+          组件内部只负责管理状态和逻辑，渲染完全由外部控制。
+        </p>
+        <ul style={{ margin: '10px 0 0 20px', fontSize: '14px', lineHeight: '1.6' }}>
+          <li>语法更简洁，嵌套层级更少</li>
+          <li>children可以是任何React组件</li>
+          <li>完全控制渲染逻辑</li>
+          <li>易于理解和维护</li>
+        </ul>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={handleFetch}
+          style={{
+            padding: '10px 20px',
+            background: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            transition: 'all 0.2s'
+          }}
+        >
+          📡 获取用户数据
+        </button>
+      </div>
+
+      <DataProvider fetcher={fetchUserData}>
+        {userProfile}
+      </DataProvider>
+
+      <div style={{
+        marginTop: '25px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          📝 关键优势
+        </h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>灵活渲染</strong> - 渲染逻辑完全由children控制</li>
+          <li><strong>类型安全</strong> - TypeScript可以完美推断children的类型</li>
+          <li><strong>易于测试</strong> - 可以轻松mock children函数进行测试</li>
+          <li><strong>组合友好</strong> - 非常适合构建可组合的API</li>
+          <li><strong>语义化</strong> - children本身就暗示"组件的内容"</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用（更自然的语法）
-<DataProvider fetcher={fetchUser}>
-  {({ data, loading, error }) => {
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error.message}</div>;
-    return <div>Welcome, {data.name}</div>;
-  }}
-</DataProvider>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -208,233 +959,984 @@ function DataProvider({ fetcher, children }) {
 
 ### 3.1 状态管理Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function CounterRenderPropsDemo() {
+  // 状态管理组件
+  const Counter = ({ initialCount = 0, render }) => {
+    const [count, setCount] = React.useState(initialCount);
 
-```jsx
-// 状态管理组件
-class Counter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { count: props.initialCount || 0 };
-  }
+    const increment = () => {
+      setCount(prev => prev + 1);
+    };
 
-  increment = () => {
-    this.setState(prev => ({ count: prev.count + 1 }));
+    const decrement = () => {
+      setCount(prev => prev - 1);
+    };
+
+    const reset = () => {
+      setCount(initialCount);
+    };
+
+    // 传递状态和方法给渲染函数
+    return render({ count, increment, decrement, reset });
   };
 
-  decrement = () => {
-    this.setState(prev => ({ count: prev.count - 1 }));
-  };
-
-  render() {
-    return this.props.render({
-      count: this.state.count,
-      increment: this.increment,
-      decrement: this.decrement
-    });
-  }
-}
-
-// 使用
-<Counter initialCount={0}>
-  {({ count, increment, decrement }) => (
-    <div className="counter">
-      <button onClick={decrement}>-</button>
-      <span>{count}</span>
-      <button onClick={increment}>+</button>
-    </div>
-  )}
-</Counter>
-```
-
-</CodeBlock>
-
-### 3.2 列表渲染Render Props
-
-<CodeBlock>
-
-```jsx
-// 虚拟列表组件
-function VirtualList({ items, itemHeight, visibleCount, renderItem }) {
-  const [scrollTop, setScrollTop] = useState(0);
-
-  const startIndex = Math.floor(scrollTop / itemHeight);
-  const endIndex = Math.min(startIndex + visibleCount, items.length);
-  const visibleItems = items.slice(startIndex, endIndex);
-  const totalHeight = items.length * itemHeight;
-
+  // 使用Counter组件
   return (
-    <div
-      style={{ height: totalHeight, position: 'relative' }}
-      onScroll={(e) => setScrollTop(e.target.scrollTop)}
-    >
-      <div style={{ transform: `translateY(${startIndex * itemHeight}px)` }}>
-        {visibleItems.map((item, index) =>
-          renderItem(item, startIndex + index)
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔢 状态管理Render Props</h3>
+
+      <Counter initialCount={0}>
+        {({ count, increment, decrement, reset }) => (
+          <div style={{
+            padding: '20px',
+            background: '#f5f5f5',
+            borderRadius: '8px',
+            border: '2px solid #2196f3',
+            maxWidth: '300px'
+          }}>
+            <h4 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>计数器</h4>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '15px',
+              marginBottom: '20px'
+            }}>
+              <button
+                onClick={decrement}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  minWidth: '50px'
+                }}
+              >
+                −
+              </button>
+
+              <div style={{
+                fontSize: '48px',
+                fontWeight: 'bold',
+                color: '#2196f3',
+                minWidth: '80px',
+                textAlign: 'center'
+              }}>
+                {count}
+              </div>
+
+              <button
+                onClick={increment}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  background: '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  minWidth: '50px'
+                }}
+              >
+                +
+              </button>
+            </div>
+
+            <button
+              onClick={reset}
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '16px',
+                background: '#ff9800',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              🔄 重置为 0
+            </button>
+          </div>
         )}
+      </Counter>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>Counter组件管理状态（count）</li>
+          <li>通过render prop传递状态和操作方法</li>
+          <li>外部控制如何渲染这些数据</li>
+          <li>实现了状态逻辑与视图的分离</li>
+        </ul>
       </div>
     </div>
   );
 }
-
-// 使用
-<VirtualList
-  items={users}
-  itemHeight={50}
-  visibleCount={10}
-  renderItem={(user, index) => (
-    <div key={index} style={{ height: 50 }}>
-      {user.name}
-    </div>
-  )}
+`}
+  scope={{ React }}
 />
-```
 
-</CodeBlock>
+### 3.2 列表渲染Render Props
+
+<LiveCode
+  code={`
+function VirtualListDemo() {
+  // 模拟大量用户数据
+  const [users] = React.useState(
+    Array.from({ length: 1000 }, (_, i) => ({
+      id: i + 1,
+      name: \`用户 \${i + 1}\`,
+      email: \`user\${i + 1}@example.com\`,
+      role: ['Admin', 'User', 'Guest'][i % 3]
+    }))
+  );
+
+  // 虚拟列表组件
+  const VirtualList = ({ items, itemHeight = 50, visibleCount = 10, renderItem }) => {
+    const [scrollTop, setScrollTop] = React.useState(0);
+
+    const startIndex = Math.floor(scrollTop / itemHeight);
+    const endIndex = Math.min(startIndex + visibleCount + 5, items.length); // 多渲染一些避免空白
+    const visibleItems = items.slice(startIndex, endIndex);
+    const totalHeight = items.length * itemHeight;
+
+    return (
+      <div
+        style={{
+          height: visibleCount * itemHeight,
+          overflow: 'auto',
+          border: '2px solid #4caf50',
+          borderRadius: '8px',
+          position: 'relative',
+          background: 'white'
+        }}
+        onScroll={(e) => setScrollTop(e.target.scrollTop)}
+      >
+        <div style={{ height: totalHeight, position: 'relative' }}>
+          <div style={{ transform: \`translateY(\${startIndex * itemHeight}px)\` }}>
+            {visibleItems.map((item, index) =>
+              renderItem(item, startIndex + index)
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📋 虚拟列表Render Props</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
+          <strong>数据量：</strong>1000个用户项目
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
+          <strong>可见项目：</strong>10个（仅渲染可见项目，提升性能）
+        </p>
+      </div>
+
+      <VirtualList
+        items={users}
+        itemHeight={60}
+        visibleCount={10}
+        renderItem={(user, index) => (
+          <div
+            key={user.id}
+            style={{
+              height: 60,
+              padding: '10px 15px',
+              borderBottom: '1px solid #e0e0e0',
+              display: 'flex',
+              alignItems: 'center',
+              background: index % 2 === 0 ? '#f9f9f9' : 'white',
+              transition: 'background 0.2s'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#e3f2fd';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = index % 2 === 0 ? '#f9f9f9' : 'white';
+            }}
+          >
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: '#4caf50',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              marginRight: '15px',
+              fontSize: '16px'
+            }}>
+              {user.id}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 'bold', color: '#333', marginBottom: '4px' }}>
+                {user.name}
+              </div>
+              <div style={{ fontSize: '12px', color: '#666' }}>
+                {user.email}
+              </div>
+            </div>
+            <div style={{
+              padding: '4px 12px',
+              background: user.role === 'Admin' ? '#f44336' :
+                        user.role === 'User' ? '#2196f3' : '#9e9e9e',
+              color: 'white',
+              borderRadius: '12px',
+              fontSize: '12px',
+              fontWeight: 'bold'
+            }}>
+              {user.role}
+            </div>
+          </div>
+        )}
+      />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 性能优化原理</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>虚拟滚动</strong> - 只渲染可见区域的列表项</li>
+          <li><strong>动态计算</strong> - 根据滚动位置计算可见项目</li>
+          <li><strong>内存优化</strong> - 避免渲染大量DOM节点</li>
+          <li><strong>renderItem</strong> - 外部控制列表项的渲染逻辑</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '10px 15px',
+        background: '#fff3e0',
+        borderRadius: '6px',
+        fontSize: '13px',
+        color: '#e65100'
+      }}>
+        <strong>💡 提示：</strong>尝试滚动查看性能表现，即使滚动到底部也只渲染了少量DOM元素
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 3.3 异步数据Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function AsyncDataRenderPropsDemo() {
+  // 模拟用户数据
+  const mockUsers = [
+    { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+    { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
+    { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'Moderator' }
+  ];
 
-```jsx
-// 异步数据获取组件
-function AsyncData({ url, render, deps = [] }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    fetch(url)
-      .then(res => res.json())
-      .then(setData)
-      .catch(setError)
-      .finally(() => setLoading(false));
-  }, [url, ...deps]);
-
-  return render({ data, loading, error });
-}
-
-// 使用
-<AsyncData
-  url="/api/users"
-  deps={[userId]}
->
-  {({ data, loading, error }) => {
-    if (loading) return <div>Loading users...</div>;
-    if (error) return <div>Error loading users</div>;
-    return <UserList users={data} />;
-  }}
-</AsyncData>
-```
-
-</CodeBlock>
-
-### 3.4 主题系统Render Props
-
-<CodeBlock>
-
-```jsx
-// 主题Provider
-function ThemeProvider({ children, initialTheme = 'light' }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('theme') || initialTheme;
-  });
-
-  const toggleTheme = () => {
-    setTheme(prev => {
-      const newTheme = prev === 'light' ? 'dark' : 'light';
-      localStorage.setItem('theme', newTheme);
-      return newTheme;
+  // 模拟API调用
+  const fetchUser = (userId) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (userId && userId <= 3) {
+          resolve(mockUsers[userId - 1]);
+        } else {
+          reject(new Error('用户不存在'));
+        }
+      }, 1000);
     });
   };
 
-  return children({
-    theme,
-    toggleTheme,
-    isDark: theme === 'dark'
-  });
-}
+  // 实现AsyncData组件 (使用Render Props)
+  const AsyncData = ({ userId, children, render }) => {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const [error, setError] = React.useState(null);
 
-// 使用
-<ThemeProvider>
-  {({ theme, toggleTheme, isDark }) => (
-    <div className={`app ${isDark ? 'dark' : 'light'}`}>
-      <button onClick={toggleTheme}>
-        Switch to {isDark ? 'light' : 'dark'} mode
-      </button>
-      <div>Current theme: {theme}</div>
+    React.useEffect(() => {
+      if (!userId) {
+        setData(null);
+        setLoading(false);
+        setError(null);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      fetchUser(userId)
+        .then((result) => {
+          setData(result);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err);
+          setLoading(false);
+        });
+    }, [userId]);
+
+    return children ? children({ data, loading, error }) : render({ data, loading, error });
+  };
+
+  // 状态管理
+  const [selectedUserId, setSelectedUserId] = React.useState(1);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔄 异步数据Render Props</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => setSelectedUserId(null)}
+          style={{
+            padding: '8px 16px',
+            background: selectedUserId === null ? '#2196f3' : 'white',
+            color: selectedUserId === null ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          清空选择
+        </button>
+        <button
+          onClick={() => setSelectedUserId(1)}
+          style={{
+            padding: '8px 16px',
+            background: selectedUserId === 1 ? '#2196f3' : 'white',
+            color: selectedUserId === 1 ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          👤 用户 1
+        </button>
+        <button
+          onClick={() => setSelectedUserId(2)}
+          style={{
+            padding: '8px 16px',
+            background: selectedUserId === 2 ? '#2196f3' : 'white',
+            color: selectedUserId === 2 ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          👤 用户 2
+        </button>
+        <button
+          onClick={() => setSelectedUserId(3)}
+          style={{
+            padding: '8px 16px',
+            background: selectedUserId === 3 ? '#2196f3' : 'white',
+            color: selectedUserId === 3 ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          👤 用户 3
+        </button>
+        <button
+          onClick={() => setSelectedUserId(4)}
+          style={{
+            padding: '8px 16px',
+            background: selectedUserId === 4 ? '#f44336' : 'white',
+            color: selectedUserId === 4 ? 'white' : '#333',
+            border: '2px solid #f44336',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          ❌ 错误用户
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>当前选中用户ID: {selectedUserId || '无'}</h4>
+      </div>
+
+      {/* 使用AsyncData组件 - Render Props模式 */}
+      <AsyncData userId={selectedUserId}>
+        {({ data, loading, error }) => {
+          if (loading) {
+            return (
+              <div style={{
+                padding: '30px',
+                background: '#fff3e0',
+                borderRadius: '8px',
+                border: '2px solid #ff9800',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '32px', marginBottom: '15px' }}>⏳</div>
+                <p style={{ margin: 0, color: '#e65100', fontSize: '16px' }}>
+                  正在加载用户信息...
+                </p>
+              </div>
+            );
+          }
+
+          if (error) {
+            return (
+              <div style={{
+                padding: '30px',
+                background: '#ffebee',
+                borderRadius: '8px',
+                border: '2px solid #f44336',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '32px', marginBottom: '15px' }}>❌</div>
+                <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>加载失败</h4>
+                <p style={{ margin: '5px 0', color: '#666' }}>
+                  {error.message}
+                </p>
+              </div>
+            );
+          }
+
+          if (!data) {
+            return (
+              <div style={{
+                padding: '30px',
+                background: '#f5f5f5',
+                borderRadius: '8px',
+                border: '2px solid #ddd',
+                textAlign: 'center'
+              }}>
+                <p style={{ margin: 0, color: '#999' }}>
+                  请选择一个用户来查看详情
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div style={{
+              padding: '30px',
+              background: '#e8f5e9',
+              borderRadius: '8px',
+              border: '2px solid #4caf50'
+            }}>
+              <h4 style={{ margin: '0 0 20px 0', color: '#2e7d32' }}>
+                ✅ 用户信息加载成功
+              </h4>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '20px'
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: '#4caf50',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '36px'
+                }}>
+                  {data.role === 'Admin' ? '👑' :
+                   data.role === 'Moderator' ? '🛡️' : '👤'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>
+                    {data.name}
+                  </h4>
+                  <p style={{ margin: '5px 0', color: '#666' }}>
+                    📧 {data.email}
+                  </p>
+                  <p style={{ margin: '5px 0', color: '#666' }}>
+                    🏷️ 角色: {data.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }}
+      </AsyncData>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 Render Props优势</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>状态管理</strong> - AsyncData组件负责所有异步逻辑</li>
+          <li><strong>灵活渲染</strong> - 通过children函数自定义UI</li>
+          <li><strong>错误处理</strong> - 统一的错误和加载状态处理</li>
+          <li><strong>复用性强</strong> - 相同的逻辑，不同的UI展示</li>
+        </ul>
+      </div>
     </div>
-  )}
-</ThemeProvider>
-```
+  );
+}
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+### 3.4 主题系统Render Props
+
+<LiveCode
+  code={`
+function ThemeSystemDemo() {
+  // 主题Provider
+  const ThemeProvider = ({ children, initialTheme = 'light' }) => {
+    const [theme, setTheme] = React.useState(() => {
+      // 在真实环境中使用localStorage
+      return initialTheme;
+    });
+
+    const toggleTheme = () => {
+      setTheme(prev => {
+        const newTheme = prev === 'light' ? 'dark' : 'light';
+        return newTheme;
+      });
+    };
+
+    return children({
+      theme,
+      toggleTheme,
+      isDark: theme === 'dark'
+    });
+  };
+
+  // 示例应用
+  return (
+    <ThemeProvider>
+      {({ theme, toggleTheme, isDark }) => (
+        <div style={{
+          padding: '20px',
+          border: '2px solid #2196f3',
+          borderRadius: '8px',
+          background: isDark ? '#2d2d2d' : '#ffffff',
+          color: isDark ? '#ffffff' : '#333333',
+          transition: 'all 0.3s ease'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '20px',
+            paddingBottom: '15px',
+            borderBottom: \`2px solid ${isDark ? '#444' : '#e0e0e0'}\`
+          }}>
+            <h3 style={{ margin: 0, color: isDark ? '#fff' : '#1976d2' }}>
+              🎨 主题系统演示
+            </h3>
+            <button
+              onClick={toggleTheme}
+              style={{
+                padding: '10px 20px',
+                background: isDark ? '#4caf50' : '#2196f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }}
+            >
+              {isDark ? '☀️ 切换到浅色' : '🌙 切换到深色'}
+            </button>
+          </div>
+
+          <div style={{
+            background: isDark ? '#1a1a1a' : '#f5f5f5',
+            padding: '20px',
+            borderRadius: '8px',
+            marginBottom: '20px'
+          }}>
+            <h4 style={{
+              margin: '0 0 10px 0',
+              color: isDark ? '#4caf50' : '#2e7d32'
+            }}>
+              当前主题信息
+            </h4>
+            <p style={{ margin: '5px 0' }}>
+              <strong>主题模式:</strong>
+              <span style={{
+                marginLeft: '8px',
+                padding: '4px 12px',
+                background: isDark ? '#4caf50' : '#2196f3',
+                color: 'white',
+                borderRadius: '12px',
+                fontSize: '12px',
+                fontWeight: 'bold'
+              }}>
+                {theme.toUpperCase()}
+              </span>
+            </p>
+            <p style={{ margin: '5px 0' }}>
+              <strong>是否深色:</strong>
+              <span style={{ marginLeft: '8px', color: isDark ? '#4caf50' : '#f44336' }}>
+                {isDark ? '✓ 是' : '✗ 否'}
+              </span>
+            </p>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '15px'
+          }}>
+            <div style={{
+              padding: '15px',
+              background: isDark ? '#1a1a1a' : '#e3f2fd',
+              borderRadius: '6px',
+              border: \`1px solid ${isDark ? '#444' : '#2196f3'}\`
+            }}>
+              <h4 style={{
+                margin: '0 0 8px 0',
+                color: isDark ? '#4caf50' : '#1976d2'
+              }}>
+                卡片 1
+              </h4>
+              <p style={{ margin: 0, fontSize: '14px', color: isDark ? '#ccc' : '#666' }}>
+                这是一个示例卡片，展示主题效果。
+              </p>
+            </div>
+            <div style={{
+              padding: '15px',
+              background: isDark ? '#1a1a1a' : '#e8f5e9',
+              borderRadius: '6px',
+              border: \`1px solid ${isDark ? '#444' : '#4caf50'}\`
+            }}>
+              <h4 style={{
+                margin: '0 0 8px 0',
+                color: isDark ? '#4caf50' : '#2e7d32'
+              }}>
+                卡片 2
+              </h4>
+              <p style={{ margin: 0, fontSize: '14px', color: isDark ? '#ccc' : '#666' }}>
+                点击按钮可以切换主题模式。
+              </p>
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '20px',
+            padding: '15px',
+            background: isDark ? '#1a1a1a' : '#fff3e0',
+            borderRadius: '6px',
+            border: \`1px solid ${isDark ? '#444' : '#ff9800'}\`
+          }}>
+            <h4 style={{
+              margin: '0 0 10px 0',
+              color: isDark ? '#ff9800' : '#e65100'
+            }}>
+              💡 工作原理
+            </h4>
+            <ul style={{
+              margin: 0,
+              paddingLeft: '20px',
+              lineHeight: '1.8',
+              fontSize: '13px',
+              color: isDark ? '#ccc' : '#666'
+            }}>
+              <li><strong>ThemeProvider</strong> 负责管理主题状态</li>
+              <li>通过 <strong>children as function</strong> 传递主题信息</li>
+              <li>组件内部可以根据 <strong>theme</strong> 和 <strong>isDark</strong> 调整样式</li>
+              <li>实现了逻辑与UI的完全分离</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </ThemeProvider>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 3.5 表单Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function FormRenderPropsDemo() {
+  // 表单状态管理组件
+  const Form = ({ initialValues, onSubmit, children }) => {
+    const [values, setValues] = React.useState(initialValues);
+    const [touched, setTouched] = React.useState({});
+    const [errors, setErrors] = React.useState({});
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-```jsx
-// 表单状态管理
-function Form({ initialValues, onSubmit, children }) {
-  const [values, setValues] = useState(initialValues);
-  const [touched, setTouched] = useState({});
-  const [errors, setErrors] = useState({});
+    const handleChange = (name, value) => {
+      setValues(prev => ({ ...prev, [name]: value }));
+    };
 
-  const handleChange = (name, value) => {
-    setValues(prev => ({ ...prev, [name]: value }));
+    const handleBlur = (name) => {
+      setTouched(prev => ({ ...prev, [name]: true }));
+    };
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+
+      // 模拟表单验证
+      const newErrors = {};
+      if (!values.name || values.name.trim() === '') {
+        newErrors.name = '请输入姓名';
+      }
+      if (!values.email || values.email.trim() === '') {
+        newErrors.email = '请输入邮箱';
+      } else if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(values.email)) {
+        newErrors.email = '邮箱格式不正确';
+      }
+
+      setErrors(newErrors);
+
+      if (Object.keys(newErrors).length === 0) {
+        onSubmit(values);
+        setTimeout(() => {
+          setIsSubmitting(false);
+        }, 1500);
+      } else {
+        setIsSubmitting(false);
+      }
+    };
+
+    return children({
+      values,
+      touched,
+      errors,
+      handleChange,
+      handleBlur,
+      handleSubmit,
+      isSubmitting
+    });
   };
 
-  const handleBlur = (name) => {
-    setTouched(prev => ({ ...prev, [name]: true }));
-  };
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📝 表单Render Props演示</h3>
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(values);
-  };
+      <Form
+        initialValues={{ name: '', email: '', message: '' }}
+        onSubmit={(values) => {
+          alert(\`表单提交成功！\\n\${JSON.stringify(values, null, 2)}\`);
+        }}
+      >
+        {({
+          values,
+          touched,
+          errors,
+          handleChange,
+          handleBlur,
+          handleSubmit,
+          isSubmitting
+        }) => (
+          <form
+            onSubmit={handleSubmit}
+            style={{
+              maxWidth: '500px',
+              background: '#f9f9f9',
+              padding: '30px',
+              borderRadius: '8px',
+              border: '2px solid #2196f3'
+            }}
+          >
+            <h4 style={{
+              margin: '0 0 20px 0',
+              color: '#1976d2',
+              textAlign: 'center'
+            }}>
+              联系我们
+            </h4>
 
-  return children({
-    values,
-    touched,
-    errors,
-    handleChange,
-    handleBlur,
-    handleSubmit
-  });
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                姓名 *
+              </label>
+              <input
+                type="text"
+                value={values.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                onBlur={() => handleBlur('name')}
+                placeholder="请输入您的姓名"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '14px',
+                  border: touched.name && errors.name ? '2px solid #f44336' : '1px solid #ccc',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.3s'
+                }}
+              />
+              {touched.name && errors.name && (
+                <span style={{
+                  color: '#f44336',
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  display: 'block'
+                }}>
+                  {errors.name}
+                </span>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                邮箱 *
+              </label>
+              <input
+                type="email"
+                value={values.email}
+                onChange={(e) => handleChange('email', e.target.value)}
+                onBlur={() => handleBlur('email')}
+                placeholder="请输入您的邮箱"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '14px',
+                  border: touched.email && errors.email ? '2px solid #f44336' : '1px solid #ccc',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.3s'
+                }}
+              />
+              {touched.email && errors.email && (
+                <span style={{
+                  color: '#f44336',
+                  fontSize: '12px',
+                  marginTop: '4px',
+                  display: 'block'
+                }}>
+                  {errors.email}
+                </span>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                留言
+              </label>
+              <textarea
+                value={values.message}
+                onChange={(e) => handleChange('message', e.target.value)}
+                onBlur={() => handleBlur('message')}
+                placeholder="请输入您的留言（可选）"
+                rows="4"
+                style={{
+                  width: '100%',
+                  padding: '10px',
+                  fontSize: '14px',
+                  border: '1px solid #ccc',
+                  borderRadius: '4px',
+                  boxSizing: 'border-box',
+                  fontFamily: 'inherit',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              style={{
+                width: '100%',
+                padding: '12px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                background: isSubmitting ? '#ccc' : '#2196f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                transition: 'background 0.3s'
+              }}
+            >
+              {isSubmitting ? '提交中...' : '提交表单'}
+            </button>
+          </form>
+        )}
+      </Form>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 Render Props优势</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>状态管理</strong> - Form组件负责所有表单状态管理</li>
+          <li><strong>验证逻辑</strong> - 集中处理表单验证</li>
+          <li><strong>灵活渲染</strong> - 完全自定义表单UI</li>
+          <li><strong>可复用性强</strong> - 相同的逻辑，不同的表单</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-<Form
-  initialValues={{ name: '', email: '' }}
-  onSubmit={(values) => console.log(values)}
->
-  {({ values, touched, errors, handleChange, handleBlur, handleSubmit }) => (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={values.name}
-        onChange={(e) => handleChange('name', e.target.value)}
-        onBlur={() => handleBlur('name')}
-        placeholder="Name"
-      />
-      {touched.name && errors.name && <span>{errors.name}</span>}
-      <input
-        value={values.email}
-        onChange={(e) => handleChange('email', e.target.value)}
-        onBlur={() => handleBlur('email')}
-        placeholder="Email"
-      />
-      {touched.email && errors.email && <span>{errors.email}</span>}
-      <button type="submit">Submit</button>
-    </form>
-  )}
-</Form>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -442,156 +1944,975 @@ function Form({ initialValues, onSubmit, children }) {
 
 ### 4.1 组合多个Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DataComposerDemo() {
+  // 模拟数据获取
+  const fetchUsers = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve([
+        { id: 1, name: 'Alice', email: 'alice@example.com' },
+        { id: 2, name: 'Bob', email: 'bob@example.com' }
+      ]), 800);
+    });
+  };
 
-```jsx
-// 组合数据
-function DataComposer({ composers, children }) {
-  const results = composers.map(composer => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+  const fetchPosts = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve([
+        { id: 1, title: 'React学习指南', author: 'Alice' },
+        { id: 2, title: 'JavaScript进阶', author: 'Bob' }
+      ]), 1200);
+    });
+  };
 
-    useEffect(() => {
-      composer.fetcher().then(setData).catch(setError).finally(() => setLoading(false));
-    }, [composer.fetcher]);
+  const fetchComments = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve([
+        { id: 1, text: '很好的文章！', author: 'Charlie' },
+        { id: 2, text: '学到了很多', author: 'David' }
+      ]), 600);
+    });
+  };
 
-    return { data, loading, error, ...composer };
-  });
+  // 组合数据组件
+  const DataComposer = ({ composers, children }) => {
+    const [allData, setAllData] = React.useState([]);
 
-  return children({ results });
+    React.useEffect(() => {
+      let mounted = true;
+
+      const loadData = async () => {
+        const results = await Promise.all(
+          composers.map(async (composer) => {
+            try {
+              const data = await composer.fetcher();
+              return {
+                name: composer.name,
+                data,
+                loading: false,
+                error: null
+              };
+            } catch (err) {
+              return {
+                name: composer.name,
+                data: null,
+                loading: false,
+                error: err.message
+              };
+            }
+          })
+        );
+
+        if (mounted) {
+          setAllData(results);
+        }
+      };
+
+      loadData();
+
+      return () => {
+        mounted = false;
+      };
+    }, [composers]);
+
+    const dataMap = allData.reduce((acc, curr) => {
+      acc[curr.name] = curr;
+      return acc;
+    }, {});
+
+    return children({ results: dataMap, allData });
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔗 组合多个Render Props</h3>
+
+      <DataComposer
+        composers={[
+          { name: 'users', fetcher: fetchUsers },
+          { name: 'posts', fetcher: fetchPosts },
+          { name: 'comments', fetcher: fetchComments }
+        ]}
+      >
+        {({ results, allData }) => {
+          const isLoading = allData.some(item => item.loading);
+          const hasError = allData.some(item => item.error);
+
+          return (
+            <div>
+              {isLoading && (
+                <div style={{
+                  padding: '20px',
+                  background: '#fff3e0',
+                  borderRadius: '8px',
+                  border: '2px solid #ff9800',
+                  marginBottom: '20px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+                  <p style={{ margin: 0, color: '#e65100' }}>正在加载数据...</p>
+                </div>
+              )}
+
+              {hasError && (
+                <div style={{
+                  padding: '20px',
+                  background: '#ffebee',
+                  borderRadius: '8px',
+                  border: '2px solid #f44336',
+                  marginBottom: '20px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '24px', marginBottom: '10px' }}>❌</div>
+                  <p style={{ margin: 0, color: '#c62828' }}>部分数据加载失败</p>
+                </div>
+              )}
+
+              {!isLoading && !hasError && (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr 1fr',
+                  gap: '20px'
+                }}>
+                  <div style={{
+                    padding: '20px',
+                    background: '#e3f2fd',
+                    borderRadius: '8px',
+                    border: '2px solid #2196f3'
+                  }}>
+                    <h4 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>
+                      👥 用户 ({results.users?.data?.length || 0})
+                    </h4>
+                    {results.users?.data?.map(user => (
+                      <div key={user.id} style={{
+                        marginBottom: '10px',
+                        padding: '10px',
+                        background: 'white',
+                        borderRadius: '4px'
+                      }}>
+                        <div style={{ fontWeight: 'bold', color: '#333' }}>{user.name}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{
+                    padding: '20px',
+                    background: '#e8f5e9',
+                    borderRadius: '8px',
+                    border: '2px solid #4caf50'
+                  }}>
+                    <h4 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>
+                      📝 文章 ({results.posts?.data?.length || 0})
+                    </h4>
+                    {results.posts?.data?.map(post => (
+                      <div key={post.id} style={{
+                        marginBottom: '10px',
+                        padding: '10px',
+                        background: 'white',
+                        borderRadius: '4px'
+                      }}>
+                        <div style={{ fontWeight: 'bold', color: '#333' }}>{post.title}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>作者: {post.author}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{
+                    padding: '20px',
+                    background: '#f3e5f5',
+                    borderRadius: '8px',
+                    border: '2px solid #9c27b0'
+                  }}>
+                    <h4 style={{ margin: '0 0 15px 0', color: '#7b1fa2' }}>
+                      💬 评论 ({results.comments?.data?.length || 0})
+                    </h4>
+                    {results.comments?.data?.map(comment => (
+                      <div key={comment.id} style={{
+                        marginBottom: '10px',
+                        padding: '10px',
+                        background: 'white',
+                        borderRadius: '4px'
+                      }}>
+                        <div style={{ fontWeight: 'bold', color: '#333' }}>{comment.text}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>— {comment.author}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                background: '#e3f2fd',
+                borderRadius: '8px',
+                border: '2px solid #2196f3'
+              }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 组合模式优势</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+                  <li><strong>统一管理</strong> - 集中处理多个数据源</li>
+                  <li><strong>并发加载</strong> - 同时获取多个API数据</li>
+                  <li><strong>状态聚合</strong> - 统一管理加载和错误状态</li>
+                  <li><strong>灵活渲染</strong> - 完全自定义数据展示方式</li>
+                </ul>
+              </div>
+            </div>
+          );
+        }}
+      </DataComposer>
+    </div>
+  );
 }
-
-// 使用
-<DataComposer
-  composers={[
-    { name: 'users', fetcher: fetchUsers },
-    { name: 'posts', fetcher: fetchPosts },
-    { name: 'comments', fetcher: fetchComments }
-  ]}
->
-  {({ results }) => {
-    const { users, posts, comments } = results;
-    return <Dashboard users={users} posts={posts} comments={comments} />;
-  }}
-</DataComposer>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 4.2 条件Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ConditionalRenderDemo() {
+  // 条件渲染组件
+  const ConditionalRender = ({ condition, ifRender, elseRender, props }) => {
+    if (!condition) {
+      return elseRender ? elseRender(props) : null;
+    }
 
-```jsx
-// 条件渲染组件
-function ConditionalRender({ condition, ifRender, elseRender }) {
-  if (!condition) {
-    return elseRender ? elseRender() : null;
-  }
+    return ifRender ? ifRender(props) : null;
+  };
 
-  return ifRender ? ifRender() : null;
+  // 模拟用户状态
+  const [user, setUser] = React.useState({
+    name: 'Alice',
+    isAdmin: true,
+    isLoggedIn: true
+  });
+
+  const [hasPermission, setHasPermission] = React.useState(true);
+
+  // 模拟组件
+  const AdminPanel = () => (
+    <div style={{
+      padding: '20px',
+      background: '#e8f5e9',
+      border: '2px solid #4caf50',
+      borderRadius: '8px',
+      marginBottom: '20px'
+    }}>
+      <h3 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>🛡️ 管理员面板</h3>
+      <p style={{ margin: '5px 0' }}>✓ 用户管理</p>
+      <p style={{ margin: '5px 0' }}>✓ 系统设置</p>
+      <p style={{ margin: '5px 0' }}>✓ 数据分析</p>
+    </div>
+  );
+
+  const UserPanel = () => (
+    <div style={{
+      padding: '20px',
+      background: '#e3f2fd',
+      border: '2px solid #2196f3',
+      borderRadius: '8px',
+      marginBottom: '20px'
+    }}>
+      <h3 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>👤 用户面板</h3>
+      <p style={{ margin: '5px 0' }}>• 个人资料</p>
+      <p style={{ margin: '5px 0' }}>• 我的订单</p>
+      <p style={{ margin: '5px 0' }}>• 设置</p>
+    </div>
+  );
+
+  const GuestPanel = () => (
+    <div style={{
+      padding: '20px',
+      background: '#fff3e0',
+      border: '2px solid #ff9800',
+      borderRadius: '8px',
+      marginBottom: '20px'
+    }}>
+      <h3 style={{ margin: '0 0 10px 0', color: '#e65100' }}>👥 访客</h3>
+      <p style={{ margin: '5px 0' }}>请登录以访问更多功能</p>
+    </div>
+  );
+
+  const PremiumButton = (props) => (
+    <button
+      {...props}
+      style={{
+        padding: '10px 20px',
+        background: '#4caf50',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        ...props.style
+      }}
+    >
+      {props.children || 'Premium 功能'}
+    </button>
+  );
+
+  const LockedButton = () => (
+    <button
+      disabled
+      style={{
+        padding: '10px 20px',
+        background: '#ccc',
+        color: '#666',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'not-allowed',
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }}
+    >
+      🔒 没有权限
+    </button>
+  );
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔀 条件Render Props</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>模拟状态控制</h4>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setUser({ ...user, isAdmin: !user.isAdmin })}
+            style={{
+              padding: '8px 16px',
+              background: '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {user.isAdmin ? '👑 取消管理员' : '👑 设为管理员'}
+          </button>
+          <button
+            onClick={() => setUser({ ...user, isLoggedIn: !user.isLoggedIn })}
+            style={{
+              padding: '8px 16px',
+              background: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {user.isLoggedIn ? '🚪 登出' : '🔑 登录'}
+          </button>
+          <button
+            onClick={() => setHasPermission(!hasPermission)}
+            style={{
+              padding: '8px 16px',
+              background: hasPermission ? '#f44336' : '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {hasPermission ? '❌ 取消权限' : '✅ 授予权限'}
+          </button>
+        </div>
+        <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+          <strong>当前状态:</strong>
+          <span style={{ marginLeft: '8px' }}>管理员: {user.isAdmin ? '✓' : '✗'}</span>
+          <span style={{ marginLeft: '12px' }}>已登录: {user.isLoggedIn ? '✓' : '✗'}</span>
+          <span style={{ marginLeft: '12px' }}>有权限: {hasPermission ? '✓' : '✗'}</span>
+        </div>
+      </div>
+
+      <h4 style={{ margin: '0 0 10px 0' }}>示例1: 用户角色条件渲染</h4>
+      <ConditionalRender
+        condition={user.isLoggedIn}
+        ifRender={() => (
+          <ConditionalRender
+            condition={user.isAdmin}
+            ifRender={AdminPanel}
+            elseRender={UserPanel}
+          />
+        )}
+        elseRender={GuestPanel}
+      />
+
+      <h4 style={{ margin: '20px 0 10px 0' }}>示例2: 权限条件渲染</h4>
+      <div style={{
+        padding: '20px',
+        background: '#f9f9f9',
+        borderRadius: '8px',
+        border: '2px solid #2196f3',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px'
+      }}>
+        <span style={{ fontWeight: 'bold' }}>操作按钮:</span>
+        <ConditionalRender
+          condition={hasPermission}
+          ifRender={() => <PremiumButton>🚀 高级功能</PremiumButton>}
+          elseRender={LockedButton}
+        />
+        <ConditionalRender
+          condition={hasPermission}
+          ifRender={(props) => <PremiumButton {...props}>✨ 特殊操作</PremiumButton>}
+          elseRender={LockedButton}
+        />
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 条件渲染优势</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>灵活条件</strong> - 支持复杂条件逻辑</li>
+          <li><strong>组件复用</strong> - 相同的条件组件，不同的渲染内容</li>
+          <li><strong>支持Props</strong> - 可以将props传递给渲染函数</li>
+          <li><strong>可组合性</strong> - 支持嵌套条件渲染</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-<ConditionalRender
-  condition={user.isAdmin}
-  ifRender={() => <AdminPanel />}
-  elseRender={() => <UserPanel />}
+`}
+  scope={{ React }}
 />
-
-// 带props的条件渲染
-<ConditionalRender
-  condition={hasPermission}
-  ifRender={(props) => <Button {...props} />}
-  elseRender={() => <button disabled>No Permission</button>}
-/>
-```
-
-</CodeBlock>
 
 ### 4.3 动态Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DynamicRendererDemo() {
+  // 动态渲染组件
+  const DynamicRenderer = ({ type, props }) => {
+    const renderers = {
+      'user-card': ({ user }) => (
+        <div style={{
+          padding: '20px',
+          background: '#e3f2fd',
+          border: '2px solid #2196f3',
+          borderRadius: '8px',
+          maxWidth: '300px'
+        }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: '#2196f3',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            margin: '0 auto 15px'
+          }}>
+            {user.name.charAt(0)}
+          </div>
+          <h4 style={{ margin: '0 0 5px 0', textAlign: 'center', color: '#1976d2' }}>
+            {user.name}
+          </h4>
+          <p style={{ margin: '0 0 5px 0', textAlign: 'center', color: '#666', fontSize: '14px' }}>
+            📧 {user.email}
+          </p>
+          <p style={{ margin: '0', textAlign: 'center', color: '#999', fontSize: '12px' }}>
+            {user.role}
+          </p>
+        </div>
+      ),
+      'product-card': ({ product }) => (
+        <div style={{
+          padding: '20px',
+          background: '#e8f5e9',
+          border: '2px solid #4caf50',
+          borderRadius: '8px',
+          maxWidth: '300px'
+        }}>
+          <div style={{
+            width: '100%',
+            height: '150px',
+            background: '#c8e6c9',
+            borderRadius: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '48px',
+            marginBottom: '15px'
+          }}>
+            📦
+          </div>
+          <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>
+            {product.name}
+          </h4>
+          <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>
+            {product.description}
+          </p>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '10px'
+          }}>
+            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#4caf50' }}>
+              ¥{product.price}
+            </span>
+            <span style={{
+              padding: '4px 8px',
+              background: '#4caf50',
+              color: 'white',
+              borderRadius: '4px',
+              fontSize: '12px'
+            }}>
+              {product.stock > 0 ? '✓ 有库存' : '✗ 缺货'}
+            </span>
+          </div>
+        </div>
+      ),
+      'article-card': ({ article }) => (
+        <div style={{
+          padding: '20px',
+          background: '#f3e5f5',
+          border: '2px solid #9c27b0',
+          borderRadius: '8px',
+          maxWidth: '300px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#7b1fa2' }}>
+            📰 {article.title}
+          </h4>
+          <p style={{
+            margin: '0 0 10px 0',
+            color: '#666',
+            fontSize: '14px',
+            lineHeight: '1.5'
+          }}>
+            {article.excerpt}
+          </p>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '15px',
+            paddingTop: '10px',
+            borderTop: '1px solid #ce93d8',
+            fontSize: '12px',
+            color: '#999'
+          }}>
+            <span>👤 {article.author}</span>
+            <span>📅 {article.date}</span>
+          </div>
+          <div style={{ marginTop: '10px' }}>
+            {article.tags.map(tag => (
+              <span
+                key={tag}
+                style={{
+                  display: 'inline-block',
+                  padding: '2px 8px',
+                  background: '#9c27b0',
+                  color: 'white',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  marginRight: '4px'
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    };
 
-```jsx
-// 动态渲染组件
-function DynamicRenderer({ type, props }) {
-  const renderers = {
-    'user-card': ({ user }) => <UserCard user={user} />,
-    'product-card': ({ product }) => <ProductCard product={product} />,
-    'article-card': ({ article }) => <ArticleCard article={article} />
+    const renderComponent = renderers[type] || (() => (
+      <div style={{
+        padding: '20px',
+        background: '#ffebee',
+        border: '2px solid #f44336',
+        borderRadius: '8px',
+        color: '#c62828'
+      }}>
+        ❌ 未知类型: {type}
+      </div>
+    ));
+
+    return renderComponent(props);
   };
 
-  const renderComponent = renderers[type] || (() => <div>Unknown type</div>);
-  return renderComponent(props);
+  // 模拟数据
+  const [currentType, setCurrentType] = React.useState('user-card');
+  const [userData] = React.useState({
+    name: 'Alice Johnson',
+    email: 'alice@example.com',
+    role: 'Administrator'
+  });
+  const [productData] = React.useState({
+    name: 'React学习指南',
+    description: '深入理解React的完整教程',
+    price: 99.99,
+    stock: 50
+  });
+  const [articleData] = React.useState({
+    title: 'React Hooks完全指南',
+    excerpt: '探索React Hooks的强大功能，学习如何在自己的项目中使用它们...',
+    author: '张三',
+    date: '2024-01-15',
+    tags: ['React', 'Hooks', '前端开发']
+  });
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>⚡ 动态Render Props</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>选择卡片类型</h4>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setCurrentType('user-card')}
+            style={{
+              padding: '8px 16px',
+              background: currentType === 'user-card' ? '#2196f3' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            👤 用户卡片
+          </button>
+          <button
+            onClick={() => setCurrentType('product-card')}
+            style={{
+              padding: '8px 16px',
+              background: currentType === 'product-card' ? '#2196f3' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📦 产品卡片
+          </button>
+          <button
+            onClick={() => setCurrentType('article-card')}
+            style={{
+              padding: '8px 16px',
+              background: currentType === 'article-card' ? '#2196f3' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            📰 文章卡片
+          </button>
+          <button
+            onClick={() => setCurrentType('invalid-type')}
+            style={{
+              padding: '8px 16px',
+              background: currentType === 'invalid-type' ? '#f44336' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            ❌ 错误类型
+          </button>
+        </div>
+        <div style={{ marginTop: '10px', fontSize: '14px', color: '#666' }}>
+          <strong>当前类型:</strong>
+          <span style={{ marginLeft: '8px', fontFamily: 'monospace' }}>
+            {currentType}
+          </span>
+        </div>
+      </div>
+
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        marginBottom: '20px'
+      }}>
+        <DynamicRenderer
+          type={currentType}
+          props={{
+            user: userData,
+            product: productData,
+            article: articleData
+          }}
+        />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 动态渲染优势</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>类型映射</strong> - 根据type属性动态选择渲染函数</li>
+          <li><strong>灵活扩展</strong> - 可以轻松添加新的组件类型</li>
+          <li><strong>统一接口</strong> - 相同的API，不同的渲染</li>
+          <li><strong>错误处理</strong> - 提供默认的fallback渲染</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-<DynamicRenderer
-  type="user-card"
-  props={{ user: currentUser }}
+`}
+  scope={{ React }}
 />
-```
-
-</CodeBlock>
 
 ### 4.4 渲染策略模式
 
-<CodeBlock>
+<LiveCode
+  code={`
+function RenderStrategyDemo() {
+  // 模拟数据
+  const sampleData = [
+    { id: 1, name: '产品 A', price: 99, category: '电子产品' },
+    { id: 2, name: '产品 B', price: 199, category: '服装' },
+    { id: 3, name: '产品 C', price: 299, category: '电子产品' },
+    { id: 4, name: '产品 D', price: 399, category: '家居' },
+    { id: 5, name: '产品 E', price: 499, category: '电子产品' },
+    { id: 6, name: '产品 F', price: 599, category: '服装' }
+  ];
 
-```jsx
-// 渲染策略
-class RenderStrategyProvider extends React.Component {
-  state = { currentStrategy: 'default' };
+  // 渲染策略Provider
+  const RenderStrategyProvider = ({ data, children }) => {
+    const [currentStrategy, setCurrentStrategy] = React.useState('grid');
 
-  strategies = {
-    default: (data) => <DefaultView data={data} />,
-    grid: (data) => <GridView data={data} />,
-    list: (data) => <ListView data={data} />,
-    compact: (data) => <CompactView data={data} />
-  };
+    const strategies = {
+      grid: (data) => (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: '20px'
+        }}>
+          {data.map(item => (
+            <div key={item.id} style={{
+              padding: '15px',
+              background: '#e3f2fd',
+              border: '2px solid #2196f3',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '32px', marginBottom: '10px' }}>📦</div>
+              <h4 style={{ margin: '0 0 5px 0', color: '#1976d2' }}>{item.name}</h4>
+              <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>{item.category}</p>
+              <p style={{ margin: '5px 0', fontSize: '18px', fontWeight: 'bold', color: '#2196f3' }}>
+                ¥{item.price}
+              </p>
+            </div>
+          ))}
+        </div>
+      ),
+      list: (data) => (
+        <div>
+          {data.map(item => (
+            <div key={item.id} style={{
+              padding: '15px',
+              marginBottom: '10px',
+              background: '#e8f5e9',
+              border: '2px solid #4caf50',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '20px'
+            }}>
+              <div style={{ fontSize: '24px' }}>📦</div>
+              <div style={{ flex: 1 }}>
+                <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>{item.name}</h4>
+                <p style={{ margin: '0', fontSize: '14px', color: '#666' }}>{item.category}</p>
+              </div>
+              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#4caf50' }}>
+                ¥{item.price}
+              </div>
+            </div>
+          ))}
+        </div>
+      ),
+      compact: (data) => (
+        <div>
+          {data.map(item => (
+            <div key={item.id} style={{
+              padding: '8px 12px',
+              marginBottom: '5px',
+              background: '#fff3e0',
+              border: '1px solid #ff9800',
+              borderRadius: '4px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '14px'
+            }}>
+              <span style={{ color: '#e65100' }}>{item.name}</span>
+              <span style={{ color: '#666' }}>¥{item.price}</span>
+            </div>
+          ))}
+        </div>
+      ),
+      card: (data) => (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '15px'
+        }}>
+          {data.map(item => (
+            <div key={item.id} style={{
+              padding: '20px',
+              background: '#f3e5f5',
+              border: '2px solid #9c27b0',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '20px'
+            }}>
+              <div style={{
+                width: '60px',
+                height: '60px',
+                background: '#9c27b0',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '30px',
+                borderRadius: '8px'
+              }}>
+                📦
+              </div>
+              <div style={{ flex: 1 }}>
+                <h4 style={{ margin: '0 0 5px 0', color: '#7b1fa2' }}>{item.name}</h4>
+                <p style={{ margin: '0', fontSize: '14px', color: '#666' }}>{item.category}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#9c27b0' }}>
+                  ¥{item.price}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    };
 
-  setStrategy = (strategy) => {
-    if (this.strategies[strategy]) {
-      this.setState({ currentStrategy: strategy });
-    }
-  };
+    const setStrategy = (strategy) => {
+      if (strategies[strategy]) {
+        setCurrentStrategy(strategy);
+      }
+    };
 
-  render() {
-    const { data, children } = this.props;
-    const { currentStrategy } = this.state;
-
-    const strategyRenderer = this.strategies[currentStrategy];
+    const renderStrategy = strategies[currentStrategy];
 
     return children({
       currentStrategy,
-      setStrategy: this.setStrategy,
-      render: strategyRenderer,
+      setStrategy,
+      render: renderStrategy,
       data
     });
-  }
-}
+  };
 
-// 使用
-<RenderStrategyProvider data={items}>
-  {({ currentStrategy, setStrategy, render, data }) => (
-    <div>
-      <div className="strategy-buttons">
-        <button onClick={() => setStrategy('default')}>Default</button>
-        <button onClick={() => setStrategy('grid')}>Grid</button>
-        <button onClick={() => setStrategy('list')}>List</button>
-        <button onClick={() => setStrategy('compact')}>Compact</button>
-      </div>
-      <div className={`view ${currentStrategy}`}>
-        {render(data)}
-      </div>
+  const strategyButtons = [
+    { key: 'grid', label: '网格视图', icon: '🟦' },
+    { key: 'list', label: '列表视图', icon: '📋' },
+    { key: 'card', label: '卡片视图', icon: '🃏' },
+    { key: 'compact', label: '紧凑视图', icon: '📄' }
+  ];
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎨 渲染策略模式</h3>
+
+      <RenderStrategyProvider data={sampleData}>
+        {({ currentStrategy, setStrategy, render, data }) => (
+          <div>
+            <div style={{
+              marginBottom: '20px',
+              padding: '15px',
+              background: '#f5f5f5',
+              borderRadius: '8px',
+              display: 'flex',
+              gap: '10px',
+              flexWrap: 'wrap',
+              alignItems: 'center'
+            }}>
+              <span style={{ fontWeight: 'bold', marginRight: '10px' }}>选择视图模式:</span>
+              {strategyButtons.map(btn => (
+                <button
+                  key={btn.key}
+                  onClick={() => setStrategy(btn.key)}
+                  style={{
+                    padding: '8px 16px',
+                    background: currentStrategy === btn.key ? '#2196f3' : 'white',
+                    color: currentStrategy === btn.key ? 'white' : '#333',
+                    border: '2px solid #2196f3',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: currentStrategy === btn.key ? 'bold' : 'normal',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span style={{ marginRight: '5px' }}>{btn.icon}</span>
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{
+              padding: '20px',
+              background: '#f9f9f9',
+              borderRadius: '8px',
+              border: '2px solid #2196f3',
+              minHeight: '300px'
+            }}>
+              {render(data)}
+            </div>
+
+            <div style={{
+              marginTop: '20px',
+              padding: '15px',
+              background: '#e3f2fd',
+              borderRadius: '8px',
+              border: '2px solid #2196f3'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 策略模式优势</h4>
+              <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+                <li><strong>策略切换</strong> - 运行时动态切换渲染策略</li>
+                <li><strong>策略封装</strong> - 每种策略独立实现和测试</li>
+                <li><strong>易扩展</strong> - 添加新策略无需修改现有代码</li>
+                <li><strong>统一接口</strong> - 相同的API，不同的渲染实现</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </RenderStrategyProvider>
     </div>
-  )}
-</RenderStrategyProvider>
-```
-
-</CodeBlock>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -599,95 +2920,682 @@ class RenderStrategyProvider extends React.Component {
 
 ### 5.1 模式对比
 
-<Compare>
+<LiveCode
+  code={`
+function PatternComparisonDemo() {
+  const [selectedPattern, setSelectedPattern] = React.useState('render-props');
 
-```jsx
-// HOC - 包装组件
-const EnhancedComponent = withData(WrappedComponent);
-
-// Render Props - 传递渲染函数
+  const patterns = {
+    'hoc': {
+      name: 'HOC (高阶组件)',
+      code: \`// HOC - 包装组件
+const EnhancedComponent = withData(WrappedComponent);\`,
+      pros: ['语法简单', '易于理解', '广泛使用'],
+      cons: ['额外组件层级', '命名冲突风险', '调试困难'],
+      color: '#2196f3'
+    },
+    'render-props': {
+      name: 'Render Props',
+      code: \`// Render Props - 传递渲染函数
 <DataProvider
   render={(data) => <WrappedComponent data={data} />}
-/>
-
-// Hooks - 自定义Hook
+/>\`,
+      pros: ['清晰数据流', '灵活控制', '无层级增加'],
+      cons: ['嵌套地狱', '学习曲线', '类型支持弱'],
+      color: '#4caf50'
+    },
+    'hooks': {
+      name: 'Hooks (推荐)',
+      code: \`// 自定义Hook
 function useData() {
   const [data, setData] = useState(null);
-  // ...
   return data;
 }
 
 function WrappedComponent() {
   const data = useData();
-  // 使用data
+}\`,
+      pros: ['最佳性能', '灵活组合', '类型友好', '易测试'],
+      cons: ['规则限制', '学习曲线', '依赖依赖数组'],
+      color: '#9c27b0'
+    }
+  };
+
+  const currentPattern = patterns[selectedPattern];
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>🔄 三种模式对比</h3>
+
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setSelectedPattern('hoc')}
+          style={{
+            padding: '10px 20px',
+            background: selectedPattern === 'hoc' ? '#2196f3' : 'white',
+            color: selectedPattern === 'hoc' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          HOC
+        </button>
+        <button
+          onClick={() => setSelectedPattern('render-props')}
+          style={{
+            padding: '10px 20px',
+            background: selectedPattern === 'render-props' ? '#4caf50' : 'white',
+            color: selectedPattern === 'render-props' ? 'white' : '#333',
+            border: '2px solid #4caf50',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          Render Props
+        </button>
+        <button
+          onClick={() => setSelectedPattern('hooks')}
+          style={{
+            padding: '10px 20px',
+            background: selectedPattern === 'hooks' ? '#9c27b0' : 'white',
+            color: selectedPattern === 'hooks' ? 'white' : '#333',
+            border: '2px solid #9c27b0',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          Hooks
+        </button>
+      </div>
+
+      <div style={{
+        background: '#f8f9fa',
+        borderRadius: '8px',
+        border: \`2px solid \${currentPattern.color}\`,
+        padding: '20px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: currentPattern.color }}>
+          {currentPattern.name}
+        </h4>
+        <pre style={{
+          background: '#2d2d2d',
+          color: '#f8f8f2',
+          padding: '15px',
+          borderRadius: '6px',
+          overflow: 'auto',
+          fontSize: '13px',
+          lineHeight: '1.5'
+        }}>
+          <code>{currentPattern.code}</code>
+        </pre>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{
+          padding: '15px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          border: '2px solid #4caf50'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>
+            ✅ 优势
+          </h4>
+          <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8' }}>
+            {currentPattern.pros.map((pro, index) => (
+              <li key={index} style={{ color: '#333', fontSize: '14px' }}>{pro}</li>
+            ))}
+          </ul>
+        </div>
+
+        <div style={{
+          padding: '15px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>
+            ❌ 劣势
+          </h4>
+          <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8' }}>
+            {currentPattern.cons.map((con, index) => (
+              <li key={index} style={{ color: '#333', fontSize: '14px' }}>{con}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 选择建议</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>新项目</strong> - 优先使用 Hooks</li>
+          <li><strong>库开发</strong> - HOC 仍然有价值（如 Redux connect）</li>
+          <li><strong>Render Props</strong> - 适合状态提升和条件渲染</li>
+          <li><strong>旧项目迁移</strong> - 逐步从 HOC/Render Props 迁移到 Hooks</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 差异分析
-1. 语法复杂度: HOC < Render Props < Hooks
-2. 学习曲线: HOC < Render Props < Hooks
-3. 调试体验: HOC < Render Props < Hooks
-4. 性能: Hooks ≈ Render Props < HOC
-5. 灵活性: Hooks > Render Props > HOC
-```
-
-</Compare>
+`}
+  scope={{ React }}
+/>
 
 ### 5.2 选择指南
 
-<CodeBlock>
+<LiveCode
+  code={`
+function SelectionGuideDemo() {
+  const [useCase, setUseCase] = React.useState('new-project');
 
-```jsx
-// 选择Render Props的场景
-1. 状态提升到父组件
-2. 多个组件共享状态逻辑
-3. 需要控制渲染逻辑
-4. children as function模式
-5. 不支持Hooks的旧版React
+  const useCases = {
+    'new-project': {
+      title: '新项目开发',
+      recommended: 'hooks',
+      description: '现代React项目建议优先使用Hooks',
+      details: {
+        hooks: {
+          title: '✅ 推荐: Hooks',
+          reasons: [
+            '现代React标准写法',
+            '更好的TypeScript支持',
+            '更简洁的代码',
+            '更容易测试和复用',
+            '更好的开发体验'
+          ],
+          color: '#4caf50'
+        },
+        'render-props': {
+          title: '⚠️ 可选: Render Props',
+          reasons: [
+            '需要状态提升',
+            '复杂的条件渲染',
+            '多个组件共享状态'
+          ],
+          color: '#ff9800'
+        },
+        hoc: {
+          title: '❌ 不推荐: HOC',
+          reasons: [
+            '代码层级增加',
+            '调试困难',
+            '逐渐被Hooks替代'
+          ],
+          color: '#f44336'
+        }
+      }
+    },
+    'library': {
+      title: '库开发',
+      recommended: 'hoc',
+      description: '开发可复用库时HOC仍有价值',
+      details: {
+        hoc: {
+          title: '✅ 推荐: HOC',
+          reasons: [
+            'Redux connect的成功实践',
+            '成熟的API设计',
+            '易于理解和使用',
+            '广泛的社区支持',
+            '向后兼容性好'
+          ],
+          color: '#4caf50'
+        },
+        hooks: {
+          title: '⚠️ 复杂: Hooks',
+          reasons: [
+            '需要用户学习Hook模式',
+            '自定义Hook设计复杂',
+            '类型推断挑战'
+          ],
+          color: '#ff9800'
+        },
+        'render-props': {
+          title: '⚠️ 可选: Render Props',
+          reasons: [
+            '需要理解函数式思维',
+            '嵌套可能过深'
+          ],
+          color: '#ff9800'
+        }
+      }
+    },
+    'legacy': {
+      title: '旧项目维护',
+      recommended: 'render-props',
+      description: '维护或升级旧项目时的选择',
+      details: {
+        'render-props': {
+          title: '✅ 推荐: Render Props',
+          reasons: [
+            '从类组件迁移的中间选择',
+            '比HOC更灵活',
+            '易于理解',
+            '迁移成本较低'
+          ],
+          color: '#4caf50'
+        },
+        hoc: {
+          title: '⚠️ 维持: HOC',
+          reasons: [
+            '已有大量HOC代码',
+            '逐步迁移策略',
+            '保持一致性'
+          ],
+          color: '#ff9800'
+        },
+        hooks: {
+          title: '🎯 目标: Hooks',
+          reasons: [
+            '长期发展方向',
+            '最终迁移目标',
+            '现代化代码库'
+          ],
+          color: '#2196f3'
+        }
+      }
+    },
+    'complex-state': {
+      title: '复杂状态管理',
+      recommended: 'hooks',
+      description: '处理复杂状态逻辑时的选择',
+      details: {
+        hooks: {
+          title: '✅ 推荐: Hooks',
+          reasons: [
+            'useReducer处理复杂状态',
+            'useContext共享状态',
+            '自定义Hook封装逻辑',
+            '更好的性能控制'
+          ],
+          color: '#4caf50'
+        },
+        'render-props': {
+          title: '⚠️ 可选: Render Props',
+          reasons: [
+            '状态提升到父组件',
+            '需要条件渲染',
+            '多个组件共享状态'
+          ],
+          color: '#ff9800'
+        },
+        hoc: {
+          title: '❌ 不推荐: HOC',
+          reasons: [
+            'HOC状态管理复杂',
+            'prop代理容易出错',
+            '调试困难'
+          ],
+          color: '#f44336'
+        }
+      }
+    }
+  };
 
-// 选择Hooks的场景 (推荐)
-1. 新的项目
-2. 逻辑复用简单
-3. 不需要额外组件层级
-4. 更好的TypeScript支持
-5. 更好的开发体验
+  const currentUseCase = useCases[useCase];
+  const recommendedPattern = currentUseCase.details[currentUseCase.recommended];
 
-// 选择HOC的场景
-1. 库开发 (如Redux connect)
-2. 需要继承React.Component方法
-3. 样式增强
-4. 已有大量HOC代码
-```
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>📋 模式选择指南</h3>
 
-</CodeBlock>
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ margin: '0 0 15px 0', color: '#666', fontSize: '14px' }}>
+          {currentUseCase.description}
+        </p>
+
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {Object.entries(useCases).map(([key, uc]) => (
+            <button
+              key={key}
+              onClick={() => setUseCase(key)}
+              style={{
+                padding: '10px 20px',
+                background: useCase === key ? '#2196f3' : 'white',
+                color: useCase === key ? 'white' : '#333',
+                border: '2px solid #2196f3',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                transition: 'all 0.2s'
+              }}
+            >
+              {uc.title}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        background: '#f8f9fa',
+        borderRadius: '8px',
+        padding: '20px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#333' }}>
+          📌 场景: {currentUseCase.title}
+        </h4>
+
+        {Object.entries(currentUseCase.details).map(([pattern, info]) => {
+          const isRecommended = pattern === currentUseCase.recommended;
+          return (
+            <div
+              key={pattern}
+              style={{
+                marginBottom: '15px',
+                padding: '15px',
+                background: 'white',
+                borderRadius: '6px',
+                border: \`2px solid \${info.color}\`,
+                opacity: isRecommended ? 1 : 0.85
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                <h5 style={{ margin: '0', color: info.color, flex: 1 }}>
+                  {info.title}
+                </h5>
+                {isRecommended && (
+                  <span style={{
+                    padding: '4px 12px',
+                    background: '#4caf50',
+                    color: 'white',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: 'bold'
+                  }}>
+                    推荐
+                  </span>
+                )}
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8' }}>
+                {info.reasons.map((reason, index) => (
+                  <li key={index} style={{ fontSize: '14px', color: '#666' }}>
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 决策原则</h4>
+        <ol style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>新项目</strong> - 优先使用 Hooks，这是 React 的未来</li>
+          <li><strong>库开发</strong> - 继续使用 HOC，因为它们已被广泛接受</li>
+          <li><strong>旧项目</strong> - 逐步从 HOC 迁移到 Hooks</li>
+          <li><strong>简单逻辑</strong> - 使用自定义 Hook</li>
+          <li><strong>复杂逻辑</strong> - 考虑 Render Props 或 HOC</li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 5.3 性能对比
 
-<CodeBlock>
+<LiveCode
+  code={`
+function PerformanceComparisonDemo() {
+  const [pattern, setPattern] = React.useState('hoc');
+  const [updateCount, setUpdateCount] = React.useState(0);
 
-```jsx
-// HOC - 可能导致重复渲染
+  const patterns = {
+    hoc: {
+      name: 'HOC (高阶组件)',
+      implementation: \`
+// HOC实现
 class withData extends React.Component {
   render() {
-    return <WrappedComponent {...this.props} />;
+    return <WrappedComponent {...this.props} {...this.state} />;
   }
 }
 
-// Render Props - 更好的控制
-<DataProvider
-  render={(data) => {
-    // 可以精确控制哪些组件更新
-    return <MyComponent data={data} />;
-  }}
-/>
-
-// Hooks - 最佳性能
-function MyComponent() {
-  const data = useData(); // 只在需要时更新
-  // ...
+class WrappedComponent extends React.Component {
+  render() {
+    return <div>Data: {this.props.data}</div>;
+  }
 }
-```
+\`,
+      color: '#f44336',
+      performance: '⚠️ 中等',
+      issues: [
+        '每次父组件更新，HOC都会重新渲染',
+        '所有子组件都会收到新props',
+        'React.memo需要额外配置',
+        '调试困难，难以追踪更新来源'
+      ],
+      score: 2
+    },
+    'render-props': {
+      name: 'Render Props',
+      implementation: \`
+// Render Props实现
+function DataProvider({ render }) {
+  return render(data);
+}
 
-</CodeBlock>
+function MyComponent() {
+  return (
+    <DataProvider
+      render={({ data }) => <div>Data: {data}</div>}
+    />
+  );
+}
+\`,
+      color: '#ff9800',
+      performance: '✅ 良好',
+      issues: [
+        '可以精确控制渲染',
+        '只在依赖变化时更新',
+        '避免不必要的重渲染',
+        'render函数可以优化'
+      ],
+      score: 3
+    },
+    hooks: {
+      name: 'Hooks (推荐)',
+      implementation: \`
+// Hooks实现
+function useData() {
+  const [data, setData] = useState(null);
+  return data;
+}
+
+function MyComponent() {
+  const data = useData();
+  return <div>Data: {data}</div>;
+}
+\`,
+      color: '#4caf50',
+      performance: '✅ 最佳',
+      issues: [
+        '精确的依赖追踪',
+        '只在依赖变化时更新',
+        'useMemo和useCallback优化',
+        '最小化重渲染范围',
+        'React compiler自动优化'
+      ],
+      score: 5
+    }
+  };
+
+  const currentPattern = patterns[pattern];
+  const [renderLog, setRenderLog] = React.useState([]);
+
+  const triggerUpdate = () => {
+    const newLogEntry = {
+      id: Date.now(),
+      pattern: currentPattern.name,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    setRenderLog([newLogEntry, ...renderLog.slice(0, 4)]);
+    setUpdateCount(count => count + 1);
+  };
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>⚡ 性能对比分析</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px' }}>
+          {Object.entries(patterns).map(([key, p]) => (
+            <button
+              key={key}
+              onClick={() => {
+                setPattern(key);
+                setRenderLog([]);
+                setUpdateCount(0);
+              }}
+              style={{
+                padding: '10px 20px',
+                background: pattern === key ? p.color : 'white',
+                color: pattern === key ? 'white' : '#333',
+                border: \`2px solid \${p.color}\`,
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                transition: 'all 0.2s'
+              }}
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={triggerUpdate}
+            style={{
+              padding: '10px 20px',
+              background: '#2196f3',
+              color: 'white',
+              border: '2px solid #2196f3',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+          >
+            触发更新 ({updateCount})
+          </button>
+          <span style={{ color: '#666', fontSize: '14px' }}>
+            点击查看渲染行为
+          </span>
+        </div>
+      </div>
+
+      <div style={{
+        background: '#f8f9fa',
+        borderRadius: '8px',
+        border: \`2px solid \${currentPattern.color}\`,
+        padding: '20px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: currentPattern.color }}>
+          {currentPattern.name} - 性能等级: {currentPattern.performance}
+        </h4>
+        <pre style={{
+          background: '#2d2d2d',
+          color: '#f8f8f2',
+          padding: '15px',
+          borderRadius: '6px',
+          overflow: 'auto',
+          fontSize: '12px',
+          lineHeight: '1.5'
+        }}>
+          <code>{currentPattern.implementation}</code>
+        </pre>
+      </div>
+
+      {renderLog.length > 0 && (
+        <div style={{
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800',
+          padding: '15px',
+          marginBottom: '20px'
+        }}>
+          <h5 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+            📊 最近渲染记录
+          </h5>
+          {renderLog.map((entry, index) => (
+            <div key={entry.id} style={{
+              padding: '8px',
+              background: index === 0 ? '#ffe0b2' : '#ffe0b280',
+              borderRadius: '4px',
+              marginBottom: '5px',
+              fontSize: '13px'
+            }}>
+              <strong>{entry.timestamp}</strong> - {entry.pattern} 重新渲染
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{
+        padding: '15px',
+        background: '#ffebee',
+        borderRadius: '8px',
+        border: '2px solid #f44336'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>
+          ⚠️ 性能问题
+        </h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8' }}>
+          {currentPattern.issues.map((issue, index) => (
+            <li key={index} style={{ fontSize: '14px', color: '#333' }}>
+              {issue}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 性能优化建议</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>HOC</strong> - 使用React.memo包装，谨慎传递props</li>
+          <li><strong>Render Props</strong> - 使用useCallback优化render函数</li>
+          <li><strong>Hooks</strong> - 合理使用useMemo和useCallback</li>
+          <li><strong>通用</strong> - 避免在render中创建新对象或函数</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -695,195 +3603,1347 @@ function MyComponent() {
 
 ### 6.1 用户认证Render Props
 
-<CodeBlock>
-
-```jsx
-// 认证Provider
-function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth().then(setUser).finally(() => setLoading(false));
-  }, []);
-
-  const login = (credentials) => {
-    return loginUser(credentials).then(setUser);
+<LiveCode
+  code={`
+function AuthProviderDemo() {
+  // 模拟API调用
+  const mockCheckAuth = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const savedUser = localStorage.getItem('mockUser');
+        resolve(savedUser ? JSON.parse(savedUser) : null);
+      }, 800);
+    });
   };
 
-  const logout = () => {
-    return logoutUser().then(() => setUser(null));
+  const mockLoginUser = (credentials) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (credentials.username === 'admin' && credentials.password === 'password') {
+          const user = { id: 1, username: 'admin', email: 'admin@example.com' };
+          localStorage.setItem('mockUser', JSON.stringify(user));
+          resolve(user);
+        } else {
+          reject(new Error('Invalid credentials'));
+        }
+      }, 1000);
+    });
   };
 
-  return children({
-    user,
-    loading,
-    isAuthenticated: !!user,
-    login,
-    logout
-  });
-}
+  const mockLogoutUser = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        localStorage.removeItem('mockUser');
+        resolve();
+      }, 500);
+    });
+  };
 
-// 使用
-<AuthProvider>
-  {({ user, loading, isAuthenticated, login, logout }) => {
-    if (loading) return <div>Loading...</div>;
+  // AuthProvider实现
+  const AuthProvider = ({ children }) => {
+    const [user, setUser] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      mockCheckAuth().then((userData) => {
+        setUser(userData);
+        setLoading(false);
+      });
+    }, []);
+
+    const login = (credentials) => {
+      return mockLoginUser(credentials).then(setUser);
+    };
+
+    const logout = () => {
+      return mockLogoutUser().then(() => setUser(null));
+    };
+
+    return children({
+      user,
+      loading,
+      isAuthenticated: !!user,
+      login,
+      logout
+    });
+  };
+
+  // 登录表单组件
+  const LoginForm = ({ onLogin }) => {
+    const [username, setUsername] = React.useState('');
+    const [password, setPassword] = React.useState('');
+    const [error, setError] = React.useState('');
+    const [isLogging, setIsLogging] = React.useState(false);
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      setIsLogging(true);
+      setError('');
+
+      try {
+        await onLogin({ username, password });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLogging(false);
+      }
+    };
 
     return (
-      <div>
-        {isAuthenticated ? (
-          <Dashboard user={user} onLogout={logout} />
-        ) : (
-          <LoginForm onLogin={login} />
-        )}
+      <div style={{
+        padding: '30px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3',
+        maxWidth: '400px',
+        margin: '0 auto'
+      }}>
+        <h3 style={{ margin: '0 0 20px 0', color: '#1976d2', textAlign: 'center' }}>
+          🔐 用户登录
+        </h3>
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              用户名
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="输入用户名"
+              disabled={isLogging}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: '2px solid #2196f3',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              密码
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="输入密码"
+              disabled={isLogging}
+              style={{
+                width: '100%',
+                padding: '10px',
+                borderRadius: '4px',
+                border: '2px solid #2196f3',
+                fontSize: '14px',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
+
+          {error && (
+            <div style={{
+              padding: '10px',
+              background: '#ffebee',
+              border: '2px solid #f44336',
+              borderRadius: '4px',
+              color: '#c62828',
+              marginBottom: '15px',
+              textAlign: 'center'
+            }}>
+              ❌ {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLogging}
+            style={{
+              width: '100%',
+              padding: '12px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              background: isLogging ? '#ccc' : '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isLogging ? 'not-allowed' : 'pointer',
+              transition: 'background 0.3s'
+            }}
+          >
+            {isLogging ? '登录中...' : '登录'}
+          </button>
+
+          <div style={{
+            marginTop: '15px',
+            padding: '10px',
+            background: '#fff',
+            borderRadius: '4px',
+            fontSize: '12px',
+            color: '#666'
+          }}>
+            <strong>测试账号：</strong> admin / password
+          </div>
+        </form>
       </div>
     );
-  }}
-</AuthProvider>
-```
+  };
 
-</CodeBlock>
+  // 仪表盘组件
+  const Dashboard = ({ user, onLogout }) => {
+    return (
+      <div style={{
+        padding: '30px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50',
+        maxWidth: '500px',
+        margin: '0 auto'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          marginBottom: '20px',
+          paddingBottom: '20px',
+          borderBottom: '2px solid #4caf50'
+        }}>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            background: '#4caf50',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '36px',
+            marginRight: '20px'
+          }}>
+            👤
+          </div>
+          <div>
+            <h3 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>
+              {user.username}
+            </h3>
+            <p style={{ margin: '0', color: '#666' }}>{user.email}</p>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>仪表盘</h4>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '10px'
+          }}>
+            <div style={{
+              padding: '15px',
+              background: 'white',
+              borderRadius: '4px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2196f3' }}>42</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>待办事项</div>
+            </div>
+            <div style={{
+              padding: '15px',
+              background: 'white',
+              borderRadius: '4px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4caf50' }}>8</div>
+              <div style={{ fontSize: '12px', color: '#666' }}>已完成</div>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={onLogout}
+          style={{
+            width: '100%',
+            padding: '12px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          🚪 退出登录
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔐 用户认证Render Props演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>AuthProvider</strong> 管理认证状态（user, loading, isAuthenticated）</li>
+          <li>通过 <strong>children as function</strong> 传递认证信息</li>
+          <li>外部决定如何渲染登录表单或仪表盘</li>
+          <li>完全分离认证逻辑和UI展示</li>
+        </ul>
+      </div>
+
+      <AuthProvider>
+        {({ user, loading, isAuthenticated, login, logout }) => {
+          if (loading) {
+            return (
+              <div style={{
+                padding: '40px',
+                background: '#fff3e0',
+                borderRadius: '8px',
+                border: '2px solid #ff9800',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '10px' }}>⏳</div>
+                <p style={{ margin: 0, color: '#e65100', fontSize: '18px' }}>
+                  正在验证身份...
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div>
+              {isAuthenticated ? (
+                <Dashboard user={user} onLogout={logout} />
+              ) : (
+                <LoginForm onLogin={login} />
+              )}
+            </div>
+          );
+        }}
+      </AuthProvider>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✨ 关键优势</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>状态集中管理</strong> - 所有认证逻辑在AuthProvider中</li>
+          <li><strong>灵活渲染</strong> - 完全自定义登录和仪表盘UI</li>
+          <li><strong>易于测试</strong> - 可以轻松模拟认证流程</li>
+          <li><strong>可复用性高</strong> - 认证逻辑一次编写，多处使用</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 6.2 媒体查询Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function MediaQueryDemo() {
+  // 模拟媒体查询组件
+  const [currentQuery, setCurrentQuery] = React.useState('(min-width: 768px)');
+  const [viewportSize, setViewportSize] = React.useState({ width: 800, height: 600 });
 
-```jsx
-// 媒体查询组件
-function MediaQuery({ query, children }) {
-  const [matches, setMatches] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia(query).matches;
-    }
-    return false;
-  });
+  // 媒体查询组件
+  const MediaQuery = ({ query, children }) => {
+    const [matches, setMatches] = React.useState(() => {
+      // 模拟媒体查询结果
+      const width = viewportSize.width;
+      if (query.includes('min-width')) {
+        const minWidth = parseInt(query.match(/(\d+)px/)[1]);
+        return width >= minWidth;
+      } else if (query.includes('max-width')) {
+        const maxWidth = parseInt(query.match(/(\d+)px/)[1]);
+        return width <= maxWidth;
+      }
+      return false;
+    });
 
-  useEffect(() => {
-    const mediaQuery = window.matchMedia(query);
-    setMatches(mediaQuery.matches);
+    React.useEffect(() => {
+      const width = viewportSize.width;
+      let result = false;
 
-    const handler = (event) => setMatches(event.matches);
-    mediaQuery.addListener(handler);
+      if (query.includes('min-width')) {
+        const minWidth = parseInt(query.match(/(\d+)px/)[1]);
+        result = width >= minWidth;
+      } else if (query.includes('max-width')) {
+        const maxWidth = parseInt(query.match(/(\d+)px/)[1]);
+        result = width <= maxWidth;
+      }
 
-    return () => mediaQuery.removeListener(handler);
-  }, [query]);
+      setMatches(result);
+    }, [query, viewportSize.width]);
 
-  return children({ matches });
-}
+    return children({ matches });
+  };
 
-// 使用
-<MediaQuery query="(min-width: 768px)">
-  {({ matches }) => (
-    <div>
-      {matches ? (
-        <DesktopLayout />
-      ) : (
-        <MobileLayout />
-      )}
+  // 桌面布局组件
+  const DesktopLayout = () => (
+    <div style={{
+      padding: '20px',
+      background: '#e8f5e9',
+      borderRadius: '8px',
+      border: '2px solid #4caf50'
+    }}>
+      <h3 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>
+        🖥️ 桌面布局
+      </h3>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+        gap: '15px'
+      }}>
+        <div style={{
+          padding: '20px',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '36px', marginBottom: '10px' }}>📊</div>
+          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>数据概览</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>完整的统计信息</div>
+        </div>
+        <div style={{
+          padding: '20px',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '36px', marginBottom: '10px' }}>📈</div>
+          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>图表分析</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>详细数据图表</div>
+        </div>
+        <div style={{
+          padding: '20px',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '36px', marginBottom: '10px' }}>⚙️</div>
+          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>系统设置</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>高级配置选项</div>
+        </div>
+      </div>
     </div>
-  )}
-</MediaQuery>
-```
+  );
 
-</CodeBlock>
+  // 移动布局组件
+  const MobileLayout = () => (
+    <div style={{
+      padding: '20px',
+      background: '#e3f2fd',
+      borderRadius: '8px',
+      border: '2px solid #2196f3'
+    }}>
+      <h3 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>
+        📱 移动布局
+      </h3>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px'
+      }}>
+        <div style={{
+          padding: '15px',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px'
+        }}>
+          <div style={{ fontSize: '32px' }}>📊</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>数据概览</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>统计信息</div>
+          </div>
+        </div>
+        <div style={{
+          padding: '15px',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px'
+        }}>
+          <div style={{ fontSize: '32px' }}>📈</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>图表</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>数据可视化</div>
+          </div>
+        </div>
+        <div style={{
+          padding: '15px',
+          background: 'white',
+          borderRadius: '6px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px'
+        }}>
+          <div style={{ fontSize: '32px' }}>⚙️</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>设置</div>
+            <div style={{ fontSize: '12px', color: '#666' }}>系统配置</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const queries = [
+    { label: '桌面设备 (≥768px)', query: '(min-width: 768px)' },
+    { label: '平板设备 (768-1024px)', query: '(min-width: 768px) and (max-width: 1024px)' },
+    { label: '移动设备 (≤767px)', query: '(max-width: 767px)' }
+  ];
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📱 媒体查询Render Props演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          🎮 模拟设备尺寸
+        </h4>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            屏幕宽度: {viewportSize.width}px
+          </label>
+          <input
+            type="range"
+            min="320"
+            max="1200"
+            value={viewportSize.width}
+            onChange={(e) => setViewportSize({ ...viewportSize, width: parseInt(e.target.value) })}
+            style={{ width: '100%' }}
+          />
+        </div>
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          flexWrap: 'wrap'
+        }}>
+          {['320px', '768px', '1024px', '1200px'].map(size => (
+            <button
+              key={size}
+              onClick={() => setViewportSize({ ...viewportSize, width: parseInt(size) })}
+              style={{
+                padding: '5px 10px',
+                background: viewportSize.width === parseInt(size) ? '#ff9800' : 'white',
+                color: viewportSize.width === parseInt(size) ? 'white' : '#333',
+                border: '2px solid #ff9800',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              {size}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>MediaQuery</strong> 组件监听屏幕尺寸变化</li>
+          <li>通过 <strong>window.matchMedia</strong> 检测媒体查询</li>
+          <li>将匹配结果传递给 <strong>children as function</strong></li>
+          <li>外部根据匹配结果决定渲染桌面或移动布局</li>
+        </ul>
+      </div>
+
+      <MediaQuery query={currentQuery}>
+        {({ matches }) => (
+          <div>
+            <div style={{
+              marginBottom: '15px',
+              padding: '10px',
+              background: matches ? '#e8f5e9' : '#e3f2fd',
+              border: '2px solid ' + (matches ? '#4caf50' : '#2196f3'),
+              borderRadius: '6px',
+              textAlign: 'center'
+            }}>
+              <strong style={{ color: matches ? '#2e7d32' : '#1976d2' }}>
+                {matches ? '✅ 匹配桌面布局' : '✅ 匹配移动布局'}
+              </strong>
+            </div>
+            {matches ? <DesktopLayout /> : <MobileLayout />}
+          </div>
+        )}
+      </MediaQuery>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>选择媒体查询</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {queries.map(q => (
+            <label key={q.query} style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px',
+              background: 'white',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}>
+              <input
+                type="radio"
+                name="query"
+                value={q.query}
+                checked={currentQuery === q.query}
+                onChange={(e) => setCurrentQuery(e.target.value)}
+                style={{ marginRight: '10px' }}
+              />
+              <span>{q.label}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✨ 实际应用场景</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>响应式设计</strong> - 根据屏幕尺寸调整布局</li>
+          <li><strong>组件切换</strong> - 桌面和移动端使用不同组件</li>
+          <li><strong>功能降级</strong> - 在小屏幕上禁用复杂功能</li>
+          <li><strong>性能优化</strong> - 根据设备性能加载不同资源</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 6.3 无限滚动Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function InfiniteScrollDemo() {
+  // 生成模拟数据
+  const generateItems = (start, count) => {
+    return Array.from({ length: count }, (_, i) => ({
+      id: start + i + 1,
+      name: \`Item \${start + i + 1}\`,
+      description: \`This is item number \${start + i + 1}\`,
+      timestamp: new Date(Date.now() - (start + i) * 60000).toLocaleTimeString()
+    }));
+  };
 
-```jsx
-// 无限滚动组件
-function InfiniteScroll({ hasMore, loadMore, children, threshold = 100 }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [items, setItems] = React.useState(() => generateItems(0, 20));
+  const [hasMore, setHasMore] = React.useState(true);
+  const [nextId, setNextId] = React.useState(20);
 
-  const handleScroll = useCallback(() => {
-    if (isLoading || !hasMore) return;
+  // 模拟加载更多数据
+  const loadMore = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newItems = generateItems(nextId, 10);
+        setItems(prev => [...prev, ...newItems]);
+        setNextId(prev => prev + 10);
 
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollHeight = document.documentElement.scrollHeight;
-    const clientHeight = document.documentElement.clientHeight;
+        // 模拟数据结束
+        if (nextId >= 90) {
+          setHasMore(false);
+        }
+        resolve();
+      }, 1000);
+    });
+  };
 
-    if (scrollTop + clientHeight >= scrollHeight - threshold) {
-      setIsLoading(true);
-      loadMore().finally(() => setIsLoading(false));
-    }
-  }, [isLoading, hasMore, loadMore, threshold]);
+  // 无限滚动组件
+  const InfiniteScroll = ({ hasMore, loadMore, children, threshold = 100 }) => {
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [scrollPosition, setScrollPosition] = React.useState(0);
+    const containerRef = React.useRef(null);
 
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+    const handleScroll = React.useCallback(() => {
+      if (isLoading || !hasMore || !containerRef.current) return;
 
-  return children({ isLoading });
-}
+      const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
 
-// 使用
-<InfiniteScroll
-  hasMore={hasMore}
-  loadMore={loadMore}
->
-  {({ isLoading }) => (
-    <div>
-      <ItemList items={items} />
-      {isLoading && <div>Loading more...</div>}
+      if (scrollTop + clientHeight >= scrollHeight - threshold) {
+        setIsLoading(true);
+        setScrollPosition(scrollTop);
+        loadMore().finally(() => {
+          setIsLoading(false);
+          // 恢复滚动位置
+          if (containerRef.current) {
+            containerRef.current.scrollTop = scrollPosition;
+          }
+        });
+      }
+    }, [isLoading, hasMore, loadMore, threshold, scrollPosition]);
+
+    React.useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }, [handleScroll]);
+
+    return children({ isLoading, containerRef });
+  };
+
+  // 项目列表组件
+  const ItemList = ({ items }) => (
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+      gap: '15px'
+    }}>
+      {items.map(item => (
+        <div
+          key={item.id}
+          style={{
+            padding: '15px',
+            background: 'white',
+            borderRadius: '8px',
+            border: '2px solid #e0e0e0',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'transform 0.2s, box-shadow 0.2s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '10px'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              background: '#2196f3',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              marginRight: '10px'
+            }}>
+              {item.id}
+            </div>
+            <div style={{ fontWeight: 'bold', color: '#333' }}>
+              {item.name}
+            </div>
+          </div>
+          <p style={{
+            margin: '0 0 8px 0',
+            color: '#666',
+            fontSize: '14px',
+            lineHeight: '1.4'
+          }}>
+            {item.description}
+          </p>
+          <div style={{
+            fontSize: '12px',
+            color: '#999',
+            display: 'flex',
+            alignItems: 'center'
+          }}>
+            <span>⏰</span>
+            <span style={{ marginLeft: '5px' }}>{item.timestamp}</span>
+          </div>
+        </div>
+      ))}
     </div>
-  )}
-</InfiniteScroll>
-```
+  );
 
-</CodeBlock>
+  // 加载指示器
+  const LoadingIndicator = () => (
+    <div style={{
+      padding: '30px',
+      textAlign: 'center',
+      background: '#e3f2fd',
+      borderRadius: '8px',
+      marginTop: '20px',
+      border: '2px solid #2196f3'
+    }}>
+      <div style={{ fontSize: '32px', marginBottom: '10px' }}>⏳</div>
+      <p style={{ margin: '0', color: '#1976d2', fontSize: '16px', fontWeight: 'bold' }}>
+        正在加载更多项目...
+      </p>
+    </div>
+  );
+
+  // 结束指示器
+  const EndIndicator = () => (
+    <div style={{
+      padding: '20px',
+      textAlign: 'center',
+      background: '#e8f5e9',
+      borderRadius: '8px',
+      marginTop: '20px',
+      border: '2px solid #4caf50'
+    }}>
+      <div style={{ fontSize: '24px', marginBottom: '8px' }}>🎉</div>
+      <p style={{ margin: '0', color: '#2e7d32', fontSize: '14px' }}>
+        已加载所有项目
+      </p>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📜 无限滚动Render Props演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>滚动检测</strong> - 监听容器滚动事件</li>
+          <li><strong>阈值判断</strong> - 滚动到底部附近时触发加载</li>
+          <li><strong>状态传递</strong> - 通过render props传递加载状态</li>
+          <li><strong>性能优化</strong> - 避免一次性渲染所有项目</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '10px',
+        background: '#fff3e0',
+        borderRadius: '6px',
+        border: '2px solid #ff9800'
+      }}>
+        <strong>当前状态:</strong> 已加载 {items.length} 个项目
+        {hasMore ? ' | 还有更多...' : ' | 已全部加载完成'}
+      </div>
+
+      <InfiniteScroll hasMore={hasMore} loadMore={loadMore}>
+        {({ isLoading, containerRef }) => (
+          <div
+            ref={containerRef}
+            style={{
+              maxHeight: '500px',
+              overflowY: 'auto',
+              padding: '15px',
+              background: '#f5f5f5',
+              borderRadius: '8px',
+              border: '2px solid #ddd'
+            }}
+          >
+            <ItemList items={items} />
+            {isLoading && <LoadingIndicator />}
+            {!isLoading && !hasMore && <EndIndicator />}
+          </div>
+        )}
+      </InfiniteScroll>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✨ 实际应用场景</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>社交媒体</strong> - 无限滚动新闻feed</li>
+          <li><strong>电商平台</strong> - 商品列表分页加载</li>
+          <li><strong>搜索引擎</strong> - 搜索结果分页</li>
+          <li><strong>数据可视化</strong> - 大数据集分批加载</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>⚠️ 注意事项</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li>合理设置 <strong>threshold</strong> 避免频繁触发</li>
+          <li>在 <strong>loadMore</strong> 中处理错误情况</li>
+          <li>保持滚动位置避免体验跳跃</li>
+          <li>考虑在移动端使用虚拟列表优化性能</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 6.4 错误边界Render Props
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ErrorBoundaryDemo() {
+  // 错误边界Render Props组件
+  class ErrorBoundary extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = {
+        hasError: false,
+        error: null,
+        errorInfo: null,
+        errorId: null
+      };
+    }
 
-```jsx
-// 错误边界Render Props
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+    static getDerivedStateFromError(error) {
+      return {
+        hasError: true,
+        error,
+        errorId: Date.now()
+      };
+    }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
+    componentDidCatch(error, errorInfo) {
+      this.setState({
+        errorInfo: {
+          componentStack: errorInfo.componentStack
+        }
+      });
 
-  componentDidCatch(error, errorInfo) {
-    this.props.onError?.(error, errorInfo);
-  }
+      if (this.props.onError) {
+        this.props.onError(error, errorInfo);
+      }
+    }
 
-  render() {
-    if (this.state.hasError) {
-      return this.props.render({
-        error: this.state.error,
-        reset: () => this.setState({ hasError: false, error: null })
+    reset = () => {
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+        errorId: null
       });
     }
 
-    return this.props.children;
+    render() {
+      if (this.state.hasError) {
+        return this.props.render({
+          error: this.state.error,
+          errorInfo: this.state.errorInfo,
+          reset: this.reset,
+          errorId: this.state.errorId
+        });
+      }
+
+      return this.props.children;
+    }
   }
-}
 
-// 使用
-<ErrorBoundary
-  onError={(error, info) => console.error(error, info)}
-  render={({ error, reset }) => (
-    <div className="error-boundary">
-      <h2>Something went wrong</h2>
-      <details>
-        <summary>Error details</summary>
-        <pre>{error.toString()}</pre>
-      </details>
-      <button onClick={reset}>Try again</button>
+  // 模拟正常组件
+  const WorkingComponent = ({ onSuccess }) => (
+    <div style={{
+      padding: '30px',
+      background: '#e8f5e9',
+      borderRadius: '8px',
+      border: '2px solid #4caf50',
+      textAlign: 'center'
+    }}>
+      <div style={{ fontSize: '48px', marginBottom: '15px' }}>✅</div>
+      <h3 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>
+        组件正常工作
+      </h3>
+      <p style={{ margin: '0 0 15px 0', color: '#666' }}>
+        这个组件运行正常，没有错误
+      </p>
+      <button
+        onClick={onSuccess}
+        style={{
+          padding: '10px 20px',
+          background: '#4caf50',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}
+      >
+        触发成功事件
+      </button>
     </div>
-  )}
->
-  <MyComponent />
-</ErrorBoundary>
-```
+  );
 
-</CodeBlock>
+  // 模拟有错误的组件
+  const BuggyComponent = ({ shouldThrow, onTrigger }) => {
+    if (shouldThrow) {
+      // 故意抛出错误
+      throw new Error('这是一个演示错误！组件渲染失败。');
+    }
+
+    return (
+      <div style={{
+        padding: '30px',
+        background: '#ffebee',
+        borderRadius: '8px',
+        border: '2px solid #f44336',
+        textAlign: 'center'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '15px' }}>⚠️</div>
+        <h3 style={{ margin: '0 0 10px 0', color: '#c62828' }}>
+          这个组件可能会出错
+        </h3>
+        <p style={{ margin: '0 0 15px 0', color: '#666' }}>
+          点击按钮会触发一个错误
+        </p>
+        <button
+          onClick={onTrigger}
+          style={{
+            padding: '10px 20px',
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: 'bold'
+          }}
+        >
+          触发错误
+        </button>
+      </div>
+    );
+  };
+
+  // 错误显示组件
+  const ErrorDisplay = ({ error, errorInfo, reset, errorId }) => (
+    <div style={{
+      padding: '30px',
+      background: '#ffebee',
+      borderRadius: '8px',
+      border: '2px solid #f44336',
+      maxWidth: '600px',
+      margin: '0 auto'
+    }}>
+      <div style={{
+        fontSize: '48px',
+        marginBottom: '15px',
+        textAlign: 'center'
+      }}>
+        ❌
+      </div>
+      <h3 style={{
+        margin: '0 0 15px 0',
+        color: '#c62828',
+        textAlign: 'center'
+      }}>
+        出现了错误
+      </h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: 'white',
+        borderRadius: '6px',
+        border: '1px solid #f44336'
+      }}>
+        <h4 style={{
+          margin: '0 0 10px 0',
+          color: '#c62828',
+          fontSize: '16px'
+        }}>
+          错误信息:
+        </h4>
+        <div style={{
+          fontFamily: 'monospace',
+          fontSize: '13px',
+          color: '#d32f2f',
+          background: '#ffebee',
+          padding: '10px',
+          borderRadius: '4px',
+          overflow: 'auto'
+        }}>
+          {error?.toString()}
+        </div>
+      </div>
+
+      {errorInfo?.componentStack && (
+        <div style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: 'white',
+          borderRadius: '6px',
+          border: '1px solid #f44336'
+        }}>
+          <h4 style={{
+            margin: '0 0 10px 0',
+            color: '#c62828',
+            fontSize: '16px'
+          }}>
+            组件堆栈:
+          </h4>
+          <pre style={{
+            fontFamily: 'monospace',
+            fontSize: '12px',
+            color: '#666',
+            background: '#f5f5f5',
+            padding: '10px',
+            borderRadius: '4px',
+            overflow: 'auto',
+            margin: 0,
+            whiteSpace: 'pre-wrap'
+          }}>
+            {errorInfo.componentStack}
+          </pre>
+        </div>
+      )}
+
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        justifyContent: 'center'
+      }}>
+        <button
+          onClick={reset}
+          style={{
+            padding: '12px 24px',
+            background: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            transition: 'background 0.3s'
+          }}
+        >
+          🔄 重试
+        </button>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            padding: '12px 24px',
+            background: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          🔁 重新加载页面
+        </button>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '10px',
+        background: '#fff3e0',
+        borderRadius: '4px',
+        textAlign: 'center',
+        fontSize: '12px',
+        color: '#e65100'
+      }}>
+        <strong>错误ID:</strong> {errorId}
+      </div>
+    </div>
+  );
+
+  // 主应用状态
+  const [mode, setMode] = React.useState('working'); // 'working' or 'buggy'
+  const [errorCount, setErrorCount] = React.useState(0);
+
+  const handleError = (error, errorInfo) => {
+    console.error('Error caught by boundary:', error, errorInfo);
+    setErrorCount(prev => prev + 1);
+  };
+
+  const successMessage = () => (
+    <div style={{
+      padding: '20px',
+      background: '#e8f5e9',
+      borderRadius: '6px',
+      marginTop: '15px',
+      textAlign: 'center',
+      border: '2px solid #4caf50'
+    }}>
+      <div style={{ fontSize: '32px', marginBottom: '8px' }}>🎉</div>
+      <p style={{ margin: 0, color: '#2e7d32', fontWeight: 'bold' }}>
+        太好了！组件正常工作！
+      </p>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🛡️ 错误边界Render Props演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>错误捕获</strong> - 通过componentDidCatch捕获渲染错误</li>
+          <li><strong>状态管理</strong> - 在state中存储错误信息</li>
+          <li><strong>渲染错误UI</strong> - 通过render prop自定义错误展示</li>
+          <li><strong>错误恢复</strong> - 提供reset方法重置状态</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '6px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          🎮 控制面板
+        </h4>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setMode('working')}
+            disabled={mode === 'working'}
+            style={{
+              padding: '8px 16px',
+              background: mode === 'working' ? '#4caf50' : 'white',
+              color: mode === 'working' ? 'white' : '#333',
+              border: '2px solid #4caf50',
+              borderRadius: '6px',
+              cursor: mode === 'working' ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              transition: 'all 0.2s'
+            }}
+          >
+            ✅ 正常模式
+          </button>
+          <button
+            onClick={() => setMode('buggy')}
+            disabled={mode === 'buggy'}
+            style={{
+              padding: '8px 16px',
+              background: mode === 'buggy' ? '#f44336' : 'white',
+              color: mode === 'buggy' ? 'white' : '#333',
+              border: '2px solid #f44336',
+              borderRadius: '6px',
+              cursor: mode === 'buggy' ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 'bold'
+            }}
+          >
+            ⚠️ 错误模式
+          </button>
+        </div>
+        <div style={{
+          marginTop: '10px',
+          fontSize: '14px',
+          color: '#666'
+        }}>
+          <strong>已触发错误次数:</strong> {errorCount}
+        </div>
+      </div>
+
+      <ErrorBoundary onError={handleError}>
+        {mode === 'working' ? (
+          <WorkingComponent onSuccess={successMessage} />
+        ) : (
+          <BuggyComponent
+            shouldThrow={true}
+            onTrigger={() => {}}
+          />
+        )}
+      </ErrorBoundary>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✨ 实际应用场景</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>错误监控</strong> - 捕获并报告生产环境错误</li>
+          <li><strong>优雅降级</strong> - 错误时显示友好的错误页面</li>
+          <li><strong>错误恢复</strong> - 允许用户重试或刷新</li>
+          <li><strong>错误分析</strong> - 收集错误信息用于调试</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>⚠️ 注意事项</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li>错误边界<strong>不能</strong>捕获异步错误（如setTimeout）</li>
+          <li>错误边界<strong>不能</strong>捕获事件处理中的错误</li>
+          <li>错误边界<strong>可以</strong>捕获子组件的生命周期错误</li>
+          <li>在render props中提供详细的错误信息有助于调试</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 

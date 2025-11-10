@@ -322,8 +322,8 @@ function ToggleExample() {
 最简单的状态更新方式，直接传入新值：
 
 <CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function DirectUpdate() {
   const [count, setCount] = useState(0);
 
@@ -348,8 +348,7 @@ function DirectUpdate() {
     </div>
   );
 }
-```
-
+`} />
 </CodeBlock>
 
 ### 3.2 函数式更新

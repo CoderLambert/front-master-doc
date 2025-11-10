@@ -150,188 +150,478 @@ function UserListPresenter({ users, loading, error, onRefresh }) {
 
 ### 2.1 类组件容器 + 函数组件展示
 
-<CodeBlock>
+<LiveCode
+  code={`
+function TodoListDemo() {
+  // 展示组件 - 纯UI渲染
+  const TodoListPresenter = ({
+    todos,
+    filter,
+    onAdd,
+    onToggle,
+    onDelete,
+    onFilterChange
+  }) => {
+    const [newTodo, setNewTodo] = React.useState('');
 
-```jsx
-// 容器组件 - 类组件
-class TodoListContainer extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      todos: [],
-      filter: 'all'
+    const handleAdd = (e) => {
+      e.preventDefault();
+      if (newTodo.trim()) {
+        onAdd(newTodo.trim());
+        setNewTodo('');
+      }
     };
-  }
 
-  componentDidMount() {
-    this.loadTodos();
-  }
+    const TodoItem = ({ todo }) => (
+      <li style={{
+        marginBottom: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '8px',
+        background: todo.completed ? '#e8f5e9' : '#fff',
+        border: '1px solid #ddd',
+        borderRadius: '4px',
+        textDecoration: todo.completed ? 'line-through' : 'none'
+      }}>
+        <input
+          type="checkbox"
+          checked={todo.completed}
+          onChange={() => onToggle(todo.id)}
+          style={{ cursor: 'pointer' }}
+        />
+        <span style={{ flex: 1 }}>{todo.text}</span>
+        <button
+          onClick={() => onDelete(todo.id)}
+          style={{
+            padding: '4px 8px',
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px'
+          }}
+        >
+          删除
+        </button>
+      </li>
+    );
 
-  loadTodos = async () => {
-    try {
-      const todos = await fetchTodos();
-      this.setState({ todos });
-    } catch (error) {
-      console.error('Failed to load todos', error);
-    }
+    return (
+      <div style={{
+        maxWidth: '600px',
+        margin: '0 auto',
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h1 style={{ margin: '0 0 20px 0', color: '#1976d2' }}>📝 Todo List</h1>
+
+        <form onSubmit={handleAdd} style={{ marginBottom: '20px' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input
+              value={newTodo}
+              onChange={(e) => setNewTodo(e.target.value)}
+              placeholder="添加新任务..."
+              style={{
+                flex: 1,
+                padding: '10px',
+                fontSize: '14px',
+                border: '1px solid #ccc',
+                borderRadius: '4px'
+              }}
+            />
+            <button
+              type="submit"
+              style={{
+                padding: '10px 20px',
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              添加
+            </button>
+          </div>
+        </form>
+
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '20px'
+        }}>
+          {['all', 'active', 'completed'].map(filterType => (
+            <button
+              key={filterType}
+              onClick={() => onFilterChange(filterType)}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: filter === filterType ? '#2196f3' : 'white',
+                color: filter === filterType ? 'white' : '#333',
+                border: '2px solid #2196f3',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontWeight: 'bold'
+              }}
+            >
+              {filterType === 'all' ? '全部' :
+               filterType === 'active' ? '进行中' : '已完成'}
+            </button>
+          ))}
+        </div>
+
+        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+          {todos.length === 0 ? (
+            <li style={{
+              textAlign: 'center',
+              padding: '20px',
+              color: '#999',
+              background: 'white',
+              borderRadius: '4px'
+            }}>
+              暂无任务
+            </li>
+          ) : (
+            todos.map(todo => (
+              <TodoItem key={todo.id} todo={todo} />
+            ))
+          )}
+        </ul>
+      </div>
+    );
   };
 
-  addTodo = async (text) => {
-    const newTodo = await createTodo(text);
-    this.setState(prev => ({
-      todos: [...prev.todos, newTodo]
+  // 容器组件 - 状态管理和业务逻辑
+  const [containerState, setContainerState] = React.useState({
+    todos: [
+      { id: 1, text: '学习React基础', completed: true },
+      { id: 2, text: '理解组件模式', completed: false },
+      { id: 3, text: '实践Hooks', completed: false }
+    ],
+    filter: 'all',
+    nextId: 4
+  });
+
+  const loadTodos = () => {
+    // 模拟数据加载
+    setContainerState(prev => ({ ...prev }));
+  };
+
+  const addTodo = (text) => {
+    setContainerState(prev => ({
+      ...prev,
+      todos: [
+        ...prev.todos,
+        { id: prev.nextId, text, completed: false }
+      ],
+      nextId: prev.nextId + 1
     }));
   };
 
-  toggleTodo = async (id) => {
-    const updatedTodo = await updateTodo(id);
-    this.setState(prev => ({
+  const toggleTodo = (id) => {
+    setContainerState(prev => ({
+      ...prev,
       todos: prev.todos.map(todo =>
-        todo.id === id ? updatedTodo : todo
+        todo.id === id ? { ...todo, completed: !todo.completed } : todo
       )
     }));
   };
 
-  deleteTodo = async (id) => {
-    await deleteTodo(id);
-    this.setState(prev => ({
+  const deleteTodo = (id) => {
+    setContainerState(prev => ({
+      ...prev,
       todos: prev.todos.filter(todo => todo.id !== id)
     }));
   };
 
-  setFilter = (filter) => {
-    this.setState({ filter });
+  const setFilter = (filter) => {
+    setContainerState(prev => ({ ...prev, filter }));
   };
 
-  render() {
-    const { todos, filter } = this.state;
-
-    const filteredTodos = todos.filter(todo => {
-      if (filter === 'active') return !todo.completed;
-      if (filter === 'completed') return todo.completed;
-      return true;
-    });
-
-    return (
-      <TodoListPresenter
-        todos={filteredTodos}
-        filter={filter}
-        onAdd={this.addTodo}
-        onToggle={this.toggleTodo}
-        onDelete={this.deleteTodo}
-        onFilterChange={this.setFilter}
-      />
-    );
-  }
-}
-
-// 展示组件 - 函数组件
-function TodoListPresenter({
-  todos,
-  filter,
-  onAdd,
-  onToggle,
-  onDelete,
-  onFilterChange
-}) {
-  const [newTodo, setNewTodo] = React.useState('');
-
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if (newTodo.trim()) {
-      onAdd(newTodo.trim());
-      setNewTodo('');
-    }
-  };
+  const filteredTodos = containerState.todos.filter(todo => {
+    if (containerState.filter === 'active') return !todo.completed;
+    if (containerState.filter === 'completed') return todo.completed;
+    return true;
+  });
 
   return (
-    <div className="todo-list">
-      <h1>Todo List</h1>
-
-      <form onSubmit={handleAdd}>
-        <input
-          value={newTodo}
-          onChange={(e) => setNewTodo(e.target.value)}
-          placeholder="Add a new todo..."
-        />
-        <button type="submit">Add</button>
-      </form>
-
-      <div className="filter-buttons">
-        <button
-          onClick={() => onFilterChange('all')}
-          className={filter === 'all' ? 'active' : ''}
-        >
-          All
-        </button>
-        <button
-          onClick={() => onFilterChange('active')}
-          className={filter === 'active' ? 'active' : ''}
-        >
-          Active
-        </button>
-        <button
-          onClick={() => onFilterChange('completed')}
-          className={filter === 'completed' ? 'active' : ''}
-        >
-          Completed
-        </button>
+    <div>
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 容器-展示模式</h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>容器组件</strong>：管理状态、数据获取、业务逻辑
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>展示组件</strong>：接收props、渲染UI、处理简单交互
+        </p>
       </div>
 
-      <ul className="todos">
-        {todos.map(todo => (
-          <TodoItem
-            key={todo.id}
-            todo={todo}
-            onToggle={onToggle}
-            onDelete={onDelete}
-          />
-        ))}
-      </ul>
+      <TodoListPresenter
+        todos={filteredTodos}
+        filter={containerState.filter}
+        onAdd={addTodo}
+        onToggle={toggleTodo}
+        onDelete={deleteTodo}
+        onFilterChange={setFilter}
+      />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        fontSize: '14px'
+      }}>
+        <strong>💡 关键特点：</strong>
+        <ul style={{ margin: '10px 0 0 20px', lineHeight: '1.8' }}>
+          <li>容器组件处理所有业务逻辑</li>
+          <li>展示组件只负责UI渲染</li>
+          <li>状态提升到容器中管理</li>
+          <li>清晰的关注点分离</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-function TodoItem({ todo, onToggle, onDelete }) {
-  return (
-    <li className={todo.completed ? 'completed' : ''}>
-      <input
-        type="checkbox"
-        checked={todo.completed}
-        onChange={() => onToggle(todo.id)}
-      />
-      <span>{todo.text}</span>
-      <button onClick={() => onDelete(todo.id)}>Delete</button>
-    </li>
-  );
-}
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.2 函数组件容器 + Hooks
 
-<CodeBlock>
+<LiveCode
+  code={`
+function UserProfileDemo() {
+  // 展示组件 - 纯UI渲染
+  const UserProfilePresenter = ({
+    user,
+    posts,
+    loading,
+    error,
+    onUpdate,
+    onDeletePost,
+    onRefresh
+  }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800'
+        }}>
+          <div style={{ fontSize: '32px', marginBottom: '10px' }}>⏳</div>
+          <p style={{ color: '#e65100', fontSize: '16px' }}>正在加载用户资料...</p>
+        </div>
+      );
+    }
 
-```jsx
-// 容器组件 - 使用Hooks
-function UserProfileContainer({ userId }) {
+    if (error) {
+      return (
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336'
+        }}>
+          <div style={{ fontSize: '32px', marginBottom: '10px' }}>❌</div>
+          <p style={{ color: '#c62828', fontSize: '16px' }}>加载失败: {error.message}</p>
+          <button
+            onClick={onRefresh}
+            style={{
+              marginTop: '15px',
+              padding: '10px 20px',
+              background: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            重试
+          </button>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div style={{
+          padding: '40px',
+          textAlign: 'center',
+          background: '#f5f5f5',
+          borderRadius: '8px',
+          border: '2px solid #ddd'
+        }}>
+          <p style={{ color: '#999', fontSize: '16px' }}>未找到用户</p>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{
+        maxWidth: '800px',
+        margin: '0 auto',
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: '20px',
+          background: 'white',
+          borderRadius: '8px',
+          marginBottom: '20px',
+          border: '2px solid #4caf50'
+        }}>
+          <img
+            src={user.avatar}
+            alt={user.name}
+            style={{
+              width: '100px',
+              height: '100px',
+              borderRadius: '50%',
+              marginRight: '20px',
+              border: '3px solid #4caf50'
+            }}
+          />
+          <div style={{ flex: 1 }}>
+            <h1 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>{user.name}</h1>
+            <p style={{ margin: '5px 0', color: '#666' }}>📧 {user.email}</p>
+            <p style={{ margin: '5px 0', color: '#666' }}>
+              📅 加入日期: {user.joinDate}
+            </p>
+          </div>
+          <button
+            onClick={onRefresh}
+            style={{
+              padding: '10px 20px',
+              background: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 刷新
+          </button>
+        </div>
+
+        <div style={{
+          padding: '20px',
+          background: 'white',
+          borderRadius: '8px',
+          border: '2px solid #4caf50'
+        }}>
+          <h2 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>
+            📝 文章 ({posts.length})
+          </h2>
+          {posts.length === 0 ? (
+            <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>
+              暂无文章
+            </p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {posts.map(post => (
+                <li
+                  key={post.id}
+                  style={{
+                    padding: '15px',
+                    marginBottom: '10px',
+                    background: '#f9f9f9',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '4px'
+                  }}
+                >
+                  <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>{post.title}</h3>
+                  <p style={{ margin: '0 0 10px 0', color: '#666', fontSize: '14px' }}>
+                    {post.content}
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#999' }}>
+                      {post.date}
+                    </span>
+                    <button
+                      onClick={() => onDeletePost(post.id)}
+                      style={{
+                        padding: '6px 12px',
+                        background: '#f44336',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '12px'
+                      }}
+                    >
+                      🗑️ 删除
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // 容器组件 - 使用Hooks管理状态
+  const [userId, setUserId] = React.useState(1);
   const [user, setUser] = React.useState(null);
   const [posts, setPosts] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(null);
 
-  React.useEffect(() => {
-    loadUserData();
-  }, [userId]);
-
-  const loadUserData = async () => {
+  const loadUserData = React.useCallback(async () => {
     try {
       setLoading(true);
-      const [userData, postsData] = await Promise.all([
-        fetchUser(userId),
-        fetchUserPosts(userId)
-      ]);
+      setError(null);
+
+      // 模拟API调用
+      const userData = {
+        id: userId,
+        name: userId === 1 ? 'Alice Johnson' : 'Bob Smith',
+        email: userId === 1 ? 'alice@example.com' : 'bob@example.com',
+        avatar: userId === 1 ? '👩‍💻' : '👨‍💻',
+        joinDate: '2023-01-15'
+      };
+
+      const postsData = [
+        {
+          id: 1,
+          title: 'React学习笔记',
+          content: '今天学习了React的基础知识，包括组件和props...',
+          date: '2024-01-15'
+        },
+        {
+          id: 2,
+          title: 'Hooks使用技巧',
+          content: '深入理解了useState和useEffect的使用场景...',
+          date: '2024-01-20'
+        }
+      ];
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       setUser(userData);
       setPosts(postsData);
     } catch (err) {
@@ -339,11 +629,15 @@ function UserProfileContainer({ userId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  React.useEffect(() => {
+    loadUserData();
+  }, [loadUserData]);
 
   const updateProfile = async (updates) => {
     try {
-      const updatedUser = await updateUser(userId, updates);
+      const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
     } catch (err) {
       setError(err);
@@ -352,7 +646,6 @@ function UserProfileContainer({ userId }) {
 
   const deletePost = async (postId) => {
     try {
-      await deleteUserPost(userId, postId);
       setPosts(prev => prev.filter(post => post.id !== postId));
     } catch (err) {
       setError(err);
@@ -360,82 +653,100 @@ function UserProfileContainer({ userId }) {
   };
 
   return (
-    <UserProfilePresenter
-      user={user}
-      posts={posts}
-      loading={loading}
-      error={error}
-      onUpdate={updateProfile}
-      onDeletePost={deletePost}
-      onRefresh={loadUserData}
-    />
-  );
-}
-
-// 展示组件 - 纯函数
-function UserProfilePresenter({
-  user,
-  posts,
-  loading,
-  error,
-  onUpdate,
-  onDeletePost,
-  onRefresh
-}) {
-  if (loading) return <div className="loading">Loading profile...</div>;
-  if (error) return <div className="error">{error.message}</div>;
-  if (!user) return <div>No user found</div>;
-
-  return (
-    <div className="user-profile">
-      <div className="profile-header">
-        <img src={user.avatar} alt={user.name} />
-        <h1>{user.name}</h1>
-        <p>{user.email}</p>
-        <button onClick={onRefresh}>Refresh</button>
+    <div>
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 函数组件 + Hooks</h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          使用 <strong>useState</strong> 管理状态，<strong>useEffect</strong> 处理副作用
+        </p>
+        <div style={{ marginTop: '10px' }}>
+          <button
+            onClick={() => setUserId(1)}
+            style={{
+              marginRight: '10px',
+              padding: '8px 16px',
+              background: userId === 1 ? '#4caf50' : 'white',
+              color: userId === 1 ? 'white' : '#333',
+              border: '2px solid #4caf50',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            👩‍💻 用户 1
+          </button>
+          <button
+            onClick={() => setUserId(2)}
+            style={{
+              padding: '8px 16px',
+              background: userId === 2 ? '#4caf50' : 'white',
+              color: userId === 2 ? 'white' : '#333',
+              border: '2px solid #4caf50',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            👨‍💻 用户 2
+          </button>
+        </div>
       </div>
 
-      <div className="profile-posts">
-        <h2>Posts ({posts.length})</h2>
-        {posts.length === 0 ? (
-          <p>No posts yet</p>
-        ) : (
-          <ul>
-            {posts.map(post => (
-              <li key={post.id}>
-                <h3>{post.title}</h3>
-                <p>{post.content}</p>
-                <button onClick={() => onDeletePost(post.id)}>
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+      <UserProfilePresenter
+        user={user}
+        posts={posts}
+        loading={loading}
+        error={error}
+        onUpdate={updateProfile}
+        onDeletePost={deletePost}
+        onRefresh={loadUserData}
+      />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        fontSize: '14px'
+      }}>
+        <strong>💡 Hooks优势：</strong>
+        <ul style={{ margin: '10px 0 0 20px', lineHeight: '1.8' }}>
+          <li>更简洁的代码（无类组件样板代码）</li>
+          <li>更容易测试和复用逻辑</li>
+          <li>更好的TypeScript支持</li>
+          <li>更少的渲染优化问题</li>
+        </ul>
       </div>
     </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.3 复用容器模式
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ReusableContainerDemo() {
+  // ========== HOC Pattern ==========
+  const withData = (WrappedComponent, fetcher) => {
+    return function DataContainer(props) {
+      const [data, setData] = React.useState(null);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(null);
 
-```jsx
-// 高阶容器组件
-function withData(WrappedComponent, fetcher) {
-  return function DataContainer(props) {
-    const [data, setData] = React.useState(null);
-    const [loading, setLoading] = React.useState(true);
-    const [error, setError] = React.useState(null);
-
-    React.useEffect(() => {
-      const loadData = async () => {
+      const loadData = React.useCallback(async () => {
         try {
           setLoading(true);
+          setError(null);
           const result = await fetcher(props);
           setData(result);
         } catch (err) {
@@ -443,56 +754,490 @@ function withData(WrappedComponent, fetcher) {
         } finally {
           setLoading(false);
         }
-      };
+      }, [fetcher, props.id, props.category]);
 
+      React.useEffect(() => {
+        loadData();
+      }, [loadData]);
+
+      return (
+        <WrappedComponent
+          {...props}
+          data={data}
+          loading={loading}
+          error={error}
+          refetch={loadData}
+        />
+      );
+    };
+  };
+
+  // ========== Render Props Pattern ==========
+  const DataContainer = ({ fetcher, render, deps = [] }) => {
+    const [data, setData] = React.useState(null);
+    const [loading, setLoading] = React.useState(true);
+    const [error, setError] = React.useState(null);
+
+    const loadData = React.useCallback(async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const result = await fetcher();
+        setData(result);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    }, deps);
+
+    React.useEffect(() => {
       loadData();
-    }, [props.id]); // 依赖props
+    }, [loadData]);
+
+    return render({ data, loading, error, refetch: loadData });
+  };
+
+  // ========== Demo State ==========
+  const [currentDemo, setCurrentDemo] = React.useState('hoc');
+  const [filter, setFilter] = React.useState('all');
+  const [category, setCategory] = React.useState('electronics');
+
+  // ========== Mock Data Fetchers ==========
+  const fetchUsers = React.useCallback((props) => {
+    const allUsers = [
+      { id: 1, name: 'Alice', role: 'Admin', category: 'electronics' },
+      { id: 2, name: 'Bob', role: 'User', category: 'books' },
+      { id: 3, name: 'Charlie', role: 'Editor', category: 'electronics' },
+      { id: 4, name: 'Diana', role: 'User', category: 'clothing' },
+      { id: 5, name: 'Eve', role: 'Admin', category: 'electronics' }
+    ];
+
+    return new Promise(resolve => {
+      setTimeout(() => {
+        let filtered = allUsers;
+        if (props?.filter === 'admin') {
+          filtered = allUsers.filter(u => u.role === 'Admin');
+        }
+        if (props?.category) {
+          filtered = filtered.filter(u => u.category === props.category);
+        }
+        resolve(filtered);
+      }, 800);
+    });
+  }, []);
+
+  const fetchProducts = React.useCallback(() => {
+    const products = [
+      { id: 1, name: 'Laptop', price: 999, category: 'electronics' },
+      { id: 2, name: 'Book', price: 20, category: 'books' },
+      { id: 3, name: 'Phone', price: 699, category: 'electronics' },
+      { id: 4, name: 'Shirt', price: 30, category: 'clothing' }
+    ];
+
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve(products.filter(p => p.category === category));
+      }, 600);
+    });
+  }, [category]);
+
+  // ========== HOC Example ==========
+  const UserListPresenter = ({ data, loading, error, refetch }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+          <p style={{ color: '#e65100', margin: 0 }}>加载用户数据...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>❌</div>
+          <p style={{ color: '#c62828', margin: '0 0 10px 0' }}>加载失败!</p>
+          <button
+            onClick={refetch}
+            style={{
+              padding: '8px 16px',
+              background: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            重试
+          </button>
+        </div>
+      );
+    }
 
     return (
-      <WrappedComponent
-        {...props}
-        data={data}
-        loading={loading}
-        error={error}
-        refetch={() => {
-          // 重新获取数据
-        }}
-      />
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '20px',
+        border: '2px solid #4caf50'
+      }}>
+        <h3 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>
+          📋 用户列表 (HOC模式)
+        </h3>
+        {data && data.length > 0 ? (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {data.map(user => (
+              <li
+                key={user.id}
+                style={{
+                  padding: '12px',
+                  marginBottom: '8px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <div>
+                  <strong>{user.name}</strong>
+                  <span style={{ marginLeft: '10px', color: '#666' }}>
+                    {user.role}
+                  </span>
+                </div>
+                <span style={{
+                  fontSize: '12px',
+                  padding: '4px 8px',
+                  background: '#e3f2fd',
+                  color: '#1976d2',
+                  borderRadius: '4px'
+                }}>
+                  {user.category}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ textAlign: 'center', color: '#999' }}>暂无数据</p>
+        )}
+      </div>
     );
   };
+
+  const UserListContainer = withData(UserListPresenter, fetchUsers);
+
+  // ========== Render Props Example ==========
+  const ProductList = ({ data, loading, error, refetch }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+          <p style={{ color: '#e65100', margin: 0 }}>加载产品数据...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '20px',
+          textAlign: 'center',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>❌</div>
+          <p style={{ color: '#c62828', margin: '0 0 10px 0' }}>加载失败!</p>
+          <button
+            onClick={refetch}
+            style={{
+              padding: '8px 16px',
+              background: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            重试
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '20px',
+        border: '2px solid #9c27b0'
+      }}>
+        <h3 style={{ margin: '0 0 15px 0', color: '#6a1b9a' }}>
+          🛍️ 产品列表 (Render Props模式)
+        </h3>
+        {data && data.length > 0 ? (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {data.map(product => (
+              <li
+                key={product.id}
+                style={{
+                  padding: '12px',
+                  marginBottom: '8px',
+                  background: '#f5f5f5',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}
+              >
+                <strong>{product.name}</strong>
+                <span style={{
+                  fontSize: '18px',
+                  fontWeight: 'bold',
+                  color: '#2e7d32'
+                }}>
+                  ${product.price}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ textAlign: 'center', color: '#999' }}>暂无产品</p>
+        )}
+      </div>
+    );
+  };
+
+  // ========== Render ==========
+  return (
+    <div>
+      {/* Header */}
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e1f5fe',
+        borderRadius: '8px',
+        border: '2px solid #0288d1'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#01579b' }}>
+          💡 可复用容器模式
+        </h4>
+        <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.6' }}>
+          <strong>HOC模式</strong>：包装组件，注入数据逻辑<br/>
+          <strong>Render Props</strong>：函数作为children，灵活传递数据
+        </p>
+      </div>
+
+      {/* Demo Selector */}
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px'
+      }}>
+        <button
+          onClick={() => setCurrentDemo('hoc')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            background: currentDemo === 'hoc' ? '#4caf50' : 'white',
+            color: currentDemo === 'hoc' ? 'white' : '#333',
+            border: '2px solid #4caf50',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}
+        >
+          🔧 HOC 模式
+        </button>
+        <button
+          onClick={() => setCurrentDemo('render-props')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            background: currentDemo === 'render-props' ? '#9c27b0' : 'white',
+            color: currentDemo === 'render-props' ? 'white' : '#333',
+            border: '2px solid #9c27b0',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '14px'
+          }}
+        >
+          🎯 Render Props 模式
+        </button>
+      </div>
+
+      {/* Controls */}
+      {currentDemo === 'hoc' ? (
+        <div style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: '#f5f5f5',
+          borderRadius: '8px',
+          border: '1px solid #ddd'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>HOC 控制面板</h4>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setFilter('all')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: filter === 'all' ? '#4caf50' : 'white',
+                color: filter === 'all' ? 'white' : '#333',
+                border: '1px solid #4caf50',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              全部用户
+            </button>
+            <button
+              onClick={() => setFilter('admin')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: filter === 'admin' ? '#4caf50' : 'white',
+                color: filter === 'admin' ? 'white' : '#333',
+                border: '1px solid #4caf50',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              仅管理员
+            </button>
+            <button
+              onClick={() => setCategory('electronics')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: category === 'electronics' ? '#4caf50' : 'white',
+                color: category === 'electronics' ? 'white' : '#333',
+                border: '1px solid #4caf50',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              电子产品
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          marginBottom: '20px',
+          padding: '15px',
+          background: '#f5f5f5',
+          borderRadius: '8px',
+          border: '1px solid #ddd'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Render Props 控制面板</h4>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setCategory('electronics')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: category === 'electronics' ? '#9c27b0' : 'white',
+                color: category === 'electronics' ? 'white' : '#333',
+                border: '1px solid #9c27b0',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              电子产品
+            </button>
+            <button
+              onClick={() => setCategory('books')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: category === 'books' ? '#9c27b0' : 'white',
+                color: category === 'books' ? 'white' : '#333',
+                border: '1px solid #9c27b0',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              图书
+            </button>
+            <button
+              onClick={() => setCategory('clothing')}
+              style={{
+                flex: 1,
+                padding: '8px',
+                background: category === 'clothing' ? '#9c27b0' : 'white',
+                color: category === 'clothing' ? 'white' : '#333',
+                border: '1px solid #9c27b0',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              服装
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Demo Component */}
+      {currentDemo === 'hoc' ? (
+        <UserListContainer filter={filter} category={category} />
+      ) : (
+        <DataContainer
+          fetcher={fetchProducts}
+          deps={[category]}
+        >
+          {(props) => <ProductList {...props} />}
+        </DataContainer>
+      )}
+
+      {/* Explanation */}
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        fontSize: '14px'
+      }}>
+        <strong>💡 模式对比：</strong>
+        <ul style={{ margin: '10px 0 0 20px', lineHeight: '1.8' }}>
+          <li><strong>HOC</strong>：包装现有组件，生成新组件，可复用但层级增加</li>
+          <li><strong>Render Props</strong>：通过children函数传递数据，更灵活但需要函数式思维</li>
+          <li><strong>现代方案</strong>：自定义Hooks更简洁，是推荐的复用方式</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用高阶容器
-const UserListContainer = withData(
-  UserListPresenter,
-  (props) => fetchUsers(props.filter)
-);
-
-// 或者使用Render Props
-function DataContainer({ fetcher, render, deps = [] }) {
-  const [data, setData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
-
-  React.useEffect(() => {
-    fetcher().then(setData).catch(setError).finally(() => setLoading(false));
-  }, deps);
-
-  return render({ data, loading, error });
-}
-
-// 使用
-<DataContainer
-  fetcher={() => fetchUsers()}
-  deps={[filter]}
->
-  {({ data, loading, error }) => (
-    <UserListPresenter users={data} loading={loading} error={error} />
-  )}
-</DataContainer>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 

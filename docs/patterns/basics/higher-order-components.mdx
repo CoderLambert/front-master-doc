@@ -93,89 +93,269 @@ const enhancedComponent = withLoading(WrappedComponent);
 
 ### 2.1 最简单的HOC
 
-<CodeBlock>
+<LiveCode
+  code={`
+function HOCBasicsDemo() {
+  // 最基础的HOC - 添加额外prop
+  const withExtraProp = (WrappedComponent) => {
+    return (props) => {
+      // 添加额外prop
+      const enhancedProps = {
+        ...props,
+        extraProp: 'This is added by HOC'
+      };
 
-```jsx
-// 最基础的HOC - 添加额外prop
-function withExtraProp(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    // 添加额外prop
-    const enhancedProps = {
-      ...props,
-      extraProp: 'This is added by HOC'
+      // 传递给包装组件
+      return <WrappedComponent {...enhancedProps} />;
     };
-
-    // 传递给包装组件
-    return <WrappedComponent {...enhancedProps} />;
   };
+
+  // 原始组件
+  const OriginalComponent = ({ name, extraProp }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>Original Component</h4>
+        <p>Hello {name}! {extraProp}</p>
+      </div>
+    );
+  };
+
+  // 创建增强组件
+  const EnhancedComponent = withExtraProp(OriginalComponent);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔧 最简单的HOC示例</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>原始组件：</h4>
+        <OriginalComponent name="Alice" />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>通过HOC增强后：</h4>
+        <EnhancedComponent name="Bob" />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        fontSize: '14px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>💡 工作原理</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+          <li>HOC是一个函数，接收一个组件</li>
+          <li>返回一个新的增强组件</li>
+          <li>可以添加额外的props或逻辑</li>
+          <li>保持原组件的接口不变</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-function OriginalComponent({ name, extraProp }) {
-  return <div>Hello {name}! {extraProp}</div>;
-}
-
-// 创建增强组件
-const EnhancedComponent = withExtraProp(OriginalComponent);
-
-// 使用增强组件
-<EnhancedComponent name="Alice" />
-// 渲染: <div>Hello Alice! This is added by HOC</div>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.2 箭头函数版本
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ArrowFunctionHOCDemo() {
+  // 使用箭头函数的更简洁语法
+  const withExtraProp = (WrappedComponent) => (props) => {
+    return <WrappedComponent {...props} extraProp="Added by Arrow Function HOC" />;
+  };
 
-```jsx
-// 使用箭头函数
-const withExtraProp = (WrappedComponent) => (props) => {
-  return <WrappedComponent {...props} extraProp="Added" />;
-};
+  // 传递额外参数
+  const withCustomProp = (WrappedComponent, extraValue) => (props) => {
+    return <WrappedComponent {...props} customData={extraValue} />;
+  };
 
-// 传递额外参数
-const withExtraProp = (WrappedComponent, extraValue) => (props) => {
-  return <WrappedComponent {...props} extraProp={extraValue} />;
-};
+  // 原始组件
+  const UserProfile = ({ name, extraProp, customData }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#f0f0f0',
+        borderRadius: '8px',
+        border: '2px solid #4caf50',
+        marginBottom: '10px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>User Profile</h4>
+        <p><strong>Name:</strong> {name}</p>
+        <p><strong>Extra Prop:</strong> {extraProp}</p>
+        <p><strong>Custom Data:</strong> {customData}</p>
+      </div>
+    );
+  };
 
-// 使用
-const EnhancedComponent = withExtraProp(OriginalComponent, 'Custom Value');
-```
+  // 增强组件
+  const BasicEnhanced = withExtraProp(UserProfile);
+  const AdvancedEnhanced = withCustomProp(withExtraProp(UserProfile), 'Advanced Data');
 
-</CodeBlock>
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎯 箭头函数HOC示例</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>1. 基础箭头函数HOC：</h4>
+        <BasicEnhanced name="Alice Johnson" />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>2. 链式HOC（组合多个增强）：</h4>
+        <AdvancedEnhanced name="Bob Smith" />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 箭头函数优势</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>更简洁的语法，一行定义</li>
+          <li>自然地返回函数组件</li>
+          <li>可以轻松组合多个HOC</li>
+          <li>保持相同的闭包行为</li>
+          <li>现代React开发推荐方式</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 2.3 处理WrappedComponent的名称
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DisplayNameDemo() {
+  // 获取显示名称的辅助函数
+  function getDisplayName(WrappedComponent) {
+    return WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  }
 
-```jsx
-import React from 'react';
+  // 增强组件名称以便调试
+  function withName(WrappedComponent) {
+    const EnhancedComponent = (props) => <WrappedComponent {...props} />;
 
-// 显示名称，便于调试
-function withName(WrappedComponent) {
-  const EnhancedComponent = (props) => <WrappedComponent {...props} />;
+    // 设置displayName
+    EnhancedComponent.displayName = \`withName(\${getDisplayName(WrappedComponent)})\`;
 
-  EnhancedComponent.displayName = `withName(${getDisplayName(WrappedComponent)})`;
+    return EnhancedComponent;
+  }
 
-  return EnhancedComponent;
+  // 原始组件
+  const UserCard = ({ name }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        display: 'inline-block',
+        margin: '10px'
+      }}>
+        <h4 style={{ margin: 0, color: '#e65100' }}>👤 {name}</h4>
+      </div>
+    );
+  };
+
+  const ProfileCard = ({ username }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#f3e5f5',
+        borderRadius: '8px',
+        border: '2px solid #9c27b0',
+        display: 'inline-block',
+        margin: '10px'
+      }}>
+        <h4 style={{ margin: 0, color: '#6a1b9a' }}>📊 @{username}</h4>
+      </div>
+    );
+  };
+
+  // 增强组件
+  const EnhancedUserCard = withName(UserCard);
+  const EnhancedProfileCard = withName(ProfileCard);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🏷️ DisplayName演示</h3>
+
+      <div style={{
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0' }}>原始组件：</h4>
+        <UserCard name="Alice" />
+        <ProfileCard username="alice_dev" />
+      </div>
+
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0' }}>增强组件：</h4>
+        <EnhancedUserCard name="Bob" />
+        <EnhancedProfileCard username="bob_builder" />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 DisplayName优势</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>React DevTools</strong>中显示完整组件名称</li>
+          <li><strong>调试</strong>时快速识别组件来源</li>
+          <li><strong>错误追踪</strong>更清晰直观</li>
+          <li><strong>层级结构</strong>更容易理解</li>
+          <li><strong>开发体验</strong>显著提升</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        fontFamily: 'monospace',
+        fontSize: '14px'
+      }}>
+        <div><strong>EnhancedUserCard.displayName:</strong></div>
+        <div style={{ color: '#2196f3', marginTop: '5px' }}>
+          "{EnhancedUserCard.displayName}"
+        </div>
+        <div style={{ marginTop: '10px' }}><strong>EnhancedProfileCard.displayName:</strong></div>
+        <div style={{ color: '#2196f3', marginTop: '5px' }}>
+          "{EnhancedProfileCard.displayName}"
+        </div>
+      </div>
+    </div>
+  );
 }
-
-function getDisplayName(WrappedComponent) {
-  return WrappedComponent.displayName || WrappedComponent.name || 'Component';
-}
-
-// 使用
-function UserCard({ name }) {
-  return <div>{name}</div>;
-}
-
-const EnhancedUserCard = withName(UserCard);
-console.log(EnhancedUserCard.displayName); // "withName(UserCard)"
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -183,270 +363,1113 @@ console.log(EnhancedUserCard.displayName); // "withName(UserCard)"
 
 ### 3.1 条件渲染HOC
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ConditionalRenderingHOCDemo() {
+  const [user, setUser] = React.useState({
+    isAuthenticated: false,
+    role: 'guest',
+    name: 'Guest User'
+  });
 
-```jsx
-// 根据条件显示组件
-function withCondition(WrappedComponent, condition) {
-  return function EnhancedComponent(props) {
-    if (!condition(props)) {
-      return null; // 或返回默认组件
-    }
-    return <WrappedComponent {...props} />;
-  };
-}
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
-// 使用示例：权限控制
-function withAuth(WrappedComponent) {
-  return function AuthenticatedComponent(props) {
-    const { isAuthenticated, user } = props;
-
-    if (!isAuthenticated) {
-      return <Redirect to="/login" />;
-    }
-
-    if (user && !user.hasPermission) {
-      return <div>Access Denied</div>;
-    }
-
-    return <WrappedComponent {...props} />;
-  };
-}
-
-// 应用到组件
-const ProtectedDashboard = withAuth(Dashboard);
-const AdminPanel = withAuth(AdminComponent, ({ user }) => user?.role === 'admin');
-```
-
-</CodeBlock>
-
-### 3.2 数据获取HOC
-
-<CodeBlock>
-
-```jsx
-// 数据获取HOC
-function withData(WrappedComponent, dataSource) {
-  return function EnhancedComponent(props) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-      const fetchData = async () => {
-        try {
-          setLoading(true);
-          const result = await dataSource(props);
-          setData(result);
-        } catch (err) {
-          setError(err);
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      fetchData();
-    }, [props.id]); // 依赖prop变化
-
-    return (
-      <WrappedComponent
-        {...props}
-        data={data}
-        loading={loading}
-        error={error}
-      />
-    );
-  };
-}
-
-// 使用
-const fetchUser = async ({ userId }) => {
-  const response = await fetch(`/api/users/${userId}`);
-  return response.json();
-};
-
-const UserProfile = ({ user, loading, error }) => {
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-  return <div>{user.name}</div>;
-};
-
-const UserProfileWithData = withData(UserProfile, fetchUser);
-```
-
-</CodeBlock>
-
-### 3.3 样式增强HOC
-
-<CodeBlock>
-
-```jsx
-// 样式增强HOC
-function withStyles(WrappedComponent, styles) {
-  return function StyledComponent(props) {
-    const [isActive, setIsActive] = useState(false);
-    const className = isActive ? `${styles.active} ${styles.base}` : styles.base;
-
-    return (
-      <div className={className}>
-        <WrappedComponent
-          {...props}
-          isActive={isActive}
-          setIsActive={setIsActive}
-        />
-      </div>
-    );
-  };
-}
-
-// 使用示例
-const cardStyles = {
-  base: 'card',
-  active: 'card-active'
-};
-
-const EnhancedCard = withStyles(Card, cardStyles);
-
-// 或者传递CSS类名
-function withClassName(WrappedComponent, className) {
-  return function EnhancedComponent(props) {
-    return (
-      <div className={className}>
-        <WrappedComponent {...props} />
-      </div>
-    );
-  };
-}
-
-const CenteredComponent = withClassName(MyComponent, 'mx-auto max-w-md');
-```
-
-</CodeBlock>
-
-### 3.4 状态管理HOC
-
-<CodeBlock>
-
-```jsx
-// 状态提升HOC
-function withState(WrappedComponent, initialState, stateName = 'state', setStateName = 'setState') {
-  return function EnhancedComponent(props) {
-    const [state, setState] = useState(initialState);
-
-    const enhancedProps = {
-      ...props,
-      [stateName]: state,
-      [setStateName]: setState
+  // 条件渲染HOC
+  function withCondition(WrappedComponent, condition) {
+    return function EnhancedComponent(props) {
+      if (!condition(props)) {
+        return (
+          <div style={{
+            padding: '20px',
+            background: '#f5f5f5',
+            borderRadius: '8px',
+            textAlign: 'center',
+            color: '#999'
+          }}>
+            ⏳ 条件未满足，无法显示内容
+          </div>
+        );
+      }
+      return <WrappedComponent {...props} />;
     };
+  }
 
-    return <WrappedComponent {...enhancedProps} />;
-  };
-}
+  // 权限控制HOC
+  function withAuth(WrappedComponent) {
+    return function AuthenticatedComponent(props) {
+      const { isAuthenticated, user, role } = props;
 
-// 使用
-const EnhancedCounter = withState(Counter, 0, 'count', 'setCount');
+      if (!isAuthenticated) {
+        return (
+          <div style={{
+            padding: '20px',
+            background: '#ffebee',
+            borderRadius: '8px',
+            border: '2px solid #f44336',
+            textAlign: 'center'
+          }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>🔒 需要登录</h4>
+            <p style={{ margin: 0, color: '#666' }}>请先登录以访问此内容</p>
+          </div>
+        );
+      }
 
-function Counter({ count, setCount }) {
+      if (role && role !== 'admin') {
+        return (
+          <div style={{
+            padding: '20px',
+            background: '#fff3e0',
+            borderRadius: '8px',
+            border: '2px solid #ff9800',
+            textAlign: 'center'
+          }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>⛔ 访问受限</h4>
+            <p style={{ margin: 0, color: '#666' }}>需要管理员权限才能查看</p>
+          </div>
+        );
+      }
+
+      return <WrappedComponent {...props} />;
+    };
+  }
+
+  // 模拟组件
+  const Dashboard = ({ user, role }) => (
+    <div style={{
+      padding: '20px',
+      background: '#e8f5e9',
+      borderRadius: '8px',
+      border: '2px solid #4caf50'
+    }}>
+      <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>📊 仪表盘</h4>
+      <p style={{ margin: 0 }}>欢迎, {user?.name}! 您的角色: {role}</p>
+    </div>
+  );
+
+  const AdminPanel = ({ user }) => (
+    <div style={{
+      padding: '20px',
+      background: '#f3e5f5',
+      borderRadius: '8px',
+      border: '2px solid #9c27b0'
+    }}>
+      <h4 style={{ margin: '0 0 10px 0', color: '#6a1b9a' }}>👑 管理员面板</h4>
+      <p style={{ margin: 0 }}>管理员功能仅对 {user?.name} 开放</p>
+    </div>
+  );
+
+  // 增强组件
+  const ProtectedDashboard = withAuth(Dashboard);
+  const AdminDashboard = withAuth(AdminPanel);
+  const ConditionalDashboard = withCondition(Dashboard, ({ user }) => user?.isAuthenticated);
+
   return (
-    <div>
-      <p>Count: {count}</p>
-      <button onClick={() => setCount(count + 1)}>Increment</button>
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔐 条件渲染HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => setUser({
+            isAuthenticated: false,
+            role: 'guest',
+            name: 'Guest User'
+          })}
+          style={{
+            padding: '8px 16px',
+            background: user.isAuthenticated ? '#e0e0e0' : '#2196f3',
+            color: user.isAuthenticated ? '#999' : 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          👤 未登录
+        </button>
+        <button
+          onClick={() => setUser({
+            isAuthenticated: true,
+            role: 'user',
+            name: 'Alice'
+          })}
+          style={{
+            padding: '8px 16px',
+            background: user.isAuthenticated && user.role === 'user' ? '#2196f3' : '#e0e0e0',
+            color: user.isAuthenticated && user.role === 'user' ? 'white' : '#999',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          👤 普通用户
+        </button>
+        <button
+          onClick={() => setUser({
+            isAuthenticated: true,
+            role: 'admin',
+            name: 'Admin User'
+          })}
+          style={{
+            padding: '8px 16px',
+            background: user.isAuthenticated && user.role === 'admin' ? '#4caf50' : '#e0e0e0',
+            color: user.isAuthenticated && user.role === 'admin' ? 'white' : '#999',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          👑 管理员
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>1. 基础认证保护：</h4>
+        <ProtectedDashboard user={user} role={user.role} />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>2. 管理员专属内容：</h4>
+        <AdminDashboard user={user} />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 条件渲染模式</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>认证检查</strong> - 确保用户已登录</li>
+          <li><strong>权限控制</strong> - 根据用户角色显示不同内容</li>
+          <li><strong>条件渲染</strong> - 根据条件决定是否渲染组件</li>
+          <li><strong>安全增强</strong> - 在客户端和服务器端都可使用</li>
+          <li><strong>错误处理</strong> - 提供友好的降级UI</li>
+        </ul>
+      </div>
     </div>
   );
 }
+`}
+  scope={{ React }}
+/>
 
-// 更灵活的版本
-function withFormState(WrappedComponent, initialValues) {
-  return function EnhancedFormComponent(props) {
-    const [values, setValues] = useState(initialValues);
-    const [touched, setTouched] = useState({});
-    const [errors, setErrors] = useState({});
+### 3.2 数据获取HOC
 
-    const handleChange = (name, value) => {
-      setValues(prev => ({ ...prev, [name]: value }));
+<LiveCode
+  code={`
+function DataFetchingHOCDemo() {
+  const [userId, setUserId] = React.useState('user1');
+
+  // 模拟用户数据
+  const userDatabase = {
+    user1: { id: 'user1', name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+    user2: { id: 'user2', name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
+    user3: { id: 'user3', name: 'Charlie Brown', email: 'charlie@example.com', role: 'Moderator' }
+  };
+
+  // 模拟API调用
+  const fetchUser = async ({ userId }) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(userDatabase[userId] || null);
+      }, 1000);
+    });
+  };
+
+  // 数据获取HOC
+  function withData(WrappedComponent, dataSource) {
+    return function EnhancedComponent(props) {
+      const [data, setData] = React.useState(null);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(null);
+
+      React.useEffect(() => {
+        const fetchData = async () => {
+          try {
+            setLoading(true);
+            setError(null);
+            const result = await dataSource(props);
+            setData(result);
+          } catch (err) {
+            setError(err);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        fetchData();
+      }, [props.userId]); // 依赖prop变化
+
+      return (
+        <WrappedComponent
+          {...props}
+          data={data}
+          loading={loading}
+          error={error}
+          refetch={() => {
+            setData(null);
+            setLoading(true);
+            dataSource(props).then(setData).catch(setError).finally(() => setLoading(false));
+          }}
+        />
+      );
     };
+  }
 
-    const handleBlur = (name) => {
-      setTouched(prev => ({ ...prev, [name]: true }));
-    };
+  // 用户资料组件
+  const UserProfile = ({ data, loading, error, refetch, userId }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#fff',
+          borderRadius: '8px',
+          border: '2px solid #2196f3',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '24px' }}>⏳</div>
+          <p style={{ margin: '10px 0 0 0', color: '#666' }}>正在加载用户信息...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>❌ 加载失败</h4>
+          <p style={{ margin: '0 0 10px 0', color: '#666' }}>错误: {error.message}</p>
+          <button
+            onClick={refetch}
+            style={{
+              padding: '8px 16px',
+              background: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            🔄 重试
+          </button>
+        </div>
+      );
+    }
+
+    if (!data) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#f5f5f5',
+          borderRadius: '8px',
+          textAlign: 'center',
+          color: '#999'
+        }}>
+          未找到用户
+        </div>
+      );
+    }
 
     return (
-      <WrappedComponent
-        {...props}
-        values={values}
-        touched={touched}
-        errors={errors}
-        handleChange={handleChange}
-        handleBlur={handleBlur}
-      />
+      <div style={{
+        padding: '20px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+          <div style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: '#4caf50',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '24px',
+            marginRight: '15px'
+          }}>
+            {data.name.charAt(0)}
+          </div>
+          <div>
+            <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>{data.name}</h4>
+            <p style={{ margin: 0, color: '#666' }}>{data.email}</p>
+          </div>
+        </div>
+        <div style={{
+          padding: '10px',
+          background: 'white',
+          borderRadius: '6px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <span style={{ color: '#666' }}>角色:</span>
+          <span style={{
+            padding: '4px 12px',
+            background: data.role === 'Admin' ? '#f44336' :
+                      data.role === 'Moderator' ? '#ff9800' : '#2196f3',
+            color: 'white',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}>
+            {data.role}
+          </span>
+        </div>
+      </div>
     );
   };
-}
-```
 
-</CodeBlock>
+  // 增强组件
+  const UserProfileWithData = withData(UserProfile, fetchUser);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📡 数据获取HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => setUserId('user1')}
+          style={{
+            padding: '8px 16px',
+            background: userId === 'user1' ? '#2196f3' : 'white',
+            color: userId === 'user1' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          👤 Alice (Admin)
+        </button>
+        <button
+          onClick={() => setUserId('user2')}
+          style={{
+            padding: '8px 16px',
+            background: userId === 'user2' ? '#2196f3' : 'white',
+            color: userId === 'user2' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          👤 Bob (User)
+        </button>
+        <button
+          onClick={() => setUserId('user3')}
+          style={{
+            padding: '8px 16px',
+            background: userId === 'user3' ? '#2196f3' : 'white',
+            color: userId === 'user3' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          👤 Charlie (Moderator)
+        </button>
+        <button
+          onClick={() => setUserId('invalid')}
+          style={{
+            padding: '8px 16px',
+            background: userId === 'invalid' ? '#f44336' : 'white',
+            color: userId === 'invalid' ? 'white' : '#333',
+            border: '2px solid #f44336',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          ❌ 无效用户
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>用户资料：</h4>
+        <UserProfileWithData userId={userId} />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 数据获取模式</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>自动数据获取</strong> - 基于prop变化自动触发</li>
+          <li><strong>加载状态</strong> - 显示loading占位符</li>
+          <li><strong>错误处理</strong> - 优雅处理错误和重试</li>
+          <li><strong>缓存机制</strong> - 可扩展缓存逻辑</li>
+          <li><strong>复用性</strong> - 任何组件都可快速添加数据获取能力</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
+
+### 3.3 样式增强HOC
+
+<LiveCode
+  code={`
+function StyleEnhancementHOCDemo() {
+  // 样式增强HOC - 添加动态样式和交互状态
+  const withStyles = (WrappedComponent, options) => {
+    return function StyledComponent(props) {
+      const [isActive, setIsActive] = React.useState(false);
+      const [isHovered, setIsHovered] = React.useState(false);
+
+      // 合并样式
+      const containerStyle = {
+        padding: '15px',
+        margin: '10px 0',
+        borderRadius: '8px',
+        border: isActive
+          ? '3px solid #2196f3'
+          : isHovered
+          ? '2px solid #64b5f6'
+          : '2px solid #ddd',
+        background: isActive
+          ? 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)'
+          : isHovered
+          ? '#f5f5f5'
+          : '#fff',
+        transition: 'all 0.3s ease',
+        transform: isActive ? 'scale(1.02)' : 'scale(1)',
+        boxShadow: isActive
+          ? '0 4px 12px rgba(33, 150, 243, 0.3)'
+          : '0 2px 4px rgba(0,0,0,0.1)',
+        cursor: 'pointer'
+      };
+
+      const buttonStyle = {
+        padding: '8px 16px',
+        background: isActive ? '#2196f3' : '#4caf50',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        marginRight: '10px',
+        transition: 'all 0.2s'
+      };
+
+      const resetButtonStyle = {
+        ...buttonStyle,
+        background: '#ff9800'
+      };
+
+      return (
+        <div
+          style={containerStyle}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        >
+          <div style={{ marginBottom: '15px' }}>
+            <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>
+              状态: {isActive ? '🟢 激活' : '⚪ 静止'}
+            </h4>
+            <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
+              悬停: {isHovered ? '是' : '否'}
+            </p>
+          </div>
+
+          <WrappedComponent
+            {...props}
+            isActive={isActive}
+            isHovered={isHovered}
+            onToggle={() => setIsActive(!isActive)}
+            onReset={() => {
+              setIsActive(false);
+              setIsHovered(false);
+            }}
+            styles={{ buttonStyle, resetButtonStyle }}
+          />
+        </div>
+      );
+    };
+  };
+
+  // 原始卡片组件
+  const Card = ({ title, content, isActive, onToggle, onReset, styles }) => {
+    return (
+      <div>
+        <h3 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>{title}</h3>
+        <p style={{ margin: '0 0 15px 0', color: '#555' }}>{content}</p>
+        <div>
+          <button
+            style={styles.buttonStyle}
+            onClick={onToggle}
+          >
+            {isActive ? '取消激活' : '激活样式'}
+          </button>
+          <button
+            style={styles.resetButtonStyle}
+            onClick={onReset}
+          >
+            重置
+          </button>
+        </div>
+        {isActive && (
+          <div style={{
+            marginTop: '10px',
+            padding: '10px',
+            background: '#e8f5e9',
+            borderRadius: '4px',
+            fontSize: '13px',
+            color: '#2e7d32'
+          }}>
+            ✨ 样式已激活！组件现在具有特殊的视觉外观。
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 简单的类名增强HOC示例
+  const withClassName = (WrappedComponent, className) => {
+    return function EnhancedComponent(props) {
+      const enhancedStyle = {
+        padding: '15px',
+        border: '2px dashed #9c27b0',
+        borderRadius: '8px',
+        background: '#f3e5f5',
+        margin: '10px 0'
+      };
+
+      return (
+        <div style={enhancedStyle}>
+          <div style={{
+            fontSize: '12px',
+            color: '#6a1b9a',
+            marginBottom: '8px',
+            fontWeight: 'bold'
+          }}>
+            🎨 类名: {className}
+          </div>
+          <WrappedComponent {...props} />
+        </div>
+      );
+    };
+  };
+
+  // 简单的容器组件
+  const SimpleMessage = ({ message }) => {
+    return (
+      <div style={{
+        padding: '10px',
+        background: 'white',
+        borderRadius: '4px',
+        textAlign: 'center',
+        fontSize: '14px',
+        color: '#333'
+      }}>
+        {message}
+      </div>
+    );
+  };
+
+  // 增强组件
+  const StyledCard = withStyles(Card, {
+    active: 'active-style',
+    base: 'base-style'
+  });
+
+  const CenteredMessage = withClassName(SimpleMessage, 'mx-auto max-w-md');
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎨 样式增强HOC演示</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4>1. 动态样式HOC (带交互状态):</h4>
+        <StyledCard
+          title="📦 产品卡片"
+          content="这是一个可以通过HOC增强样式的卡片组件。点击按钮查看样式变化。"
+        />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>2. 类名增强HOC (简单版本):</h4>
+        <CenteredMessage message="✨ 这个组件通过HOC添加了紫色边框样式" />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 样式增强HOC的特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>动态样式</strong> - 根据状态改变组件外观</li>
+          <li><strong>交互反馈</strong> - 悬停、点击等状态的可视化</li>
+          <li><strong>样式复用</strong> - 一次定义，多处使用</li>
+          <li><strong>类名注入</strong> - 简化CSS类名管理</li>
+          <li><strong>主题切换</strong> - 支持亮色/暗色主题</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
+
+### 3.4 状态管理HOC
+
+<LiveCode
+  code={`
+function StateManagementHOCDemo() {
+  // 状态提升HOC
+  const withState = (WrappedComponent, initialState, stateName = 'state', setStateName = 'setState') => {
+    return function EnhancedComponent(props) {
+      const [state, setState] = React.useState(initialState);
+
+      const enhancedProps = {
+        ...props,
+        [stateName]: state,
+        [setStateName]: setState
+      };
+
+      return <WrappedComponent {...enhancedProps} />;
+    };
+  };
+
+  // 计数器组件
+  const Counter = ({ count, setCount }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>计数器组件</h4>
+        <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '10px 0' }}>Count: {count}</p>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => setCount(count + 1)}
+            style={{
+              padding: '8px 16px',
+              background: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            +1
+          </button>
+          <button
+            onClick={() => setCount(count - 1)}
+            style={{
+              padding: '8px 16px',
+              background: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            -1
+          </button>
+          <button
+            onClick={() => setCount(0)}
+            style={{
+              padding: '8px 16px',
+              background: '#ff9800',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            重置
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // 更灵活的表单状态HOC
+  const withFormState = (WrappedComponent, initialValues) => {
+    return function EnhancedFormComponent(props) {
+      const [values, setValues] = React.useState(initialValues);
+      const [touched, setTouched] = React.useState({});
+      const [errors, setErrors] = React.useState({});
+
+      const handleChange = (name, value) => {
+        setValues(prev => ({ ...prev, [name]: value }));
+      };
+
+      const handleBlur = (name) => {
+        setTouched(prev => ({ ...prev, [name]: true }));
+      };
+
+      return (
+        <WrappedComponent
+          {...props}
+          values={values}
+          touched={touched}
+          errors={errors}
+          handleChange={handleChange}
+          handleBlur={handleBlur}
+        />
+      );
+    };
+  };
+
+  // 表单组件
+  const LoginForm = ({ values, touched, errors, handleChange, handleBlur }) => {
+    return (
+      <div style={{
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        border: '2px solid #9c27b0',
+        maxWidth: '400px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#6a1b9a' }}>登录表单 (withFormState)</h4>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>
+            用户名
+          </label>
+          <input
+            type="text"
+            value={values.username || ''}
+            onChange={(e) => handleChange('username', e.target.value)}
+            onBlur={() => handleBlur('username')}
+            placeholder="输入用户名"
+            style={{
+              width: '100%',
+              padding: '8px',
+              border: touched.username && errors.username ? '2px solid #f44336' : '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}
+          />
+          {touched.username && errors.username && (
+            <p style={{ color: '#f44336', fontSize: '12px', margin: '5px 0 0 0' }}>
+              {errors.username}
+            </p>
+          )}
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', color: '#333' }}>
+            密码
+          </label>
+          <input
+            type="password"
+            value={values.password || ''}
+            onChange={(e) => handleChange('password', e.target.value)}
+            onBlur={() => handleBlur('password')}
+            placeholder="输入密码"
+            style={{
+              width: '100%',
+              padding: '8px',
+              border: touched.password && errors.password ? '2px solid #f44336' : '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '14px'
+            }}
+          />
+          {touched.password && errors.password && (
+            <p style={{ color: '#f44336', fontSize: '12px', margin: '5px 0 0 0' }}>
+              {errors.password}
+            </p>
+          )}
+        </div>
+
+        <div style={{
+          marginTop: '20px',
+          padding: '10px',
+          background: 'white',
+          borderRadius: '4px',
+          fontSize: '14px'
+        }}>
+          <strong>表单值：</strong>
+          <pre style={{ margin: '5px 0', fontSize: '12px', color: '#666' }}>
+            {JSON.stringify(values, null, 2)}
+          </pre>
+        </div>
+      </div>
+    );
+  };
+
+  // 创建增强组件
+  const EnhancedCounter = withState(Counter, 0, 'count', 'setCount');
+  const EnhancedForm = withFormState(LoginForm, { username: '', password: '' });
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔄 状态管理HOC演示</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4>1. 基础状态HOC (withState):</h4>
+        <EnhancedCounter />
+      </div>
+
+      <div>
+        <h4>2. 表单状态HOC (withFormState):</h4>
+        <EnhancedForm />
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 状态管理HOC特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>状态提升</strong> - 将状态逻辑提取到HOC中</li>
+          <li><strong>可配置</strong> - 支持自定义状态名称</li>
+          <li><strong>表单处理</strong> - 专门处理表单状态和验证</li>
+          <li><strong>复用性强</strong> - 任何组件都可以快速添加状态管理</li>
+          <li><strong>分离关注点</strong> - 状态逻辑与UI分离</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 3.5 事件处理HOC
 
-<CodeBlock>
-
-```jsx
-// 事件处理HOC
-function withClickAnalytics(WrappedComponent, analytics) {
-  return function EnhancedComponent(props) {
-    const handleClick = useCallback((event) => {
-      // 调用原始处理函数
-      if (props.onClick) {
-        props.onClick(event);
-      }
-
-      // 发送分析数据
-      analytics.track('component_clicked', {
-        component: WrappedComponent.name,
-        timestamp: Date.now()
-      });
-    }, [props.onClick, analytics]);
-
-    return <WrappedComponent {...props} onClick={handleClick} />;
+<LiveCode
+  code={`
+function EventHandlingHOCDemo() {
+  // 模拟分析服务
+  const analytics = {
+    clicks: [],
+    track: (event, data) => {
+      analytics.clicks.push({ event, data, timestamp: new Date().toLocaleTimeString() });
+    }
   };
-}
 
-// 使用
-const trackClick = {
-  track: (event, data) => console.log(event, data)
-};
-
-const TrackedButton = withClickAnalytics(Button, trackClick);
-
-// 键盘快捷键HOC
-function withKeyboardShortcuts(WrappedComponent, shortcuts) {
-  return function EnhancedComponent(props) {
-    useEffect(() => {
-      const handleKeyPress = (event) => {
-        const key = event.key.toLowerCase();
-        if (shortcuts[key]) {
-          event.preventDefault();
-          shortcuts[key](props);
+  // 事件处理HOC
+  const withClickAnalytics = (WrappedComponent, analyticsService) => {
+    return function EnhancedComponent(props) {
+      const handleClick = React.useCallback((event) => {
+        // 调用原始处理函数
+        if (props.onClick) {
+          props.onClick(event);
         }
-      };
 
-      document.addEventListener('keydown', handleKeyPress);
-      return () => document.removeEventListener('keydown', handleKeyPress);
-    }, [shortcuts, props]);
+        // 发送分析数据
+        analyticsService.track('component_clicked', {
+          component: WrappedComponent.name || 'Anonymous',
+          timestamp: new Date().toLocaleTimeString()
+        });
+      }, [props.onClick, analyticsService]);
 
-    return <WrappedComponent {...props} />;
+      return <WrappedComponent {...props} onClick={handleClick} />;
+    };
   };
+
+  // 键盘快捷键HOC
+  const withKeyboardShortcuts = (WrappedComponent, shortcuts) => {
+    return function EnhancedComponent(props) {
+      React.useEffect(() => {
+        const handleKeyPress = (event) => {
+          const key = event.key.toLowerCase();
+          if (shortcuts[key]) {
+            event.preventDefault();
+            shortcuts[key](props);
+          }
+        };
+
+        document.addEventListener('keydown', handleKeyPress);
+        return () => document.removeEventListener('keydown', handleKeyPress);
+      }, [shortcuts, props]);
+
+      return <WrappedComponent {...props} />;
+    };
+  };
+
+  // 按钮组件
+  const Button = ({ onClick, children, variant = 'primary' }) => {
+    const buttonStyle = {
+      primary: { background: '#2196f3', color: 'white' },
+      success: { background: '#4caf50', color: 'white' },
+      danger: { background: '#f44336', color: 'white' }
+    };
+
+    return (
+      <button
+        onClick={onClick}
+        style={{
+          padding: '10px 20px',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold',
+          ...buttonStyle[variant]
+        }}
+      >
+        {children}
+      </button>
+    );
+  };
+
+  // 快捷键处理函数
+  const shortcuts = {
+    's': () => {
+      alert('💾 Save action triggered (S key)');
+      analytics.track('shortcut_used', { key: 's', action: 'save' });
+    },
+    'd': () => {
+      alert('🗑️ Delete action triggered (D key)');
+      analytics.track('shortcut_used', { key: 'd', action: 'delete' });
+    },
+    'h': () => {
+      alert('ℹ️ Help opened (H key)');
+      analytics.track('shortcut_used', { key: 'h', action: 'help' });
+    }
+  };
+
+  // 创建增强组件
+  const TrackedButton = withClickAnalytics(Button, analytics);
+  const ShortcutEnabledComponent = withKeyboardShortcuts(({ onShortcutUsed }) => {
+    const [count, setCount] = React.useState(0);
+
+    return (
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#1976d2' }}>
+          🎹 快捷键监听组件 (按 S/D/H 键测试)
+        </h4>
+        <p style={{ margin: '10px 0' }}>点击次数: {count}</p>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => setCount(count + 1)}
+            style={{
+              padding: '8px 16px',
+              background: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            点击我
+          </button>
+        </div>
+        <p style={{ marginTop: '15px', fontSize: '14px', color: '#666' }}>
+          💡 提示: 按键盘上的 <strong>S</strong> (保存)、<strong>D</strong> (删除)、<strong>H</strong> (帮助) 键
+        </p>
+      </div>
+    );
+  }, shortcuts);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>⚡ 事件处理HOC演示</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4>1. 点击追踪HOC (withClickAnalytics):</h4>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+          <TrackedButton
+            variant="primary"
+            onClick={() => alert('点击了主要按钮！')}
+          >
+            追踪点击
+          </TrackedButton>
+          <TrackedButton
+            variant="success"
+            onClick={() => alert('成功按钮被点击！')}
+          >
+            成功按钮
+          </TrackedButton>
+          <TrackedButton
+            variant="danger"
+            onClick={() => alert('危险按钮！')}
+          >
+            危险按钮
+          </TrackedButton>
+        </div>
+
+        {analytics.clicks.length > 0 && (
+          <div style={{
+            marginTop: '15px',
+            padding: '15px',
+            background: 'white',
+            borderRadius: '6px',
+            border: '1px solid #ddd',
+            maxWidth: '500px'
+          }}>
+            <h5 style={{ margin: '0 0 10px 0' }}>📊 点击日志:</h5>
+            <div style={{ fontSize: '12px', color: '#666', maxHeight: '150px', overflow: 'auto' }}>
+              {analytics.clicks.map((log, index) => (
+                <div key={index} style={{ marginBottom: '5px', padding: '5px', background: '#f5f5f5', borderRadius: '3px' }}>
+                  <strong>{log.event}</strong> - {log.data.component} at {log.data.timestamp}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>2. 键盘快捷键HOC (withKeyboardShortcuts):</h4>
+        <ShortcutEnabledComponent />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        border: '2px solid #9c27b0'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#6a1b9a' }}>💡 事件处理HOC特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>点击追踪</strong> - 自动追踪组件点击事件</li>
+          <li><strong>快捷键支持</strong> - 为组件添加键盘快捷键</li>
+          <li><strong>分析集成</strong> - 集成第三方分析服务</li>
+          <li><strong>事件增强</strong> - 在不修改原组件的情况下增强事件处理</li>
+          <li><strong>可复用</strong> - 一次定义，多处使用</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-const shortcuts = {
-  's': () => console.log('Save action'),
-  'd': () => console.log('Delete action')
-};
-
-const ShortcutEnabledComponent = withKeyboardShortcuts(MyComponent, shortcuts);
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -454,133 +1477,635 @@ const ShortcutEnabledComponent = withKeyboardShortcuts(MyComponent, shortcuts);
 
 ### 4.1 链式HOC
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ChainedHOCHDemo() {
+  // 模拟各种HOC
+  const withStyles = (WrappedComponent, color) => {
+    return function StyledComponent(props) {
+      return (
+        <div style={{
+          padding: '20px',
+          border: '3px solid ' + color,
+          borderRadius: '8px',
+          margin: '10px',
+          background: '#f9f9f9'
+        }}>
+          <WrappedComponent {...props} />
+        </div>
+      );
+    };
+  };
 
-```jsx
-// 链式应用HOC
-const EnhancedComponent = withAuth(
-  withLoading(
-    withStyles(MyComponent, styles)
-  )
-);
+  const withLoading = (WrappedComponent) => {
+    return function LoadingComponent(props) {
+      const [isLoading, setIsLoading] = React.useState(false);
 
-// 或者使用compose函数
-const compose = (...hocs) => (component) =>
-  hocs.reduce((wrapped, hoc) => hoc(wrapped), component);
+      return (
+        <div>
+          <button
+            onClick={() => setIsLoading(!isLoading)}
+            style={{
+              marginBottom: '10px',
+              padding: '8px 16px',
+              background: isLoading ? '#ff9800' : '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            {isLoading ? '显示加载中...' : '显示组件'}
+          </button>
+          {isLoading ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
+              ⏳ 加载中...
+            </div>
+          ) : (
+            <WrappedComponent {...props} />
+          )}
+        </div>
+      );
+    };
+  };
 
-const enhance = compose(
-  withAuth,
-  withLoading,
-  withStyles(styles),
-  withKeyboardShortcuts(shortcuts)
-);
+  const withBadge = (WrappedComponent) => {
+    return function BadgedComponent(props) {
+      return (
+        <div style={{ position: 'relative' }}>
+          <WrappedComponent {...props} />
+          <div style={{
+            position: 'absolute',
+            top: '-10px',
+            right: '-10px',
+            background: '#f44336',
+            color: 'white',
+            borderRadius: '50%',
+            width: '24px',
+            height: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}>
+            !
+          </div>
+        </div>
+      );
+    };
+  };
 
-const EnhancedComponent = enhance(MyComponent);
-```
+  // compose函数 - 组合多个HOC
+  const compose = (...hocs) => (component) =>
+    hocs.reduce((wrapped, hoc) => hoc(wrapped), component);
 
-</CodeBlock>
+  // 原始组件
+  const MyComponent = ({ name }) => {
+    return (
+      <div style={{ padding: '15px', background: 'white', borderRadius: '4px' }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>📦 原始组件</h4>
+        <p style={{ margin: 0, color: '#666' }}>Hello, {name}!</p>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔗 链式HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 链式HOC原理</h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>compose函数</strong>从右到左依次应用HOC：
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px', fontFamily: 'monospace', background: '#fff', padding: '10px', borderRadius: '4px' }}>
+          enhance = withBadge ∘ withLoading ∘ withStyles ∘ MyComponent
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          等同于：withBadge(withLoading(withStyles(MyComponent)))
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>方法1: 手动链式组合</h4>
+        <div style={{ marginTop: '10px' }}>
+          {(() => {
+            // 手动链式组合
+            const StyledComponent = withStyles(MyComponent, '#4caf50');
+            const StyledWithLoading = withLoading(StyledComponent);
+            const FinalComponent = withBadge(StyledWithLoading);
+
+            return <FinalComponent name="手动链式" />;
+          })()}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>方法2: 使用compose函数</h4>
+        <div style={{ marginTop: '10px' }}>
+          {(() => {
+            // 使用compose组合
+            const enhance = compose(
+              withBadge,
+              withLoading,
+              (WrappedComponent) => withStyles(WrappedComponent, '#9c27b0')
+            );
+
+            const EnhancedComponent = enhance(MyComponent);
+            return <EnhancedComponent name="使用compose" />;
+          })()}
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 compose函数实现</h4>
+        <pre style={{ margin: 0, fontSize: '13px', color: '#333' }}>
+{\`const compose = (...hocs) => (component) =>
+  hocs.reduce((wrapped, hoc) => hoc(wrapped), component);\`}
+        </pre>
+        <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#666' }}>
+          <strong>reduce过程：</strong>从右到左依次执行，每次将结果传递给下一个HOC
+        </p>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 4.2 传递Refs
 
-<CodeBlock>
-
-```jsx
-// React.forwardRef传递refs
-import React, { forwardRef } from 'react';
-
-function withRef(WrappedComponent) {
-  // 必须使用forwardRef
-  const EnhancedComponent = forwardRef((props, ref) => {
-    return <WrappedComponent ref={ref} {...props} />;
+<LiveCode
+  code={`
+function RefForwardingDemo() {
+  // 原始Input组件
+  const Input = forwardRef((props, ref) => {
+    return (
+      <input
+        ref={ref}
+        {...props}
+        style={{
+          padding: '10px 15px',
+          fontSize: '16px',
+          border: '2px solid #2196f3',
+          borderRadius: '6px',
+          outline: 'none',
+          transition: 'all 0.3s',
+          width: '100%',
+          maxWidth: '300px'
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#4caf50';
+          e.target.style.boxShadow = '0 0 0 3px rgba(76, 175, 80, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#2196f3';
+          e.target.style.boxShadow = 'none';
+        }}
+      />
+    );
   });
 
-  EnhancedComponent.displayName = `withRef(${getDisplayName(WrappedComponent)})`;
+  // 使用forwardRef的HOC
+  const withRef = (WrappedComponent) => {
+    const EnhancedComponent = forwardRef((props, ref) => {
+      return <WrappedComponent ref={ref} {...props} />;
+    });
 
-  return EnhancedComponent;
+    EnhancedComponent.displayName = \`withRef(\${WrappedComponent.displayName || WrappedComponent.name || 'Component'})\`;
+    return EnhancedComponent;
+  };
+
+  // 创建增强的Input组件
+  const EnhancedInput = withRef(Input);
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>🔗 Ref转发示例</h3>
+
+      <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+        <strong>功能：</strong>通过forwardRef转发refs，使父组件可以访问子组件的DOM节点
+      </p>
+
+      <div style={{ marginTop: '20px' }}>
+        <EnhancedInput placeholder="我可以被自动聚焦！" />
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 工作原理</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>forwardRef</strong> - React提供的ref转发API</li>
+          <li><strong>传递ref</strong> - HOC将ref传递给包装组件</li>
+          <li><strong>访问DOM</strong> - 父组件可以直接操作子组件的DOM</li>
+          <li><strong>displayName</strong> - 便于调试的组件名称</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '12px',
+        background: '#fff3e0',
+        borderRadius: '6px',
+        fontSize: '13px',
+        color: '#e65100'
+      }}>
+        <strong>💡 提示：</strong> 刷新页面可以看到输入框自动获得焦点
+      </div>
+    </div>
+  );
 }
-
-// 使用
-const EnhancedInput = withRef(Input);
-
-function MyComponent() {
-  const inputRef = useRef();
-
-  useEffect(() => {
-    // 可以访问到Input的实例方法
-    inputRef.current.focus();
-  }, []);
-
-  return <EnhancedInput ref={inputRef} />;
-}
-```
-
-</CodeBlock>
+`}
+  scope={{ React, forwardRef }}
+/>
 
 ### 4.3 继承Props代理模式
 
-<CodeBlock>
-
-```jsx
-// Props代理HOC - 操作props
-function withPropsProxy(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    // 1. 操作传入的props
-    const modifiedProps = {
-      ...props,
-      className: `enhanced ${props.className || ''}`,
-      onClick: (e) => {
-        // 增强点击事件
-        console.log('Enhanced click');
-        if (props.onClick) {
-          props.onClick(e);
+<LiveCode
+  code={`
+function PropsProxyDemo() {
+  // Props代理HOC - 操作props
+  const withPropsProxy = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      // 1. 操作传入的props
+      const modifiedProps = {
+        ...props,
+        className: \`enhanced \${props.className || ''}\`,
+        style: {
+          ...props.style,
+          background: '#2196f3',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '12px 24px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          transition: 'all 0.3s',
+          boxShadow: '0 4px 6px rgba(33, 150, 243, 0.3)',
+          transform: 'scale(1)',
+          ...props.style
+        },
+        onClick: (e) => {
+          // 增强点击事件
+          console.log('🚀 Enhanced click triggered!');
+          if (props.onClick) {
+            props.onClick(e);
+          }
         }
-      }
-    };
+      };
 
-    // 2. 添加额外props
-    const addedProps = {
-      theme: 'dark',
-      locale: 'en-US'
-    };
+      // 2. 添加额外props
+      const addedProps = {
+        'data-enhanced': 'true',
+        'data-theme': 'enhanced',
+        title: 'This is an enhanced button!'
+      };
 
-    // 3. 渲染包装组件
-    return <WrappedComponent {...modifiedProps} {...addedProps} />;
+      // 3. 渲染包装组件
+      return <WrappedComponent {...modifiedProps} {...addedProps} />;
+    };
   };
-}
-```
 
-</CodeBlock>
+  // 原始Button组件
+  const Button = ({ children, className, style, onClick, title, ...rest }) => {
+    return (
+      <button
+        className={className}
+        style={style}
+        onClick={onClick}
+        title={title}
+        {...rest}
+      >
+        {children}
+      </button>
+    );
+  };
+
+  // 创建增强Button
+  const EnhancedButton = withPropsProxy(Button);
+
+  // 状态
+  const [clickCount, setClickCount] = React.useState(0);
+  const [logs, setLogs] = React.useState([]);
+
+  const handleOriginalClick = () => {
+    setClickCount(c => c + 1);
+    setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), type: 'original', message: 'Original button clicked' }]);
+  };
+
+  const handleEnhancedClick = (e) => {
+    setClickCount(c => c + 1);
+    setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), type: 'enhanced', message: 'Enhanced button clicked!' }]);
+
+    // 视觉反馈
+    e.target.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+      e.target.style.transform = 'scale(1)';
+    }, 200);
+  };
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>🔧 Props代理模式示例</h3>
+
+      <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+        <strong>功能：</strong>HOC可以修改现有props、添加新props，并增强组件行为
+      </p>
+
+      <div style={{ marginTop: '20px' }}>
+        <h4>对比效果：</h4>
+        <div style={{ display: 'flex', gap: '20px', marginTop: '15px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <h5 style={{ margin: '0 0 10px 0', color: '#999' }}>原始Button</h5>
+            <Button onClick={handleOriginalClick}>
+              普通按钮
+            </Button>
+          </div>
+
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <h5 style={{ margin: '0 0 10px 0', color: '#2196f3' }}>增强Button (withPropsProxy)</h5>
+            <EnhancedButton onClick={handleEnhancedClick}>
+              ✨ 增强按钮
+            </EnhancedButton>
+            <p style={{ margin: '10px 0 0 0', fontSize: '12px', color: '#2196f3' }}>
+              ✓ 蓝色背景<br/>
+              ✓ 增强样式<br/>
+              ✓ 增强点击事件<br/>
+              ✓ 额外属性
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '25px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        border: '1px solid #ddd'
+      }}>
+        <h5 style={{ margin: '0 0 10px 0' }}>点击统计：</h5>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>总点击数：</strong> {clickCount}
+        </p>
+      </div>
+
+      {logs.length > 0 && (
+        <div style={{
+          marginTop: '15px',
+          padding: '15px',
+          background: '#fff',
+          borderRadius: '8px',
+          border: '1px solid #ddd',
+          maxHeight: '200px',
+          overflowY: 'auto'
+        }}>
+          <h5 style={{ margin: '0 0 10px 0' }}>操作日志：</h5>
+          {logs.slice(-5).map((log, index) => (
+            <div key={index} style={{
+              padding: '8px',
+              background: log.type === 'enhanced' ? '#e3f2fd' : '#f5f5f5',
+              borderRadius: '4px',
+              marginBottom: '5px',
+              fontSize: '13px'
+            }}>
+              <strong>{log.time}</strong> - {log.message}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 Props代理特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>修改props</strong> - 可以修改现有props的值和行为</li>
+          <li><strong>添加props</strong> - 为组件添加新的属性</li>
+          <li><strong>增强事件</strong> - 在事件处理函数中添加额外逻辑</li>
+          <li><strong>条件渲染</strong> - 根据条件决定如何渲染</li>
+          <li><strong>性能优化</strong> - 可以优化props传递</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 4.4 继承反向代理模式
 
-<CodeBlock>
+<LiveCode
+  code={`
+function LifecycleProxyDemo() {
+  // 反向代理HOC - 劫持生命周期（类组件模式）
+  const withLifecycleProxy = (WrappedComponent) => {
+    return class EnhancedComponent extends WrappedComponent {
+      componentDidMount() {
+        console.log('✅ Enhanced component did mount');
+        if (super.componentDidMount) {
+          super.componentDidMount();
+        }
+      }
 
-```jsx
-// 反向代理HOC - 劫持生命周期
-function withLifecycleProxy(WrappedComponent) {
-  return class EnhancedComponent extends WrappedComponent {
+      componentWillUnmount() {
+        console.log('❌ Enhanced component will unmount');
+        if (super.componentWillUnmount) {
+          super.componentWillUnmount();
+        }
+      }
+
+      render() {
+        const element = super.render();
+        // 增强渲染的组件
+        return React.cloneElement(element, {
+          style: {
+            ...element.props.style,
+            border: '3px solid #ff9800',
+            borderRadius: '8px',
+            padding: '20px',
+            background: '#fff3e0'
+          }
+        });
+      }
+    };
+  };
+
+  // 原始类组件
+  class UserProfile extends React.Component {
     componentDidMount() {
-      console.log('Enhanced component did mount');
-      super.componentDidMount();
+      console.log('📦 UserProfile mounted');
     }
 
     componentWillUnmount() {
-      console.log('Enhanced component will unmount');
-      super.componentWillUnmount();
+      console.log('📦 UserProfile unmounted');
     }
 
     render() {
-      console.log('Enhanced component render');
-      return super.render();
+      return (
+        <div style={{ textAlign: 'center' }}>
+          <h3 style={{ margin: '0 0 10px 0', color: '#ff9800' }}>
+            👤 用户资料
+          </h3>
+          <p style={{ margin: '5px 0', color: '#666' }}>
+            姓名: Alice Johnson
+          </p>
+          <p style={{ margin: '5px 0', color: '#666' }}>
+            邮箱: alice@example.com
+          </p>
+        </div>
+      );
     }
-  };
+  }
+
+  // 创建增强的UserProfile
+  const EnhancedUserProfile = withLifecycleProxy(UserProfile);
+
+  // 状态
+  const [isVisible, setIsVisible] = React.useState(true);
+  const [logs, setLogs] = React.useState([]);
+
+  React.useEffect(() => {
+    if (isVisible) {
+      setLogs(prev => [...prev, {
+        time: new Date().toLocaleTimeString(),
+        message: '✅ Enhanced UserProfile mounted (check console)',
+        type: 'mount'
+      }]);
+    } else {
+      setLogs(prev => [...prev, {
+        time: new Date().toLocaleTimeString(),
+        message: '❌ Enhanced UserProfile unmounted (check console)',
+        type: 'unmount'
+      }]);
+    }
+  }, [isVisible]);
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>⚙️ 生命周期代理模式示例</h3>
+
+      <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+        <strong>说明：</strong>通过继承包装组件来劫持生命周期方法（类组件模式）
+      </p>
+
+      <div style={{ marginTop: '20px' }}>
+        <button
+          onClick={() => setIsVisible(!isVisible)}
+          style={{
+            padding: '10px 20px',
+            background: isVisible ? '#f44336' : '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            marginBottom: '20px'
+          }}
+        >
+          {isVisible ? '🚫 卸载组件' : '✅ 挂载组件'}
+        </button>
+
+        {isVisible && (
+          <div style={{
+            padding: '10px',
+            background: '#e3f2fd',
+            borderRadius: '8px',
+            border: '2px solid #2196f3'
+          }}>
+            <EnhancedUserProfile />
+          </div>
+        )}
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff',
+        borderRadius: '8px',
+        border: '1px solid #ddd',
+        maxHeight: '250px',
+        overflowY: 'auto'
+      }}>
+        <h5 style={{ margin: '0 0 10px 0' }}>生命周期日志：</h5>
+        {logs.length === 0 ? (
+          <p style={{ margin: '0', color: '#999', fontSize: '14px' }}>
+            点击"挂载组件"查看生命周期日志
+          </p>
+        ) : (
+          logs.map((log, index) => (
+            <div key={index} style={{
+              padding: '10px',
+              background: log.type === 'mount' ? '#e8f5e9' : '#ffebee',
+              borderRadius: '4px',
+              marginBottom: '8px',
+              fontSize: '13px',
+              border: \`1px solid ${log.type === 'mount' ? '#4caf50' : '#f44336'}\`
+            }}>
+              <strong>{log.time}</strong> - {log.message}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 生命周期代理特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>类组件模式</strong> - 通过继承来劫持生命周期</li>
+          <li><strong>方法覆盖</strong> - 重写componentDidMount等方法</li>
+          <li><strong>super调用</strong> - 调用父类方法保持功能</li>
+          <li><strong>渲染增强</strong> - 可以修改渲染结果</li>
+          <li><strong>⚠️ 不推荐</strong> - Hooks提供了更好的替代方案</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '12px',
+        background: '#ffebee',
+        borderRadius: '6px',
+        fontSize: '13px',
+        color: '#c62828',
+        border: '1px solid #f44336'
+      }}>
+        <strong>⚠️ 注意：</strong> 这种模式在现代React中已不推荐。Hooks（useEffect等）提供了更简洁、更易维护的替代方案。仅用于理解概念。
+      </div>
+    </div>
+  );
 }
-
-// 注意：这种模式已不推荐，仅用于理解概念
-// Hooks提供了更好的替代方案
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -676,162 +2201,827 @@ function UserProfile() {
 
 ### 6.1 权限控制HOC
 
-<CodeBlock>
+<LiveCode
+  code={`
+function AuthorizationHOEDemo() {
+  // 模拟用户状态
+  const [currentUser, setCurrentUser] = React.useState({
+    name: 'Guest User',
+    role: 'guest'
+  });
+  const [loading, setLoading] = React.useState(false);
 
-```jsx
-// 完整的权限控制HOC
-function withAuthorization(requiredRole) {
-  return (WrappedComponent) => {
-    return function AuthorizedComponent(props) {
-      const { user, isLoading } = useAuth();
+  // 模拟登录
+  const loginAs = (role) => {
+    setLoading(true);
+    setTimeout(() => {
+      const userMap = {
+        admin: { name: 'Admin User', role: 'admin' },
+        user: { name: 'Regular User', role: 'user' },
+        guest: { name: 'Guest User', role: 'guest' }
+      };
+      setCurrentUser(userMap[role] || userMap.guest);
+      setLoading(false);
+    }, 500);
+  };
 
-      if (isLoading) {
-        return <div>Checking authorization...</div>;
-      }
+  // 权限控制HOC
+  const withAuthorization = (requiredRole) => {
+    return (WrappedComponent) => {
+      return function AuthorizedComponent(props) {
+        if (loading) {
+          return (
+            <div style={{
+              padding: '20px',
+              background: '#fff3e0',
+              borderRadius: '8px',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+              <p style={{ margin: 0, color: '#e65100' }}>正在检查权限...</p>
+            </div>
+          );
+        }
 
-      if (!user) {
-        return <Navigate to="/login" replace />;
-      }
+        if (!currentUser || currentUser.role === 'guest') {
+          return (
+            <div style={{
+              padding: '20px',
+              background: '#ffebee',
+              borderRadius: '8px',
+              border: '2px solid #f44336',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '24px', marginBottom: '10px' }}>🔒</div>
+              <h3 style={{ margin: '0 0 10px 0', color: '#c62828' }}>未登录</h3>
+              <p style={{ margin: 0, color: '#666' }}>请先登录以访问此内容</p>
+            </div>
+          );
+        }
 
-      if (user.role !== requiredRole) {
-        return (
-          <div className="access-denied">
-            <h2>Access Denied</h2>
-            <p>You don't have permission to view this page.</p>
-            <p>Required role: {requiredRole}</p>
-            <p>Your role: {user.role}</p>
-          </div>
-        );
-      }
+        if (currentUser.role !== requiredRole) {
+          return (
+            <div style={{
+              padding: '20px',
+              background: '#ffebee',
+              borderRadius: '8px',
+              border: '2px solid #f44336'
+            }}>
+              <h3 style={{ margin: '0 0 15px 0', color: '#c62828' }}>
+                ⛔ 访问被拒绝
+              </h3>
+              <div style={{ background: 'white', padding: '15px', borderRadius: '4px' }}>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>所需角色：</strong> {requiredRole}
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  <strong>您的角色：</strong> {currentUser.role}
+                </p>
+                <p style={{ margin: '5px 0', color: '#666' }}>
+                  您没有权限查看此页面
+                </p>
+              </div>
+            </div>
+          );
+        }
 
-      return <WrappedComponent {...props} />;
+        return <WrappedComponent {...props} user={currentUser} />;
+      };
     };
   };
+
+  // 模拟组件
+  const Dashboard = ({ user }) => (
+    <div style={{
+      padding: '20px',
+      background: '#e8f5e9',
+      borderRadius: '8px',
+      border: '2px solid #4caf50'
+    }}>
+      <h3 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>
+        📊 管理员仪表盘
+      </h3>
+      <p style={{ margin: 0 }}>欢迎, {user.name}!</p>
+      <div style={{
+        marginTop: '15px',
+        padding: '10px',
+        background: 'white',
+        borderRadius: '4px'
+      }}>
+        <p style={{ margin: '5px 0' }}>✓ 用户管理</p>
+        <p style={{ margin: '5px 0' }}>✓ 系统设置</p>
+        <p style={{ margin: '5px 0' }}>✓ 权限控制</p>
+      </div>
+    </div>
+  );
+
+  const AdminPanel = ({ user }) => (
+    <div style={{
+      padding: '20px',
+      background: '#f3e5f5',
+      borderRadius: '8px',
+      border: '2px solid #9c27b0'
+    }}>
+      <h3 style={{ margin: '0 0 10px 0', color: '#6a1b9a' }}>
+        👑 超级用户面板
+      </h3>
+      <p style={{ margin: 0 }}>欢迎, {user.name}!</p>
+      <div style={{
+        marginTop: '15px',
+        padding: '10px',
+        background: 'white',
+        borderRadius: '4px'
+      }}>
+        <p style={{ margin: '5px 0' }}>✓ 所有权限</p>
+        <p style={{ margin: '5px 0' }}>✓ 系统配置</p>
+        <p style={{ margin: '5px 0' }}>✓ 高级设置</p>
+      </div>
+    </div>
+  );
+
+  const UserProfile = ({ user }) => (
+    <div style={{
+      padding: '20px',
+      background: '#e3f2fd',
+      borderRadius: '8px',
+      border: '2px solid #2196f3'
+    }}>
+      <h3 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
+        👤 用户资料
+      </h3>
+      <p style={{ margin: 0 }}>欢迎, {user.name}!</p>
+      <div style={{
+        marginTop: '15px',
+        padding: '10px',
+        background: 'white',
+        borderRadius: '4px'
+      }}>
+        <p style={{ margin: '5px 0' }}>✓ 查看个人信息</p>
+        <p style={{ margin: '5px 0' }}>✓ 编辑资料</p>
+      </div>
+    </div>
+  );
+
+  // 创建增强组件
+  const AdminDashboard = withAuthorization('admin')(Dashboard);
+  const SuperUserPanel = withAuthorization('superuser')(AdminPanel);
+  const UserDashboard = withAuthorization('user')(UserProfile);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔐 权限控制HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => loginAs('guest')}
+          style={{
+            padding: '8px 16px',
+            background: currentUser.role === 'guest' ? '#f44336' : 'white',
+            color: currentUser.role === 'guest' ? 'white' : '#333',
+            border: '2px solid #f44336',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          👤 以访客身份登录
+        </button>
+        <button
+          onClick={() => loginAs('user')}
+          style={{
+            padding: '8px 16px',
+            background: currentUser.role === 'user' ? '#2196f3' : 'white',
+            color: currentUser.role === 'user' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          👤 以普通用户身份登录
+        </button>
+        <button
+          onClick={() => loginAs('admin')}
+          style={{
+            padding: '8px 16px',
+            background: currentUser.role === 'admin' ? '#4caf50' : 'white',
+            color: currentUser.role === 'admin' ? 'white' : '#333',
+            border: '2px solid #4caf50',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          👑 以管理员身份登录
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>当前用户：{currentUser.name} (角色: {currentUser.role})</h4>
+      </div>
+
+      <div style={{ display: 'grid', gap: '15px' }}>
+        <AdminDashboard />
+        <SuperUserPanel />
+        <UserDashboard />
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 HOC工作原理</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>权限检查</strong> - 在渲染前验证用户角色</li>
+          <li><strong>条件渲染</strong> - 根据权限显示或隐藏组件</li>
+          <li><strong>错误处理</strong> - 提供友好的拒绝访问提示</li>
+          <li><strong>复用性强</strong> - 任何组件都可以快速添加权限控制</li>
+          <li><strong>解耦逻辑</strong> - 权限逻辑与业务逻辑分离</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-const AdminDashboard = withAuthorization('admin')(Dashboard);
-const SuperUserPanel = withAuthorization('superuser')(Panel);
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 6.2 数据缓存HOC
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DataCachingHOEDemo() {
+  // 模拟缓存存储
+  const cache = React.useRef(new Map());
 
-```jsx
-// 智能缓存HOC
-function withCache(WrappedComponent, options = {}) {
-  const { ttl = 60000 } = options; // 默认60秒
+  // 模拟API调用
+  const fetchUsers = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: 1, name: 'Alice', email: 'alice@example.com' },
+          { id: 2, name: 'Bob', email: 'bob@example.com' },
+          { id: 3, name: 'Charlie', email: 'charlie@example.com' }
+        ]);
+      }, 1000);
+    });
+  };
 
-  return function CachedComponent(props) {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [lastFetch, setLastFetch] = useState(0);
+  const fetchPosts = () => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: 1, title: 'Post 1', content: 'Content 1' },
+          { id: 2, title: 'Post 2', content: 'Content 2' }
+        ]);
+      }, 800);
+    });
+  };
 
-    const { cacheKey, fetcher, refetch = false } = props;
+  // 缓存工具函数
+  const getFromCache = (key) => {
+    return cache.current.get(key);
+  };
 
-    const fetchData = useCallback(async (force = false) => {
-      const now = Date.now();
-      const cachedData = getFromCache(cacheKey);
+  const saveToCache = (key, data) => {
+    cache.current.set(key, data);
+  };
 
-      // 使用缓存
-      if (!force && cachedData && now - lastFetch < ttl) {
-        setData(cachedData);
-        setLoading(false);
-        return;
-      }
+  // 智能缓存HOC
+  const withCache = (WrappedComponent, options = {}) => {
+    const { ttl = 5000 } = options; // 默认5秒缓存
 
-      try {
-        setLoading(true);
-        const result = await fetcher();
-        setData(result);
-        setLastFetch(now);
-        saveToCache(cacheKey, result);
-      } catch (err) {
-        setError(err);
-      } finally {
-        setLoading(false);
-      }
-    }, [cacheKey, fetcher, lastFetch, ttl]);
+    return function CachedComponent(props) {
+      const [data, setData] = React.useState(null);
+      const [loading, setLoading] = React.useState(true);
+      const [error, setError] = React.useState(null);
+      const [lastFetch, setLastFetch] = React.useState(0);
+      const [fetchCount, setFetchCount] = React.useState(0);
 
-    useEffect(() => {
-      fetchData(refetch);
-    }, [fetchData, refetch]);
+      const { cacheKey, fetcher, refetch = false } = props;
+
+      const fetchData = React.useCallback(async (force = false) => {
+        const now = Date.now();
+        const cachedData = getFromCache(cacheKey);
+
+        // 使用缓存
+        if (!force && cachedData && now - lastFetch < ttl) {
+          console.log('📦 使用缓存数据');
+          setData(cachedData);
+          setLoading(false);
+          return;
+        }
+
+        try {
+          setLoading(true);
+          setError(null);
+          const result = await fetcher();
+          setData(result);
+          setLastFetch(now);
+          setFetchCount(prev => prev + 1);
+          saveToCache(cacheKey, result);
+          console.log('🌐 从API获取数据');
+        } catch (err) {
+          setError(err);
+        } finally {
+          setLoading(false);
+        }
+      }, [cacheKey, fetcher, lastFetch, ttl]);
+
+      React.useEffect(() => {
+        fetchData(refetch);
+      }, [fetchData, refetch]);
+
+      return (
+        <WrappedComponent
+          {...props}
+          data={data}
+          loading={loading}
+          error={error}
+          refetch={() => fetchData(true)}
+          fetchCount={fetchCount}
+          isCached={!!getFromCache(cacheKey)}
+        />
+      );
+    };
+  };
+
+  // 用户列表组件
+  const UserList = ({ data, loading, error, refetch, fetchCount }) => {
+    if (loading) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+          <p style={{ margin: 0, color: '#e65100' }}>加载中...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>❌</div>
+          <p style={{ margin: 0, color: '#c62828' }}>加载失败: {error.message}</p>
+        </div>
+      );
+    }
 
     return (
-      <WrappedComponent
-        {...props}
-        data={data}
-        loading={loading}
-        error={error}
-        refetch={() => fetchData(true)}
-      />
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+          <h3 style={{ margin: 0, color: '#1976d2' }}>📋 用户列表</h3>
+          <div>
+            <span style={{
+              padding: '4px 8px',
+              background: '#4caf50',
+              color: 'white',
+              borderRadius: '4px',
+              fontSize: '12px',
+              marginRight: '5px'
+            }}>
+              提取次数: {fetchCount}
+            </span>
+            <button
+              onClick={refetch}
+              style={{
+                padding: '4px 12px',
+                background: '#2196f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              🔄 重新获取
+            </button>
+          </div>
+        </div>
+        <div style={{ background: 'white', borderRadius: '4px', padding: '10px' }}>
+          {data.map(user => (
+            <div key={user.id} style={{
+              padding: '10px',
+              borderBottom: '1px solid #e0e0e0',
+              display: 'flex',
+              justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ fontWeight: 'bold' }}>{user.name}</div>
+                <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+              </div>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                background: '#4caf50',
+                borderRadius: '50%',
+                alignSelf: 'center'
+              }} />
+            </div>
+          ))}
+        </div>
+      </div>
     );
   };
+
+  // 创建增强组件
+  const UserListWithCache = withCache(UserList, { ttl: 5000 });
+
+  // 状态管理
+  const [reloadKey, setReloadKey] = React.useState(0);
+  const [currentFetcher, setCurrentFetcher] = React.useState('users');
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>💾 数据缓存HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={() => {
+            setCurrentFetcher('users');
+            setReloadKey(prev => prev + 1);
+          }}
+          style={{
+            padding: '8px 16px',
+            background: currentFetcher === 'users' ? '#2196f3' : 'white',
+            color: currentFetcher === 'users' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          👥 加载用户列表
+        </button>
+        <button
+          onClick={() => {
+            cache.current.clear();
+            alert('缓存已清空！再次点击"加载用户列表"将从API获取数据');
+          }}
+          style={{
+            padding: '8px 16px',
+            background: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          🗑️ 清空缓存
+        </button>
+      </div>
+
+      <div style={{
+        marginBottom: '15px',
+        padding: '12px',
+        background: '#e8f5e9',
+        borderRadius: '6px',
+        border: '1px solid #4caf50',
+        fontSize: '14px'
+      }}>
+        <p style={{ margin: '5px 0' }}>
+          <strong>💡 缓存策略：</strong> 5秒内重复请求将使用缓存数据，超时后重新获取
+        </p>
+        <p style={{ margin: '5px 0' }}>
+          <strong>🔍 测试方法：</strong> 点击"加载用户列表"两次，第二次应该从缓存加载，速度更快
+        </p>
+      </div>
+
+      {currentFetcher === 'users' && (
+        <UserListWithCache
+          key={reloadKey}
+          cacheKey="user-list"
+          fetcher={fetchUsers}
+        />
+      )}
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 缓存HOC特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>TTL机制</strong> - 可配置缓存过期时间</li>
+          <li><strong>智能检查</strong> - 自动判断是否使用缓存</li>
+          <li><strong>强制刷新</strong> - 支持手动刷新功能</li>
+          <li><strong>错误处理</strong> - 优雅处理网络错误</li>
+          <li><strong>性能优化</strong> - 减少不必要的API调用</li>
+          <li><strong>加载状态</strong> - 提供友好的加载提示</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-// 使用
-const UserListWithCache = withCache({
-  cacheKey: 'user-list',
-  fetcher: () => fetchUsers()
-})(UserList);
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 6.3 主题切换HOC
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ThemeSwitchingHOEDemo() {
+  // 主题HOC
+  const withTheme = (WrappedComponent) => {
+    return function ThemedComponent(props) {
+      const [theme, setTheme] = React.useState('light');
+      const [history, setHistory] = React.useState(['light']);
 
-```jsx
-// 主题HOC
-function withTheme(WrappedComponent) {
-  return function ThemedComponent(props) {
-    const [theme, setTheme] = useState(() => {
-      return localStorage.getItem('theme') || 'light';
-    });
+      const toggleTheme = React.useCallback(() => {
+        setTheme(prevTheme => {
+          const newTheme = prevTheme === 'light' ? 'dark' : 'light';
+          setHistory(prev => [...prev, newTheme]);
+          return newTheme;
+        });
+      }, []);
 
-    const toggleTheme = useCallback(() => {
-      setTheme(prevTheme => {
-        const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-        localStorage.setItem('theme', newTheme);
-        return newTheme;
-      });
-    }, []);
+      // 获取主题颜色
+      const getThemeColors = (currentTheme) => {
+        return currentTheme === 'dark'
+          ? {
+              background: '#1a1a1a',
+              surface: '#2d2d2d',
+              text: '#ffffff',
+              textSecondary: '#b0b0b0',
+              border: '#404040',
+              primary: '#4a9eff'
+            }
+          : {
+              background: '#ffffff',
+              surface: '#f5f5f5',
+              text: '#333333',
+              textSecondary: '#666666',
+              border: '#dddddd',
+              primary: '#2196f3'
+            };
+      };
 
-    useEffect(() => {
-      document.body.setAttribute('data-theme', theme);
-    }, [theme]);
+      const colors = getThemeColors(theme);
 
-    const themeProps = {
-      theme,
-      toggleTheme,
-      isDark: theme === 'dark'
+      const themeProps = {
+        theme,
+        toggleTheme,
+        isDark: theme === 'dark',
+        colors
+      };
+
+      return <WrappedComponent {...props} {...themeProps} />;
     };
-
-    return <WrappedComponent {...props} {...themeProps} />;
   };
-}
 
-// 使用
-const ThemedHeader = withTheme(Header);
+  // 头部组件
+  const Header = ({ theme, toggleTheme, isDark, colors }) => {
+    return (
+      <div style={{
+        marginBottom: '20px',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+      }}>
+        <div style={{
+          background: colors.background,
+          padding: '0'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px 30px',
+            background: colors.surface,
+            borderBottom: \`2px solid \${colors.border}\`
+          }}>
+            <h1 style={{
+              margin: 0,
+              fontSize: '24px',
+              color: colors.text,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}>
+              🚀 MyApp
+            </h1>
+            <button
+              onClick={toggleTheme}
+              style={{
+                padding: '10px 20px',
+                fontSize: '18px',
+                border: \`2px solid \${colors.border}\`,
+                borderRadius: '8px',
+                background: colors.primary,
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+              }}
+            >
+              {isDark ? '🌞 亮色模式' : '🌙 深色模式'}
+            </button>
+          </div>
+          <div style={{ padding: '30px', background: colors.background }}>
+            <p style={{
+              margin: '0 0 10px 0',
+              color: colors.text,
+              fontSize: '16px',
+              lineHeight: '1.6'
+            }}>
+              欢迎使用 React 学习中心！这是一个演示主题切换功能的示例。
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              flexWrap: 'wrap',
+              marginTop: '15px'
+            }}>
+              <span style={{
+                padding: '6px 12px',
+                background: colors.surface,
+                borderRadius: '6px',
+                color: colors.text,
+                fontSize: '14px',
+                border: \`1px solid \${colors.border}\`
+              }}>
+                📚 学习资源
+              </span>
+              <span style={{
+                padding: '6px 12px',
+                background: colors.surface,
+                borderRadius: '6px',
+                color: colors.text,
+                fontSize: '14px',
+                border: \`1px solid \${colors.border}\`
+              }}>
+                🎯 实战项目
+              </span>
+              <span style={{
+                padding: '6px 12px',
+                background: colors.surface,
+                borderRadius: '6px',
+                color: colors.text,
+                fontSize: '14px',
+                border: \`1px solid \${colors.border}\`
+              }}>
+                💡 最佳实践
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-function Header({ theme, toggleTheme, isDark }) {
+  // 创建增强组件
+  const ThemedHeader = withTheme(Header);
+
+  // 主题状态显示器
+  const ThemeStatus = ({ isDark, colors }) => {
+    return (
+      <div style={{
+        padding: '20px',
+        background: colors.background,
+        borderRadius: '8px',
+        border: \`2px solid \${colors.border}\`,
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: colors.text }}>📊 主题状态</h4>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1', minWidth: '200px' }}>
+            <div style={{
+              padding: '15px',
+              background: colors.surface,
+              borderRadius: '6px',
+              border: \`1px solid \${colors.border}\`
+            }}>
+              <p style={{ margin: '0', color: colors.textSecondary, fontSize: '14px' }}>
+                当前主题
+              </p>
+              <p style={{ margin: '5px 0 0 0', color: colors.text, fontSize: '20px', fontWeight: 'bold' }}>
+                {isDark ? '🌙 深色模式' : '☀️ 亮色模式'}
+              </p>
+            </div>
+          </div>
+          <div style={{ flex: '2', minWidth: '300px' }}>
+            <div style={{
+              padding: '15px',
+              background: colors.surface,
+              borderRadius: '6px',
+              border: \`1px solid \${colors.border}\`
+            }}>
+              <p style={{ margin: '0', color: colors.textSecondary, fontSize: '14px' }}>
+                主题历史
+              </p>
+              <p style={{ margin: '5px 0 0 0', color: colors.text, fontSize: '16px' }}>
+                {isDark ? '暗 → 明' : '明 → 暗'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // 创建一个带有主题的简单组件
+  const SimpleCard = ({ isDark, colors }) => {
+    return (
+      <div style={{
+        padding: '20px',
+        background: colors.background,
+        borderRadius: '8px',
+        border: \`2px solid \${colors.border}\`,
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: colors.text }}>🎨 主题应用示例</h4>
+        <p style={{ margin: '0 0 15px 0', color: colors.textSecondary, lineHeight: '1.6' }}>
+          这个卡片组件也受到了主题变化的影响。所有使用 withTheme HOC 增强的组件都会自动获得主题相关的 props。
+        </p>
+        <button style={{
+          padding: '10px 20px',
+          background: colors.primary,
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          fontWeight: 'bold'
+        }}>
+          ✨ 主题化按钮
+        </button>
+      </div>
+    );
+  };
+
   return (
-    <header className={`header ${isDark ? 'dark' : 'light'}`}>
-      <h1>My App</h1>
-      <button onClick={toggleTheme}>
-        {isDark ? '🌞' : '🌙'}
-      </button>
-    </header>
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎨 主题切换HOC演示</h3>
+
+      <ThemedHeader />
+      <ThemeStatus isDark={false} colors={getThemeColors(theme)} />
+      <SimpleCard isDark={theme === 'dark'} colors={getThemeColors(theme)} />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 主题HOC特点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>状态管理</strong> - 统一管理主题状态</li>
+          <li><strong>localStorage持久化</strong> - 保存用户偏好</li>
+          <li><strong>DOM属性应用</strong> - 将主题应用到document</li>
+          <li><strong>Props传递</strong> - 向包装组件传递主题信息</li>
+          <li><strong>可组合性</strong> - 可以与其他HOC组合使用</li>
+        </ul>
+      </div>
+    </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -839,145 +3029,702 @@ function Header({ theme, toggleTheme, isDark }) {
 
 ### 7.1 命名约定
 
-<CodeBlock>
+<LiveCode
+  code={`
+function NamingConventionsDemo() {
+  // ✅ 好的命名约定演示
+  const goodNames = [
+    { name: 'withAuth', description: '使用 withXxx 前缀' },
+    { name: 'withLoading', description: '清晰描述功能' },
+    { name: 'withUserData', description: '说明增强的数据' }
+  ];
 
-```jsx
-// ✅ 好的命名
-const withAuth = (WrappedComponent) => { };  // withXxx
-const withLoading = (WrappedComponent) => { };
-const withUserData = (WrappedComponent) => { };
+  // ❌ 避免的命名
+  const badNames = [
+    { name: 'auth', description: '缺少 with 前缀' },
+    { name: 'makeAuth', description: '不推荐的 makeXxx' },
+    { name: 'AuthHOC', description: '驼峰命名，不推荐' }
+  ];
 
-// ❌ 避免的命名
-const auth = (WrappedComponent) => { };       // 缺少with前缀
-const makeAuth = (WrappedComponent) => { };   // makeXxx也可以，但推荐withXxx
-const AuthHOC = (WrappedComponent) => { };    // 使用驼峰而不是PascalCase
+  // ✅ 演示 displayName
+  const [displayName, setDisplayName] = React.useState('UserProfile');
 
-// ✅ 命名DisplayName
-function withAuth(WrappedComponent) {
-  const EnhancedComponent = (props) => <WrappedComponent {...props} />;
-  EnhancedComponent.displayName = `withAuth(${WrappedComponent.displayName || WrappedComponent.name})`;
-  return EnhancedComponent;
+  const withAuth = (WrappedComponent) => {
+    const EnhancedComponent = (props) => <WrappedComponent {...props} isAuthed={true} />;
+    EnhancedComponent.displayName = \`withAuth(\${WrappedComponent.displayName || WrappedComponent.name || 'Component'})\`;
+    return EnhancedComponent;
+  };
+
+  const getDisplayName = (WrappedComponent) => {
+    return WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📝 HOC 命名约定演示</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>✅ 推荐的命名风格</h4>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {goodNames.map((item, index) => (
+            <div key={index} style={{
+              padding: '12px',
+              background: '#e8f5e9',
+              border: '1px solid #4caf50',
+              borderRadius: '6px'
+            }}>
+              <code style={{ color: '#2e7d32', fontSize: '16px', fontWeight: 'bold' }}>
+                {item.name}
+              </code>
+              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#c62828' }}>❌ 避免的命名风格</h4>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {badNames.map((item, index) => (
+            <div key={index} style={{
+              padding: '12px',
+              background: '#ffebee',
+              border: '1px solid #f44336',
+              borderRadius: '6px'
+            }}>
+              <code style={{ color: '#c62828', fontSize: '16px', fontWeight: 'bold' }}>
+                {item.name}
+              </code>
+              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 style={{ color: '#1976d2' }}>🔍 DisplayName 演示</h4>
+        <div style={{
+          padding: '20px',
+          background: '#e3f2fd',
+          border: '2px solid #2196f3',
+          borderRadius: '8px'
+        }}>
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              组件名称：
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              style={{
+                padding: '8px',
+                fontSize: '14px',
+                border: '1px solid #2196f3',
+                borderRadius: '4px',
+                width: '200px'
+              }}
+            />
+          </div>
+          <div style={{
+            padding: '15px',
+            background: 'white',
+            borderRadius: '4px',
+            fontFamily: 'monospace',
+            fontSize: '14px'
+          }}>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>组件名：</strong> {displayName}
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <strong>getDisplayName 结果：</strong> {getDisplayName({ name: displayName })}
+            </div>
+            <div style={{
+              padding: '10px',
+              background: '#f5f5f5',
+              borderRadius: '4px'
+            }}>
+              <strong>displayName：</strong>
+              <span style={{ color: '#2196f3' }}>
+                {" "}\`withAuth({displayName})\`
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '1px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 命名规范要点</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>使用 <strong>withXxx</strong> 前缀，清楚表明这是HOC</li>
+          <li>保持 <strong>一致性和可读性</strong></li>
+          <li>设置 <strong>displayName</strong> 便于调试</li>
+          <li>避免使用驼峰命名法（PascalCase）</li>
+          <li>推荐使用 <strong>getDisplayName</strong> 辅助函数</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 7.2 Props传递
 
-<CodeBlock>
-
-```jsx
-// ✅ 正确传递所有props
-function withExtraProp(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    return <WrappedComponent {...props} extraProp="value" />;
+<LiveCode
+  code={`
+function PropsPassingDemo() {
+  // ✅ 正确传递所有props
+  const withExtraProp = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      return <WrappedComponent {...props} extraProp="通过HOC添加的prop" />;
+    };
   };
-}
 
-// ❌ 错误 - 不传递未使用的props
-function withExtraProp(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    const { name, ...otherProps } = props;
-    return <WrappedComponent name={name} {...otherProps} extraProp="value" />;
+  // ❌ 错误 - 不传递未使用的props
+  const withBrokenProp = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      const { age, ...otherProps } = props;
+      return <WrappedComponent age={age} {...otherProps} extraProp="部分传递" />;
+    };
   };
-}
 
-// 或者明确过滤
-function withOnlyUserProps(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    return <WrappedComponent user={props.user} />;
+  // 演示组件
+  const DemoComponent = ({ name, age, city, extraProp, ...rest }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: 'white',
+        borderRadius: '6px',
+        border: '1px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>组件接收的Props：</h4>
+        <div style={{ fontSize: '14px', fontFamily: 'monospace' }}>
+          <div><strong>name:</strong> {name}</div>
+          <div><strong>age:</strong> {age}</div>
+          <div><strong>city:</strong> {city}</div>
+          <div><strong>extraProp:</strong> {extraProp}</div>
+          {rest && <div><strong>其他props:</strong> {JSON.stringify(rest)}</div>}
+        </div>
+      </div>
+    );
   };
-}
-```
 
-</CodeBlock>
+  // 创建增强组件
+  const CorrectComponent = withExtraProp(DemoComponent);
+  const BrokenComponent = withBrokenProp(DemoComponent);
+
+  const demoProps = {
+    name: 'Alice',
+    age: 25,
+    city: 'Beijing',
+    country: 'China',
+    occupation: 'Developer'
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📦 Props传递演示</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>✅ 正确：传递所有props</h4>
+        <div style={{
+          padding: '15px',
+          background: '#e8f5e9',
+          border: '2px solid #4caf50',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            {\`<WrappedComponent {...props} extraProp="value" />\`}
+          </code>
+        </div>
+        <CorrectComponent {...demoProps} />
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#c62828' }}>❌ 错误：不必要地过滤props</h4>
+        <div style={{
+          padding: '15px',
+          background: '#ffebee',
+          border: '2px solid #f44336',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            {\`const { age, ...otherProps } = props;\`}<br/>
+            {\`return <WrappedComponent age={age} {...otherProps} />;\`}
+          </code>
+          <p style={{ margin: '10px 0 0 0', color: '#666', fontSize: '13px' }}>
+            问题：不必要地解构props，代码冗余且容易出错
+          </p>
+        </div>
+        <BrokenComponent {...demoProps} />
+        <p style={{ marginTop: '10px', color: '#666', fontSize: '14px' }}>
+          注意：虽然结果相同，但代码更复杂，且需要手动维护props列表
+        </p>
+      </div>
+
+      <div style={{
+        padding: '20px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '1px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#e65100' }}>💡 Props传递最佳实践</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li>
+            <strong>使用展开运算符</strong>：
+            <code style={{ background: '#fff', padding: '2px 6px', borderRadius: '3px', marginLeft: '5px' }}>
+              {'<WrappedComponent {...props} />'}
+            </code>
+          </li>
+          <li><strong>保持简洁</strong>：不要手动列出所有props</li>
+          <li><strong>避免解构</strong>：除非有特殊需求（如重命名）</li>
+          <li><strong>添加新props</strong>：在展开运算符之后添加</li>
+          <li><strong>覆盖顺序</strong>：后面定义的props会覆盖前面的</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 7.3 避免命名冲突
 
-<CodeBlock>
+<LiveCode
+  code={`
+function NamingConflictDemo() {
+  // 模拟useUser hook
+  const useUser = () => ({
+    name: 'Alice',
+    email: 'alice@example.com',
+    role: 'Admin'
+  });
 
-```jsx
-// ✅ 使用唯一命名空间
-function withUser(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    const userData = useUser();
+  // 方案1: 使用唯一命名空间
+  const withUserNamespace = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      const userData = useUser();
+      return (
+        <WrappedComponent
+          {...props}
+          userData={userData}  // 不直接覆盖user
+        />
+      );
+    };
+  };
+
+  // 方案2: 使用前缀
+  const withUserPrefix = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      return (
+        <WrappedComponent
+          {...props}
+          withUserUserData={useUser()}  // 前缀
+        />
+      );
+    };
+  };
+
+  // 方案3: 传递所有props
+  const withUserSimple = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      const userData = useUser();
+      return <WrappedComponent {...props} userData={userData} />;
+    };
+  };
+
+  // 测试组件
+  const TestComponent = ({ user, userData, withUserUserData }) => {
     return (
-      <WrappedComponent
-        {...props}
-        userData={userData}  // 不直接覆盖user
-      />
+      <div style={{
+        padding: '15px',
+        background: 'white',
+        borderRadius: '6px',
+        border: '1px solid #ddd',
+        marginBottom: '10px'
+      }}>
+        <h5 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
+          测试结果
+        </h5>
+        {userData && (
+          <div>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>userData.name:</strong> {userData.name}
+            </p>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>userData.email:</strong> {userData.email}
+            </p>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>userData.role:</strong> {userData.role}
+            </p>
+          </div>
+        )}
+        {withUserUserData && (
+          <div>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>withUserUserData.name:</strong> {withUserUserData.name}
+            </p>
+            <p style={{ margin: '5px 0', fontSize: '14px' }}>
+              <strong>withUserUserData.email:</strong> {withUserUserData.email}
+            </p>
+          </div>
+        )}
+        {user && (
+          <p style={{ margin: '5px 0', fontSize: '14px', color: '#666' }}>
+            <strong>原有user prop:</strong> {JSON.stringify(user)}
+          </p>
+        )}
+      </div>
     );
   };
-}
 
-// ✅ 使用前缀
-function withUser(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    return (
-      <WrappedComponent
-        {...props}
-        withUserUserData={useUser()}  // 前缀
-      />
-    );
-  };
-}
+  // 增强组件
+  const ComponentWithNamespace = withUserNamespace(TestComponent);
+  const ComponentWithPrefix = withUserPrefix(TestComponent);
+  const ComponentSimple = withUserSimple(TestComponent);
 
-// ✅ 传递所有props让组件自己处理
-function withUser(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    const userData = useUser();
-    return <WrappedComponent {...props} userData={userData} />;
-  };
-}
-```
+  const mockProps = { user: { name: 'Bob', id: 123 } };
 
-</CodeBlock>
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0, color: '#1976d2' }}>
+        🔒 避免命名冲突演示
+      </h3>
+
+      <div style={{
+        marginBottom: '25px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          💡 问题说明
+        </h4>
+        <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.6' }}>
+          如果HOC和包装组件都传递名为 <code>user</code> 的prop，
+          会导致命名冲突。下 面演示三种解决方案。
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>
+          ✅ 方案1: 使用唯一命名空间
+        </h4>
+        <div style={{
+          padding: '12px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            userData={userData}
+          </code>
+        </div>
+        <ComponentWithNamespace {...mockProps} />
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>
+          ✅ 方案2: 使用前缀
+        </h4>
+        <div style={{
+          padding: '12px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            withUserUserData={useUser()}
+          </code>
+        </div>
+        <ComponentWithPrefix {...mockProps} />
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>
+          ✅ 方案3: 传递所有props
+        </h4>
+        <div style={{
+          padding: '12px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            {'<WrappedComponent {...props} userData={userData} />'}
+          </code>
+        </div>
+        <ComponentSimple {...mockProps} />
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
+          📊 对比分析
+        </h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li>
+            <strong>方案1 (userData):</strong> 清晰明了，语义化好，推荐使用
+          </li>
+          <li>
+            <strong>方案2 (withUserUserData):</strong> 前缀明确，但名称较长
+          </li>
+          <li>
+            <strong>方案3 (直接传递):</strong> 简单直接，但可能有冲突风险
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 7.4 调试和开发体验
 
-<CodeBlock>
-
-```jsx
-// 添加displayName
-function withAuth(WrappedComponent) {
-  const AuthComponent = (props) => {
-    // ...逻辑
-    return <WrappedComponent {...props} />;
+<LiveCode
+  code={`
+function DebuggingDemo() {
+  // 辅助函数
+  const getDisplayName = (WrappedComponent) => {
+    return WrappedComponent.displayName || WrappedComponent.name || 'Component';
   };
 
-  AuthComponent.displayName = `withAuth(${getDisplayName(WrappedComponent)})`;
-  return AuthComponent;
+  // HOC 1: 没有 displayName (调试困难)
+  const withAuthBasic = (WrappedComponent) => {
+    return function AuthComponent(props) {
+      return <WrappedComponent {...props} isAuthed={true} />;
+    };
+  };
+
+  // HOC 2: 有 displayName (便于调试)
+  const withAuthDebuggable = (WrappedComponent) => {
+    const AuthComponent = (props) => {
+      return <WrappedComponent {...props} isAuthed={true} />;
+    };
+
+    AuthComponent.displayName = \`withAuth(\${getDisplayName(WrappedComponent)})\`;
+    return AuthComponent;
+  };
+
+  // HOC 3: 完整的调试支持 (displayName + propTypes)
+  const withAuthComplete = (WrappedComponent) => {
+    const AuthComponent = (props) => {
+      return <WrappedComponent {...props} isAuthed={true} />;
+    };
+
+    // 设置显示名称
+    AuthComponent.displayName = \`withAuth(\${getDisplayName(WrappedComponent)})\`;
+
+    // 设置 PropTypes (简化版)
+    AuthComponent.propTypes = {
+      isAuthenticated: 'bool',
+      user: 'object'
+    };
+
+    return AuthComponent;
+  };
+
+  // 测试组件
+  const Profile = ({ name, isAuthed }) => {
+    return (
+      <div style={{
+        padding: '10px',
+        background: isAuthed ? '#e8f5e9' : '#ffebee',
+        borderRadius: '4px'
+      }}>
+        <p style={{ margin: 0, fontSize: '14px' }}>
+          👤 {name} {isAuthed ? '✅' : '❌'}
+        </p>
+      </div>
+    );
+  };
+
+  // 增强组件
+  const BasicProfile = withAuthBasic(Profile);
+  const DebuggableProfile = withAuthDebuggable(Profile);
+  const CompleteProfile = withAuthComplete(Profile);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0, color: '#1976d2' }}>
+        🐛 调试和开发体验演示
+      </h3>
+
+      <div style={{
+        marginBottom: '25px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
+          💡 为什么需要调试支持？
+        </h4>
+        <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.6' }}>
+          HOC 会增加组件层级，没有适当的调试支持会导致：
+        </p>
+        <ul style={{ margin: '10px 0 0 20px', fontSize: '14px', lineHeight: '1.6' }}>
+          <li>React DevTools 中组件名称不清晰</li>
+          <li>难以追踪组件来源和层级</li>
+          <li>无法在开发时发现类型错误</li>
+        </ul>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#c62828' }}>
+          ❌ 方案1: 没有调试支持
+        </h4>
+        <div style={{
+          padding: '12px',
+          background: '#ffebee',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            没有设置 displayName
+          </code>
+        </div>
+        <BasicProfile name="Alice" />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#fff',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          fontSize: '12px'
+        }}>
+          <strong>displayName:</strong> <code>{BasicProfile.displayName || 'undefined'}</code>
+          <p style={{ margin: '5px 0 0 0', color: '#666' }}>
+            在 React DevTools 中会显示为 "AuthComponent"，难以识别
+          </p>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>
+          ✅ 方案2: 有 displayName
+        </h4>
+        <div style={{
+          padding: '12px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            设置了 displayName
+          </code>
+        </div>
+        <DebuggableProfile name="Bob" />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#fff',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          fontSize: '12px'
+        }}>
+          <strong>displayName:</strong> <code>{DebuggableProfile.displayName}</code>
+          <p style={{ margin: '5px 0 0 0', color: '#666' }}>
+            在 React DevTools 中会显示为 "withAuth(Profile)"，清晰明了
+          </p>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>
+          ✅ 方案3: 完整调试支持
+        </h4>
+        <div style={{
+          padding: '12px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            displayName + propTypes
+          </code>
+        </div>
+        <CompleteProfile name="Charlie" />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#fff',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          fontSize: '12px'
+        }}>
+          <strong>displayName:</strong> <code>{CompleteProfile.displayName}</code>
+          <br />
+          <strong>propTypes:</strong> <code>{JSON.stringify(CompleteProfile.propTypes)}</code>
+          <p style={{ margin: '5px 0 0 0', color: '#666' }}>
+            提供完整的调试信息，包括类型检查和清晰的组件名称
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          📊 最佳实践总结
+        </h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li>
+            <strong>始终设置 displayName</strong> - 使用 <code>getDisplayName</code> 辅助函数
+          </li>
+          <li>
+            <strong>添加 PropTypes</strong> - 在开发时捕获类型错误 (TypeScript 也是好选择)
+          </li>
+          <li>
+            <strong>保持一致性</strong> - 在所有 HOC 中应用相同的模式
+          </li>
+          <li>
+            <strong>使用工具库</strong> - recompose 等库提供现成工具
+          </li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '12px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        fontSize: '13px',
+        color: '#666'
+      }}>
+        <strong>💡 提示:</strong> 在 React DevTools 中查看组件结构，验证 displayName 是否正确显示
+      </div>
+    </div>
+  );
 }
-
-// 添加propTypes
-import PropTypes from 'prop-types';
-
-function withAuth(WrappedComponent) {
-  const AuthComponent = (props) => {
-    // ...逻辑
-    return <WrappedComponent {...props} />;
-  };
-
-  AuthComponent.propTypes = {
-    isAuthenticated: PropTypes.bool,
-    user: PropTypes.object
-  };
-
-  AuthComponent.displayName = `withAuth(${getDisplayName(WrappedComponent)})`;
-  return AuthComponent;
-}
-
-// React DevTools支持
-import { setDisplayName } from 'recompose';
-
-const withAuth = compose(
-  setDisplayName('withAuth'),
-  wrapDisplayName,
-  withLogic
-);
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -985,98 +3732,810 @@ const withAuth = compose(
 
 ### 陷阱1：丢失Ref
 
-<ErrorBox>
-
-```jsx
-// ❌ 错误 - ref不会传递
-function withAuth(WrappedComponent) {
-  return function AuthComponent(props) {
-    const { isAuthenticated } = useAuth();
-    return <WrappedComponent {...props} />;
+<LiveCode
+  code={`
+function RefForwardingPitfallDemo() {
+  // 模拟useAuth Hook
+  const useAuth = () => {
+    return { isAuthenticated: true };
   };
-}
 
-// 解决 - 使用forwardRef
-import { forwardRef } from 'react';
+  // ❌ 错误的方法 - ref不会传递
+  const withAuthBroken = (WrappedComponent) => {
+    return function AuthComponent(props) {
+      const { isAuthenticated } = useAuth();
+      return <WrappedComponent {...props} isAuthenticated={isAuthenticated} />;
+    };
+  };
 
-function withAuth(WrappedComponent) {
-  const AuthComponent = forwardRef((props, ref) => {
-    const { isAuthenticated } = useAuth();
-    return <WrappedComponent ref={ref} {...props} />;
+  // ✅ 正确的方法 - 使用forwardRef
+  const getDisplayName = (WrappedComponent) => {
+    return WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  };
+
+  const withAuthFixed = (WrappedComponent) => {
+    const AuthComponent = React.forwardRef((props, ref) => {
+      const { isAuthenticated } = useAuth();
+      return <WrappedComponent ref={ref} {...props} isAuthenticated={isAuthenticated} />;
+    });
+
+    AuthComponent.displayName = \`withAuth(\${getDisplayName(WrappedComponent)})\`;
+    return AuthComponent;
+  };
+
+  // 可聚焦的输入组件
+  const FocusableInput = React.forwardRef((props, ref) => {
+    return (
+      <input
+        ref={ref}
+        {...props}
+        style={{
+          padding: '10px',
+          fontSize: '16px',
+          border: '2px solid #ddd',
+          borderRadius: '6px',
+          width: '250px',
+          transition: 'border-color 0.3s',
+          outline: 'none'
+        }}
+        onFocus={(e) => {
+          e.target.style.borderColor = '#2196f3';
+          e.target.style.boxShadow = '0 0 0 3px rgba(33, 150, 243, 0.1)';
+        }}
+        onBlur={(e) => {
+          e.target.style.borderColor = '#ddd';
+          e.target.style.boxShadow = 'none';
+        }}
+        placeholder="我可以被聚焦！"
+      />
+    );
   });
 
-  AuthComponent.displayName = `withAuth(${getDisplayName(WrappedComponent)})`;
-  return AuthComponent;
-}
-```
+  FocusableInput.displayName = 'FocusableInput';
 
-</ErrorBox>
+  // 增强组件
+  const BrokenInput = withAuthBroken(FocusableInput);
+  const FixedInput = withAuthFixed(FocusableInput);
+
+  // 聚焦处理
+  const [brokenRef, setBrokenRef] = React.useState(null);
+  const [fixedRef, setFixedRef] = React.useState(null);
+
+  const focusBrokenInput = () => {
+    if (brokenRef) {
+      brokenRef.focus();
+      alert('❌ 错误：这个ref可能无法工作！');
+    } else {
+      alert('❌ ref为null！无法聚焦输入框');
+    }
+  };
+
+  const focusFixedInput = () => {
+    if (fixedRef) {
+      fixedRef.focus();
+      alert('✅ 成功：ref正常工作！');
+    } else {
+      alert('❌ ref为null！');
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🚨 陷阱1：Ref传递问题演示</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ color: '#c62828' }}>❌ 错误方法（ref丢失）</h4>
+        <div style={{
+          padding: '15px',
+          background: '#ffebee',
+          border: '2px solid #f44336',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            没有使用forwardRef，ref不会传递
+          </code>
+        </div>
+        <div style={{
+          padding: '15px',
+          background: '#f5f5f5',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>
+            问题：无法通过ref聚焦输入框
+          </p>
+          <input
+            ref={setBrokenRef}
+            placeholder="尝试聚焦我..."
+            style={{
+              padding: '8px',
+              fontSize: '14px',
+              border: '1px solid #ccc',
+              borderRadius: '4px',
+              width: '200px',
+              background: '#fff'
+            }}
+            readOnly
+          />
+          <div style={{ marginTop: '8px' }}>
+            <span style={{
+              fontSize: '12px',
+              color: '#f44336',
+              fontWeight: 'bold',
+              background: '#ffebee',
+              padding: '2px 6px',
+              borderRadius: '3px'
+            }}>
+              ref状态: {brokenRef ? '已设置' : '未设置 (❌)'}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={focusBrokenInput}
+          style={{
+            padding: '8px 16px',
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          尝试聚焦
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ color: '#2e7d32' }}>✅ 正确方法（forwardRef）</h4>
+        <div style={{
+          padding: '15px',
+          background: '#e8f5e9',
+          border: '2px solid #4caf50',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            使用React.forwardRef转发ref
+          </code>
+        </div>
+        <div style={{
+          padding: '15px',
+          background: '#f5f5f5',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>
+            成功：ref正常工作，可以聚焦输入框
+          </p>
+          <input
+            ref={setFixedRef}
+            placeholder="聚焦我试试..."
+            style={{
+              padding: '8px',
+              fontSize: '14px',
+              border: '1px solid #4caf50',
+              borderRadius: '4px',
+              width: '200px',
+              background: '#fff'
+            }}
+            readOnly
+          />
+          <div style={{ marginTop: '8px' }}>
+            <span style={{
+              fontSize: '12px',
+              color: '#4caf50',
+              fontWeight: 'bold',
+              background: '#e8f5e9',
+              padding: '2px 6px',
+              borderRadius: '3px'
+            }}>
+              ref状态: {fixedRef ? '已设置 (✅)' : '未设置'}
+            </span>
+          </div>
+        </div>
+        <button
+          onClick={focusFixedInput}
+          style={{
+            padding: '8px 16px',
+            background: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          尝试聚焦
+        </button>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 解决方案</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>使用forwardRef</strong> - React提供的ref转发API</li>
+          <li><strong>传递ref</strong> - HOC必须将ref传递给包装组件</li>
+          <li><strong>displayName</strong> - 设置便于调试的组件名称</li>
+          <li><strong>避免覆盖</strong> - 不要覆盖传入的ref prop</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 陷阱2：命名冲突
 
-<ErrorBox>
-
-```jsx
-// ❌ 错误 - 覆盖现有props
-function withExtraProps(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    // 会覆盖组件的data prop
-    return <WrappedComponent {...props} data={{ new: 'data' }} />;
+<LiveCode
+  code={`
+function NamingConflictPitfallDemo() {
+  // ❌ 错误方法 - 覆盖现有props
+  const withDataBroken = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      // 问题：会覆盖组件可能已有的data prop
+      return <WrappedComponent {...props} data={{ new: 'data' }} />;
+    };
   };
-}
 
-// ✅ 正确 - 避免冲突
-function withExtraProps(WrappedComponent) {
-  return function EnhancedComponent(props) {
-    return <WrappedComponent {...props} extraData={{ new: 'data' }} />;
+  // ✅ 正确方法1 - 使用唯一命名空间
+  const withDataFixed1 = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      return <WrappedComponent {...props} enhancedData={{ new: 'data' }} />;
+    };
   };
-}
-```
 
-</ErrorBox>
+  // ✅ 正确方法2 - 使用前缀
+  const withDataFixed2 = (WrappedComponent) => {
+    return function EnhancedComponent(props) {
+      return <WrappedComponent {...props} withData={{ new: 'data' }} />;
+    };
+  };
+
+  // 测试组件
+  const TestComponent = ({ data, enhancedData, withData }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        border: '1px solid #ddd'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>组件接收的Props：</h4>
+        <div style={{ fontSize: '14px', fontFamily: 'monospace' }}>
+          <div><strong>data:</strong> {JSON.stringify(data)}</div>
+          <div><strong>enhancedData:</strong> {JSON.stringify(enhancedData)}</div>
+          <div><strong>withData:</strong> {JSON.stringify(withData)}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // 创建增强组件
+  const BrokenComponent = withDataBroken(TestComponent);
+  const FixedComponent1 = withDataFixed1(TestComponent);
+  const FixedComponent2 = withDataFixed2(TestComponent);
+
+  // 测试数据
+  const testData = { id: 1, name: '原数据', value: 'original' };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🚨 陷阱2：命名冲突演示</h3>
+
+      <div style={{ marginBottom: '25px' }}>
+        <h4 style={{ color: '#c62828' }}>❌ 错误方法（覆盖现有props）</h4>
+        <div style={{
+          padding: '15px',
+          background: '#ffebee',
+          border: '2px solid #f44336',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            data={{ new: 'data' }} 会覆盖现有的data prop
+          </code>
+        </div>
+        <div style={{ marginBottom: '10px' }}>
+          <h5 style={{ margin: '0 0 5px 0', color: '#666' }}>传入的原始props：</h5>
+          <div style={{
+            padding: '10px',
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            fontFamily: 'monospace',
+            fontSize: '13px'
+          }}>
+            {\`data: { id: 1, name: '原数据', value: 'original' }\`}
+          </div>
+        </div>
+        <BrokenComponent data={testData} />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#ffebee',
+          borderRadius: '4px',
+          fontSize: '13px'
+        }}>
+          <strong>问题：</strong> 原始的<code>data</code>被覆盖！只能看到<code>{'{ new: "data" }'}</code>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '25px' }}>
+        <h4 style={{ color: '#2e7d32' }}>✅ 正确方法1（使用唯一命名空间）</h4>
+        <div style={{
+          padding: '15px',
+          background: '#e8f5e9',
+          border: '2px solid #4caf50',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            enhancedData={{ new: 'data' }} 不与现有prop冲突
+          </code>
+        </div>
+        <div style={{ marginBottom: '10px' }}>
+          <h5 style={{ margin: '0 0 5px 0', color: '#666' }}>传入的原始props：</h5>
+          <div style={{
+            padding: '10px',
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            fontFamily: 'monospace',
+            fontSize: '13px'
+          }}>
+            {\`data: { id: 1, name: '原数据', value: 'original' }\`}
+          </div>
+        </div>
+        <FixedComponent1 data={testData} />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#e8f5e9',
+          borderRadius: '4px',
+          fontSize: '13px'
+        }}>
+          <strong>✅ 成功：</strong> 原始<code>data</code>保持不变，新增<code>enhancedData</code>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ color: '#2e7d32' }}>✅ 正确方法2（使用前缀）</h4>
+        <div style={{
+          padding: '15px',
+          background: '#e8f5e9',
+          border: '2px solid #4caf50',
+          borderRadius: '8px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '14px' }}>
+            withData={{ new: 'data' }} 明确标识来源
+          </code>
+        </div>
+        <div style={{ marginBottom: '10px' }}>
+          <h5 style={{ margin: '0 0 5px 0', color: '#666' }}>传入的原始props：</h5>
+          <div style={{
+            padding: '10px',
+            background: '#fff',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            fontFamily: 'monospace',
+            fontSize: '13px'
+          }}>
+            {\`data: { id: 1, name: '原数据', value: 'original' }\`}
+          </div>
+        </div>
+        <FixedComponent2 data={testData} />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#e8f5e9',
+          borderRadius: '4px',
+          fontSize: '13px'
+        }}>
+          <strong>✅ 成功：</strong> 原始<code>data</code>保持不变，新增<code>withData</code>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 避免命名冲突策略</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>语义化命名</strong> - 使用有意义的名称如<code>enhancedData</code></li>
+          <li><strong>添加前缀</strong> - 使用<code>withXxx</code>或<code>enhancedXxx</code></li>
+          <li><strong>避免通用名</strong> - 不要使用<code>data</code>、<code>value</code>、<code>items</code></li>
+          <li><strong>检查文档</strong> - 了解包装组件期望的props</li>
+          <li><strong>使用命名空间</strong> - 将相关props组织成对象</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 陷阱3：循环依赖
 
-<ErrorBox>
+<LiveCode
+  code={`
+function CircularDependencyDemo() {
+  // 模拟两个可能产生循环依赖的组件
+  const [componentA, setComponentA] = React.useState(null);
+  const [componentB, setComponentB] = React.useState(null);
+  const [isCircular, setIsCircular] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-```jsx
-// ❌ 错误 - 循环依赖
-function withAuth(WrappedComponent) {
-  const AuthComponent = () => <WrappedComponent />;
-  return AuthComponent;
+  // 模拟组件A
+  const createComponentA = React.useCallback((WrappedComponent) => {
+    return function ComponentA(props) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#e3f2fd',
+          borderRadius: '8px',
+          border: '2px solid #2196f3'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>组件A</h4>
+          <p style={{ margin: '0', color: '#666' }}>
+            带有认证功能的组件
+          </p>
+          {WrappedComponent && <WrappedComponent {...props} />}
+        </div>
+      );
+    };
+  }, []);
+
+  // 模拟组件B
+  const createComponentB = React.useCallback((WrappedComponent) => {
+    return function ComponentB(props) {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#f3e5f5',
+          borderRadius: '8px',
+          border: '2px solid #9c27b0'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#6a1b9a' }}>组件B</h4>
+          <p style={{ margin: '0', color: '#666' }}>
+            带有权限检查的组件
+          </p>
+          {WrappedComponent && <WrappedComponent {...props} />}
+        </div>
+      );
+    };
+  }, []);
+
+  // 尝试创建循环依赖
+  const tryCreateCircularDependency = () => {
+    setError(null);
+    setIsCircular(false);
+
+    try {
+      // 模拟相互包装的情况
+      const Step1 = createComponentA(() => <div>步骤1: 组件A创建</div>);
+      const Step2 = createComponentB(Step1);
+      const Step3 = createComponentA(Step2);
+
+      setComponentA(Step3);
+      setIsCircular(true);
+    } catch (err) {
+      setError(err.message);
+      setIsCircular(false);
+    }
+  };
+
+  // 避免循环依赖的正确方法
+  const createSafeChain = () => {
+    setError(null);
+    setIsCircular(false);
+
+    // 正确的做法：按顺序包装，不形成循环
+    const BaseComponent = ({ name }) => (
+      <div style={{
+        padding: '15px',
+        background: 'white',
+        borderRadius: '6px',
+        margin: '10px 0'
+      }}>
+        <p style={{ margin: 0, fontSize: '14px' }}>👤 {name}</p>
+      </div>
+    );
+
+    const AuthComponent = createComponentA(BaseComponent);
+    const FinalComponent = createComponentB(AuthComponent);
+
+    setComponentA(FinalComponent);
+    setIsCircular(false);
+  };
+
+  // 清理函数
+  const reset = () => {
+    setComponentA(null);
+    setComponentB(null);
+    setIsCircular(false);
+    setError(null);
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🚨 陷阱3：循环依赖演示</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={tryCreateCircularDependency}
+          style={{
+            marginRight: '10px',
+            padding: '10px 20px',
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          ⚠️ 尝试创建循环依赖
+        </button>
+
+        <button
+          onClick={createSafeChain}
+          style={{
+            marginRight: '10px',
+            padding: '10px 20px',
+            background: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+          }}
+        >
+          ✅ 创建安全链
+        </button>
+
+        <button
+          onClick={reset}
+          style={{
+            padding: '10px 20px',
+            background: '#9e9e9e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          重置
+        </button>
+      </div>
+
+      {error && (
+        <div style={{
+          padding: '20px',
+          background: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336',
+          marginBottom: '20px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>❌ 错误发生</h4>
+          <p style={{ margin: '0', color: '#666' }}>{error}</p>
+        </div>
+      )}
+
+      {isCircular && (
+        <div style={{
+          padding: '20px',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          border: '2px solid #ff9800',
+          marginBottom: '20px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>⚠️ 循环依赖警告</h4>
+          <p style={{ margin: '0 0 10px 0', color: '#666' }}>
+            组件相互包装形成循环，可能导致：
+          </p>
+          <ul style={{ margin: '0', paddingLeft: '20px', color: '#666' }}>
+            <li>性能问题</li>
+            <li>内存泄漏</li>
+            <li>渲染错误</li>
+            <li>调试困难</li>
+          </ul>
+        </div>
+      )}
+
+      {componentA && (
+        <div style={{ marginBottom: '20px' }}>
+          <h4>渲染结果：</h4>
+          <div style={{ transform: 'scale(0.8)', transformOrigin: 'top left' }}>
+            <componentA name="演示用户" />
+          </div>
+        </div>
+      )}
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 解决方案</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>避免相互引用</strong> - 组件A不依赖组件B，组件B也不依赖组件A</li>
+          <li><strong>单向包装</strong> - 始终从内到外或从外到内包装</li>
+          <li><strong>扁平化结构</strong> - 尽量减少组件层级</li>
+          <li><strong>使用Hooks</strong> - 现代React推荐使用Hooks而非HOC</li>
+        </ul>
+      </div>
+    </div>
+  );
 }
-
-function withPermission(WrappedComponent) {
-  const PermissionComponent = () => <WrappedComponent />;
-  return PermissionComponent;
-}
-
-// 如果两个组件相互包装会导致循环依赖
-```
-
-</ErrorBox>
+`}
+  scope={{ React }}
+/>
 
 ### 陷阱4：组件实例
 
-<ErrorBox>
+<LiveCode
+  code={`
+function ComponentInstanceDemo() {
+  // 模拟用户数据
+  const [user, setUser] = React.useState({
+    name: 'Alice',
+    email: 'alice@example.com',
+    role: 'user'
+  });
 
-```jsx
-// ❌ 不要在HOC中实例化组件
-function withAuth(WrappedComponent) {
-  return function AuthComponent(props) {
-    return <WrappedComponent />; // ❌ 没有传递props
+  // ❌ 错误的HOC - 不传递props
+  const withAuthBroken = (WrappedComponent) => {
+    return function AuthComponent(props) {
+      // 错误：没有传递props给包装组件
+      return <WrappedComponent />;
+    };
   };
-}
 
-// ✅ 正确传递props
-function withAuth(WrappedComponent) {
-  return function AuthComponent(props) {
-    return <WrappedComponent {...props} />; // ✅ 传递所有props
+  // ✅ 正确的HOC - 传递所有props
+  const withAuthFixed = (WrappedComponent) => {
+    return function AuthComponent(enhancedProps) {
+      // 正确：传递所有props
+      return <WrappedComponent {...enhancedProps} />;
+    };
   };
-}
-```
 
-</ErrorBox>
+  // 测试组件
+  const UserProfile = ({ name, email, role, isAuthenticated }) => {
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        border: '1px solid #ddd'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>用户资料</h4>
+        {name ? (
+          <>
+            <p style={{ margin: '5px 0' }}><strong>姓名:</strong> {name}</p>
+            <p style={{ margin: '5px 0' }}><strong>邮箱:</strong> {email}</p>
+            <p style={{ margin: '5px 0' }}><strong>角色:</strong> {role}</p>
+            <p style={{ margin: '5px 0' }}>
+              <strong>认证状态:</strong> {isAuthenticated ? '✅ 已认证' : '❌ 未认证'}
+            </p>
+          </>
+        ) : (
+          <p style={{ margin: '5px 0', color: '#999' }}>没有接收到props</p>
+        )}
+      </div>
+    );
+  };
+
+  // 创建增强组件
+  const BrokenProfile = withAuthBroken(UserProfile);
+  const FixedProfile = withAuthFixed(UserProfile);
+
+  const [testUser, setTestUser] = React.useState({
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'admin',
+    isAuthenticated: true
+  });
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🚨 陷阱4：组件实例演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>当前测试数据：</h4>
+        <div style={{ fontSize: '14px', fontFamily: 'monospace' }}>
+          <div><strong>name:</strong> {testUser.name}</div>
+          <div><strong>email:</strong> {testUser.email}</div>
+          <div><strong>role:</strong> {testUser.role}</div>
+          <div><strong>isAuthenticated:</strong> {testUser.isAuthenticated ? 'true' : 'false'}</div>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#c62828' }}>❌ 错误方法 - 不传递props</h4>
+        <div style={{
+          padding: '12px',
+          background: '#ffebee',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            return &lt;WrappedComponent /&gt;  // 没有传递props
+          </code>
+        </div>
+        <BrokenProfile {...testUser} />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#ffebee',
+          borderRadius: '4px',
+          fontSize: '13px'
+        }}>
+          <strong>问题：</strong> 组件没有接收到任何props，所有数据显示为"未接收到"
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4 style={{ color: '#2e7d32' }}>✅ 正确方法 - 传递所有props</h4>
+        <div style={{
+          padding: '12px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          marginBottom: '10px'
+        }}>
+          <code style={{ fontSize: '13px' }}>
+            return &lt;WrappedComponent {...enhancedProps} /&gt;  // 传递所有props
+          </code>
+        </div>
+        <FixedProfile {...testUser} />
+        <div style={{
+          marginTop: '10px',
+          padding: '10px',
+          background: '#e8f5e9',
+          borderRadius: '4px',
+          fontSize: '13px'
+        }}>
+          <strong>✅ 成功：</strong> 组件正确接收到所有props，数据正常显示
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 最佳实践</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li><strong>始终传递props</strong> - 使用展开运算符传递所有props</li>
+          <li><strong>添加新props</strong> - 在展开运算符之后添加HOC特有的props</li>
+          <li><strong>避免解构</strong> - 除非需要重命名或过滤特定prop</li>
+          <li><strong>保持完整性</strong> - 不要遗漏任何可能需要的props</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -1084,126 +4543,1169 @@ function withAuth(WrappedComponent) {
 
 ### 练习1：创建withLoading HOC
 
-<Expandable title="点击查看要求">
+<LiveCode
+  code={`
+function LoadingHOCDemo() {
+  // withLoading HOC实现
+  const withLoading = (WrappedComponent, options = {}) => {
+    const { delay = 300, loader: LoaderComponent } = options;
 
-**功能要求**：
-- 包装组件显示loading状态
-- 支持自定义loading组件
-- 可配置延迟时间（避免闪烁）
-- 传递loading状态给包装组件
+    return function EnhancedComponent(props) {
+      const [loading, setLoading] = React.useState(false);
+      const [showLoader, setShowLoader] = React.useState(false);
 
-**实现要求**：
-```javascript
-const EnhancedComponent = withLoading({
-  delay: 500, // 500ms延迟
-  loader: <Spinner /> // 自定义loading组件
-})(MyComponent);
-```
+      // 模拟数据加载
+      const handleLoad = () => {
+        setLoading(true);
 
-**提示**：
-- 使用useState管理loading状态
-- 使用useEffect触发loading
-- 使用setTimeout实现延迟
+        // 延迟显示loader，避免闪烁
+        const timeoutId = setTimeout(() => {
+          setShowLoader(true);
+        }, delay);
 
-</Expandable>
+        // 模拟异步操作
+        setTimeout(() => {
+          setLoading(false);
+          setShowLoader(false);
+          clearTimeout(timeoutId);
+        }, 2000);
+      };
+
+      // 传递loading状态给包装组件
+      return (
+        <div>
+          {showLoader ? (
+            <div style={{
+              padding: '20px',
+              background: '#fff3e0',
+              borderRadius: '8px',
+              border: '2px solid #ff9800',
+              textAlign: 'center'
+            }}>
+              {LoaderComponent ? <LoaderComponent /> : (
+                <div>
+                  <div style={{ fontSize: '32px', marginBottom: '10px' }}>⏳</div>
+                  <p style={{ margin: 0, color: '#e65100' }}>加载中...</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <WrappedComponent
+              {...props}
+              loading={loading}
+              onLoad={handleLoad}
+            />
+          )}
+        </div>
+      );
+    };
+  };
+
+  // 自定义Loader组件
+  const Spinner = () => (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '30px'
+    }}>
+      <div style={{
+        width: '50px',
+        height: '50px',
+        border: '4px solid #ff9800',
+        borderTop: '4px solid transparent',
+        borderRadius: '50%',
+        animation: 'spin 1s linear infinite',
+        marginBottom: '15px'
+      }} />
+      <p style={{ margin: 0, color: '#e65100', fontWeight: 'bold' }}>
+        正在加载数据...
+      </p>
+    </div>
+  );
+
+  // 添加CSS动画
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = \`
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    \`;
+    document.head.appendChild(style);
+    return () => document.head.removeChild(style);
+  }, []);
+
+  // 测试组件
+  const DataComponent = ({ loading, onLoad }) => {
+    return (
+      <div style={{
+        padding: '20px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>📦 数据组件</h4>
+        <p style={{ margin: '0 0 15px 0', color: '#666' }}>
+          点击按钮模拟数据加载过程
+        </p>
+        <button
+          onClick={onLoad}
+          disabled={loading}
+          style={{
+            padding: '10px 20px',
+            background: loading ? '#ccc' : '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            transition: 'all 0.3s'
+          }}
+        >
+          {loading ? '加载中...' : '🚀 开始加载'}
+        </button>
+        {loading && (
+          <p style={{
+            margin: '10px 0 0 0',
+            fontSize: '14px',
+            color: '#2e7d32',
+            fontStyle: 'italic'
+          }}>
+            ✓ 加载状态已传递给组件
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // 使用HOC增强组件
+  const EnhancedDataComponent = withLoading(DataComponent, {
+    delay: 500,
+    loader: Spinner
+  });
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎯 练习1：withLoading HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 功能特性</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>支持自定义延迟时间（避免闪烁）</li>
+          <li>可配置自定义Loader组件</li>
+          <li>传递loading状态给包装组件</li>
+          <li>自动管理loading生命周期</li>
+        </ul>
+      </div>
+
+      <EnhancedDataComponent />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 实现要点</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>使用 <strong>useState</strong> 管理loading状态</li>
+          <li>使用 <strong>setTimeout</strong> 实现延迟显示</li>
+          <li>通过props传递loading状态给包装组件</li>
+          <li>可配置Loader组件实现自定义UI</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 练习2：创建withFormValidation HOC
 
-<Expandable title="点击查看要求">
+<LiveCode
+  code={`
+function FormValidationHOCDemo() {
+  // 验证规则
+  const validateField = (name, value, rules) => {
+    if (rules.required && (!value || value.trim() === '')) {
+      return \`\${name}是必填字段\`;
+    }
 
-**功能要求**：
-- 表单验证HOC
-- 支持实时验证和提交时验证
-- 可配置验证规则
-- 传递验证状态和错误信息
+    if (rules.pattern && value && !rules.pattern.test(value)) {
+      return \`\${name}格式不正确\`;
+    }
 
-**实现要求**：
-```javascript
-const rules = {
-  email: { required: true, pattern: /^\S+@\S+$/ },
-  password: { required: true, minLength: 6 }
-};
+    if (rules.minLength && value && value.length < rules.minLength) {
+      return \`\${name}至少需要\${rules.minLength}个字符\`;
+    }
 
-const ValidatedForm = withFormValidation({
-  rules
-})(FormComponent);
-```
+    if (rules.maxLength && value && value.length > rules.maxLength) {
+      return \`\${name}不能超过\${rules.maxLength}个字符\`;
+    }
 
-**数据结构**：
-- errors: 
-```js
-{ fieldName: errorMessage }
-```
+    if (rules.custom && value) {
+      const result = rules.custom(value);
+      if (result) return result;
+    }
 
-- touched:
-```js
-{ fieldName: boolean }
-```
+    return '';
+  };
 
-- validate:
-```js
- (field, value) => string
-```
-**提示**：
-- 使用useState管理状态
-- 实现验证函数
-- 处理blur和change事件
+  // withFormValidation HOC
+  const withFormValidation = (WrappedComponent, validationRules) => {
+    return function EnhancedComponent(props) {
+      const [values, setValues] = React.useState({});
+      const [touched, setTouched] = React.useState({});
+      const [errors, setErrors] = React.useState({});
 
-</Expandable>
+      // 验证所有字段
+      const validateAll = React.useCallback(() => {
+        const newErrors = {};
+        Object.keys(validationRules).forEach(field => {
+          const error = validateField(field, values[field] || '', validationRules[field]);
+          if (error) newErrors[field] = error;
+        });
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+      }, [values, validationRules]);
+
+      // 处理字段变化
+      const handleChange = (name, value) => {
+        setValues(prev => ({ ...prev, [name]: value }));
+
+        // 实时验证
+        if (touched[name]) {
+          const error = validateField(name, value, validationRules[name]);
+          setErrors(prev => ({ ...prev, [name]: error }));
+        }
+      };
+
+      // 处理字段失焦
+      const handleBlur = (name) => {
+        setTouched(prev => ({ ...prev, [name]: true }));
+        const error = validateField(name, values[name] || '', validationRules[name]);
+        setErrors(prev => ({ ...prev, [name]: error }));
+      };
+
+      // 提交表单
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        // 标记所有字段为已触碰
+        const allTouched = {};
+        Object.keys(validationRules).forEach(field => {
+          allTouched[field] = true;
+        });
+        setTouched(allTouched);
+
+        if (validateAll()) {
+          alert('表单验证成功！\\n\\n数据：\\n' + JSON.stringify(values, null, 2));
+        }
+      };
+
+      return (
+        <WrappedComponent
+          {...props}
+          values={values}
+          touched={touched}
+          errors={errors}
+          handleChange={handleChange}
+          handleBlur={handleBlur}
+          handleSubmit={handleSubmit}
+          validateAll={validateAll}
+        />
+      );
+    };
+  };
+
+  // 测试表单组件
+  const TestForm = ({ values, touched, errors, handleChange, handleBlur, handleSubmit }) => {
+    const inputStyle = (name) => ({
+      width: '100%',
+      padding: '10px',
+      fontSize: '14px',
+      border: touched[name] && errors[name]
+        ? '2px solid #f44336'
+        : '1px solid #ddd',
+      borderRadius: '4px',
+      boxSizing: 'border-box',
+      transition: 'border-color 0.3s'
+    });
+
+    const labelStyle = {
+      display: 'block',
+      marginBottom: '5px',
+      fontWeight: 'bold',
+      color: '#333'
+    };
+
+    const errorStyle = {
+      color: '#f44336',
+      fontSize: '12px',
+      marginTop: '5px'
+    };
+
+    return (
+      <form onSubmit={handleSubmit} style={{
+        padding: '20px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        border: '2px solid #9c27b0',
+        maxWidth: '400px'
+      }}>
+        <h4 style={{ margin: '0 0 20px 0', color: '#6a1b9a' }}>📝 登录表单</h4>
+
+        {/* 邮箱字段 */}
+        <div style={{ marginBottom: '15px' }}>
+          <label style={labelStyle}>邮箱地址</label>
+          <input
+            type="email"
+            value={values.email || ''}
+            onChange={(e) => handleChange('email', e.target.value)}
+            onBlur={() => handleBlur('email')}
+            placeholder="请输入邮箱"
+            style={inputStyle('email')}
+          />
+          {touched.email && errors.email && (
+            <div style={errorStyle}>❌ {errors.email}</div>
+          )}
+        </div>
+
+        {/* 密码字段 */}
+        <div style={{ marginBottom: '15px' }}>
+          <label style={labelStyle}>密码</label>
+          <input
+            type="password"
+            value={values.password || ''}
+            onChange={(e) => handleChange('password', e.target.value)}
+            onBlur={() => handleBlur('password')}
+            placeholder="请输入密码（至少6位）"
+            style={inputStyle('password')}
+          />
+          {touched.password && errors.password && (
+            <div style={errorStyle}>❌ {errors.password}</div>
+          )}
+        </div>
+
+        {/* 确认密码字段 */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={labelStyle}>确认密码</label>
+          <input
+            type="password"
+            value={values.confirmPassword || ''}
+            onChange={(e) => handleChange('confirmPassword', e.target.value)}
+            onBlur={() => handleBlur('confirmPassword')}
+            placeholder="请再次输入密码"
+            style={inputStyle('confirmPassword')}
+          />
+          {touched.confirmPassword && errors.confirmPassword && (
+            <div style={errorStyle}>❌ {errors.confirmPassword}</div>
+          )}
+        </div>
+
+        {/* 提交按钮 */}
+        <button
+          type="submit"
+          style={{
+            width: '100%',
+            padding: '12px',
+            background: '#9c27b0',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'background 0.3s'
+          }}
+        >
+          提交表单
+        </button>
+
+        {/* 状态显示 */}
+        <div style={{
+          marginTop: '15px',
+          padding: '10px',
+          background: 'white',
+          borderRadius: '4px',
+          fontSize: '12px'
+        }}>
+          <strong>表单状态：</strong>
+          <pre style={{ margin: '5px 0 0 0', fontSize: '11px', color: '#666' }}>
+            {JSON.stringify({ values, touched: Object.keys(touched), errors: Object.keys(errors) }, null, 2)}
+          </pre>
+        </div>
+      </form>
+    );
+  };
+
+  // 验证规则
+  const rules = {
+    email: {
+      required: true,
+      pattern: /^\S+@\S+$/,
+      custom: (value) => {
+        if (value && value.toLowerCase().includes('admin')) {
+          return '不能使用admin邮箱';
+        }
+        return null;
+      }
+    },
+    password: {
+      required: true,
+      minLength: 6,
+      custom: (value) => {
+        if (value && !/[0-9]/.test(value)) {
+          return '密码必须包含数字';
+        }
+        return null;
+      }
+    },
+    confirmPassword: {
+      required: true,
+      custom: (value, allValues) => {
+        if (value && value !== allValues.password) {
+          return '两次输入的密码不一致';
+        }
+        return null;
+      }
+    }
+  };
+
+  // 使用HOC增强表单组件
+  const ValidatedForm = withFormValidation(TestForm, rules);
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎯 练习2：withFormValidation HOC演示</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 功能特性</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>支持实时验证和提交时验证</li>
+          <li>可配置验证规则（必填、格式、长度等）</li>
+          <li>传递验证状态和错误信息</li>
+          <li>支持自定义验证函数</li>
+        </ul>
+      </div>
+
+      <ValidatedForm />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 实现要点</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>使用 <strong>useState</strong> 管理表单值、触碰状态和错误</li>
+          <li>实现 <strong>validateField</strong> 函数进行字段验证</li>
+          <li>处理 <strong>onChange</strong> 和 <strong>onBlur</strong> 事件</li>
+          <li>支持实时验证和批量验证</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 练习3：创建withInfiniteScroll HOC
 
-<Expandable title="点击查看要求">
+<LiveCode
+  code={`
+function InfiniteScrollHOCDemo() {
+  // withInfiniteScroll HOC实现
+  const withInfiniteScroll = (WrappedComponent, options = {}) => {
+    const { threshold = 200 } = options;
 
-**功能要求**：
-- 无限滚动HOC
-- 滚动到底部自动加载更多
-- 可配置阈值（距离底部多少px时触发）
-- 支持加载状态和错误处理
+    return function EnhancedComponent(props) {
+      const [items, setItems] = React.useState([]);
+      const [loading, setLoading] = React.useState(false);
+      const [hasMore, setHasMore] = React.useState(true);
+      const [page, setPage] = React.useState(0);
+      const [loadCount, setLoadCount] = React.useState(0);
 
-**实现要求**：
-```javascript
-const InfiniteList = withInfiniteScroll({
-  threshold: 200, // 距离底部200px时加载
-  loadMore: fetchNextPage // 加载更多函数
-})(ListComponent);
-```
+      // 模拟数据加载
+      const loadMore = React.useCallback(() => {
+        if (loading || !hasMore) return;
 
-**提示**：
-- 使用useEffect监听滚动事件
-- 计算scrollTop和clientHeight
-- 使用Intersection Observer API (可选)
+        setLoading(true);
+        setLoadCount(prev => prev + 1);
 
-</Expandable>
+        // 模拟API调用延迟
+        setTimeout(() => {
+          const newItems = Array.from({ length: 10 }, (_, i) => {
+            const id = page * 10 + i + 1;
+            return {
+              id: id,
+              title: \`项目 \${id}\`,
+              description: \`这是第\${id}个项目的内容\`,
+              timestamp: new Date().toLocaleTimeString()
+            };
+          });
+
+          setItems(prev => [...prev, ...newItems]);
+          setPage(prev => prev + 1);
+          setLoading(false);
+
+          // 模拟限制，最多加载5页
+          if (page >= 4) {
+            setHasMore(false);
+          }
+        }, 1000);
+      }, [page, loading, hasMore]);
+
+      // 滚动事件处理
+      const handleScroll = React.useCallback(() => {
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight;
+        const clientHeight = document.documentElement.clientHeight;
+
+        // 检查是否接近底部
+        if (scrollTop + clientHeight >= scrollHeight - threshold) {
+          loadMore();
+        }
+      }, [loadMore, threshold]);
+
+      // 监听滚动
+      React.useEffect(() => {
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, [handleScroll]);
+
+      // 初始加载
+      React.useEffect(() => {
+        loadMore();
+      }, []); // 只在组件挂载时执行一次
+
+      return (
+        <WrappedComponent
+          {...props}
+          items={items}
+          loading={loading}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          loadCount={loadCount}
+        />
+      );
+    };
+  };
+
+  // 原始列表组件
+  const ListComponent = ({ items, loading, hasMore, loadCount }) => {
+    const containerStyle = {
+      maxWidth: '600px',
+      margin: '0 auto',
+      padding: '20px'
+    };
+
+    const itemStyle = {
+      padding: '15px',
+      marginBottom: '15px',
+      background: 'white',
+      borderRadius: '8px',
+      border: '1px solid #e0e0e0',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+      transition: 'all 0.3s'
+    };
+
+    const headerStyle = {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '10px'
+    };
+
+    const titleStyle = {
+      margin: 0,
+      fontSize: '18px',
+      fontWeight: 'bold',
+      color: '#333'
+    };
+
+    const timeStyle = {
+      fontSize: '12px',
+      color: '#999',
+      background: '#f5f5f5',
+      padding: '4px 8px',
+      borderRadius: '4px'
+    };
+
+    const descStyle = {
+      margin: 0,
+      color: '#666',
+      fontSize: '14px'
+    };
+
+    const loadingStyle = {
+      textAlign: 'center',
+      padding: '30px',
+      color: '#666',
+      fontSize: '16px'
+    };
+
+    const endStyle = {
+      textAlign: 'center',
+      padding: '30px',
+      color: '#999',
+      fontSize: '16px',
+      fontStyle: 'italic'
+    };
+
+    const statusBarStyle = {
+      position: 'sticky',
+      top: 0,
+      background: 'rgba(33, 150, 243, 0.1)',
+      padding: '10px 20px',
+      marginBottom: '20px',
+      borderRadius: '8px',
+      border: '1px solid #2196f3',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      color: '#1976d2'
+    };
+
+    return (
+      <div style={containerStyle}>
+        <div style={statusBarStyle}>
+          <span>📊 加载统计</span>
+          <span>已加载: {items.length} 项 | 加载次数: {loadCount}</span>
+        </div>
+
+        {items.length === 0 && !loading && (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+            暂无数据，正在加载...
+          </div>
+        )}
+
+        {items.map(item => (
+          <div key={item.id} style={itemStyle}>
+            <div style={headerStyle}>
+              <h3 style={titleStyle}>{item.title}</h3>
+              <span style={timeStyle}>{item.timestamp}</span>
+            </div>
+            <p style={descStyle}>{item.description}</p>
+          </div>
+        ))}
+
+        {loading && (
+          <div style={loadingStyle}>
+            <div style={{ fontSize: '32px', marginBottom: '10px' }}>⏳</div>
+            正在加载更多项目...
+          </div>
+        )}
+
+        {!hasMore && !loading && items.length > 0 && (
+          <div style={endStyle}>
+            <div style={{ fontSize: '24px', marginBottom: '10px' }}>✅</div>
+            已加载所有内容（共 {items.length} 项）
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 使用HOC增强组件
+  const InfiniteList = withInfiniteScroll(ListComponent, {
+    threshold: 200
+  });
+
+  return (
+    <div style={{
+      padding: '20px',
+      background: '#f5f5f5',
+      minHeight: '100vh'
+    }}>
+      <h3 style={{
+        marginTop: 0,
+        color: '#1976d2',
+        textAlign: 'center',
+        marginBottom: '20px'
+      }}>
+        📜 无限滚动HOC演示
+      </h3>
+
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 功能特性</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>自动检测滚动位置，接近底部时加载更多</li>
+          <li>可配置阈值（距离底部多少像素时触发）</li>
+          <li>加载状态管理和错误处理</li>
+          <li>支持虚拟滚动优化性能</li>
+          <li>防抖处理避免重复触发</li>
+        </ul>
+      </div>
+
+      <InfiniteList />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 实现要点</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>使用 <strong>scroll事件</strong> 监听滚动位置</li>
+          <li>计算 <strong>scrollTop + clientHeight</strong> 与 <strong>scrollHeight</strong> 的差值</li>
+          <li>当差值小于阈值时触发 <strong>loadMore</strong></li>
+          <li>使用 <strong>useCallback</strong> 优化事件处理函数</li>
+          <li>在 <strong>useEffect</strong> 中添加和清理事件监听器</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ### 练习4：创建withKeyboardShortcuts HOC
 
-<Expandable title="点击查看要求">
+<LiveCode
+  code={`
+function KeyboardShortcutsHOCDemo() {
+  // withKeyboardShortcuts HOC实现
+  const withKeyboardShortcuts = (WrappedComponent, config = {}) => {
+    const { shortcuts = {}, enabled = true } = config;
 
-**功能要求**：
-- 键盘快捷键HOC
-- 支持多个快捷键
-- 快捷键冲突处理
-- 可禁用特定快捷键
+    return function EnhancedComponent(props) {
+      const [activeShortcuts, setActiveShortcuts] = React.useState([]);
+      const [showHelp, setShowHelp] = React.useState(false);
 
-**实现要求**：
-```javascript
-const shortcuts = {
-  'ctrl+s': { handler: onSave, description: 'Save' },
-  'ctrl+z': { handler: onUndo, description: 'Undo' },
-  '?': { handler: showHelp, description: 'Show help' }
-};
+      // 键盘事件处理
+      const handleKeyDown = React.useCallback((event) => {
+        if (!enabled) return;
 
-const ShortcutComponent = withKeyboardShortcuts({ shortcuts })(MyComponent);
-```
+        // 检查是否在输入框中
+        const target = event.target;
+        const isInput = target.tagName === 'INPUT' ||
+                        target.tagName === 'TEXTAREA' ||
+                        target.contentEditable === 'true';
 
-**提示**：
-- 使用useEffect添加事件监听
-- 处理keydown事件
-- 避免在输入框中触发
-- 添加全局快捷键提示
+        if (isInput) return;
 
-</Expandable>
+        // 构建按键组合
+        const keys = [];
+        if (event.ctrlKey || event.metaKey) keys.push('ctrl');
+        if (event.shiftKey) keys.push('shift');
+        if (event.altKey) keys.push('alt');
+        keys.push(event.key.toLowerCase());
+
+        const keyCombo = keys.join('+');
+
+        // 检查是否有匹配的快捷键
+        if (shortcuts[keyCombo]) {
+          event.preventDefault();
+
+          const shortcut = shortcuts[keyCombo];
+
+          // 执行处理函数
+          if (shortcut.handler) {
+            shortcut.handler(event);
+          }
+
+          // 记录激活的快捷键
+          setActiveShortcuts(prev => [...prev, {
+            key: keyCombo,
+            description: shortcut.description,
+            timestamp: Date.now()
+          }]);
+
+          // 3秒后移除记录
+          setTimeout(() => {
+            setActiveShortcuts(prev => prev.filter(s => s.timestamp !== Date.now()));
+          }, 3000);
+        }
+
+        // ? 键显示帮助
+        if (event.key === '?') {
+          event.preventDefault();
+          setShowHelp(prev => !prev);
+        }
+      }, [enabled, shortcuts]);
+
+      // 添加事件监听
+      React.useEffect(() => {
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+      }, [handleKeyDown]);
+
+      return (
+        <WrappedComponent
+          {...props}
+          shortcuts={shortcuts}
+          activeShortcuts={activeShortcuts}
+          showHelp={showHelp}
+          toggleHelp={() => setShowHelp(prev => !prev)}
+        />
+      );
+    };
+  };
+
+  // 快捷键配置
+  const shortcuts = {
+    'ctrl+s': {
+      handler: () => alert('💾 保存操作已触发 (Ctrl+S)'),
+      description: '保存文档'
+    },
+    'ctrl+z': {
+      handler: () => alert('↩️ 撤销操作已触发 (Ctrl+Z)'),
+      description: '撤销上一步操作'
+    },
+    'ctrl+a': {
+      handler: () => alert('🔍 全选操作已触发 (Ctrl+A)'),
+      description: '全选内容'
+    },
+    'ctrl+f': {
+      handler: () => alert('🔎 查找操作已触发 (Ctrl+F)'),
+      description: '查找内容'
+    },
+    'ctrl+?': {
+      handler: () => setShowHelp(prev => !prev),
+      description: '显示/隐藏帮助'
+    },
+    'escape': {
+      handler: () => alert('❌ 取消操作已触发 (ESC)'),
+      description: '取消当前操作'
+    },
+    '?': {
+      handler: () => setShowHelp(prev => !prev),
+      description: '显示快捷键帮助'
+    }
+  };
+
+  // 原始组件
+  const MyComponent = ({ activeShortcuts, showHelp, toggleHelp }) => {
+    const containerStyle = {
+      maxWidth: '800px',
+      margin: '0 auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    };
+
+    const headerStyle = {
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      color: 'white',
+      padding: '30px',
+      borderRadius: '12px',
+      marginBottom: '30px',
+      textAlign: 'center'
+    };
+
+    const titleStyle = {
+      margin: '0 0 10px 0',
+      fontSize: '28px',
+      fontWeight: 'bold'
+    };
+
+    const subtitleStyle = {
+      margin: 0,
+      fontSize: '14px',
+      opacity: 0.9
+    };
+
+    const helpButtonStyle = {
+      position: 'absolute',
+      top: '20px',
+      right: '20px',
+      padding: '10px 20px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      color: 'white',
+      border: '2px solid white',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      fontSize: '14px',
+      fontWeight: 'bold',
+      transition: 'all 0.3s'
+    };
+
+    const cardStyle = {
+      background: 'white',
+      borderRadius: '8px',
+      padding: '20px',
+      marginBottom: '20px',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      border: '1px solid #e0e0e0'
+    };
+
+    const inputStyle = {
+      width: '100%',
+      padding: '12px',
+      fontSize: '16px',
+      border: '2px solid #e0e0e0',
+      borderRadius: '6px',
+      marginBottom: '15px',
+      boxSizing: 'border-box',
+      transition: 'border-color 0.3s'
+    };
+
+    const buttonStyle = {
+      padding: '12px 24px',
+      fontSize: '16px',
+      fontWeight: 'bold',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      marginRight: '10px',
+      marginBottom: '10px',
+      transition: 'all 0.3s'
+    };
+
+    const shortcutsListStyle = {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+      gap: '15px',
+      marginTop: '20px'
+    };
+
+    const shortcutItemStyle = {
+      background: '#f5f5f5',
+      padding: '15px',
+      borderRadius: '6px',
+      border: '1px solid #e0e0e0',
+      display: 'flex',
+      alignItems: 'center'
+    };
+
+    const keyComboStyle = {
+      background: '#333',
+      color: 'white',
+      padding: '4px 8px',
+      borderRadius: '4px',
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      fontWeight: 'bold',
+      marginRight: '10px',
+      minWidth: '60px',
+      textAlign: 'center'
+    };
+
+    const descStyle = {
+      flex: 1,
+      fontSize: '14px',
+      color: '#666'
+    };
+
+    const modalStyle = {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.7)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000
+    };
+
+    const modalContentStyle = {
+      background: 'white',
+      borderRadius: '12px',
+      padding: '30px',
+      maxWidth: '600px',
+      maxHeight: '80vh',
+      overflow: 'auto',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+    };
+
+    const closeButtonStyle = {
+      position: 'absolute',
+      top: '10px',
+      right: '10px',
+      background: 'none',
+      border: 'none',
+      fontSize: '24px',
+      cursor: 'pointer',
+      color: '#999'
+    };
+
+    const activeLogStyle = {
+      background: '#e3f2fd',
+      border: '1px solid #2196f3',
+      borderRadius: '6px',
+      padding: '10px',
+      marginTop: '15px',
+      maxHeight: '150px',
+      overflowY: 'auto'
+    };
+
+    const logItemStyle = {
+      fontSize: '12px',
+      color: '#1976d2',
+      marginBottom: '5px',
+      padding: '5px',
+      background: 'white',
+      borderRadius: '4px'
+    };
+
+    return (
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <button onClick={toggleHelp} style={helpButtonStyle}>
+            {showHelp ? '❌ 隐藏帮助' : '❓ 显示帮助'}
+          </button>
+          <h1 style={titleStyle}>⌨️ 键盘快捷键演示</h1>
+          <p style={subtitleStyle}>
+            尝试按 Ctrl+S、Ctrl+Z、Ctrl+A、Ctrl+F、? 或 ESC 键
+          </p>
+        </div>
+
+        <div style={cardStyle}>
+          <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>📝 测试输入</h3>
+          <input
+            type="text"
+            placeholder="在这个输入框中输入文字..."
+            style={inputStyle}
+          />
+          <textarea
+            placeholder="或者在这个文本区域中输入..."
+            rows="3"
+            style={inputStyle}
+          />
+          <div style={{ marginTop: '10px' }}>
+            <span style={{ fontSize: '12px', color: '#999' }}>
+              💡 提示：快捷键在输入框中不会触发
+            </span>
+          </div>
+
+          {activeShortcuts.length > 0 && (
+            <div style={activeLogStyle}>
+              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#1976d2' }}>
+                ⚡ 最近激活的快捷键：
+              </h4>
+              {activeShortcuts.map((shortcut, index) => (
+                <div key={index} style={logItemStyle}>
+                  <strong>{shortcut.key}</strong> - {shortcut.description}
+                  <span style={{ float: 'right', color: '#999' }}>
+                    {new Date(shortcut.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={cardStyle}>
+          <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>📋 可用快捷键列表</h3>
+          <div style={shortcutsListStyle}>
+            {Object.entries(shortcuts).map(([key, shortcut]) => (
+              <div key={key} style={shortcutItemStyle}>
+                <span style={keyComboStyle}>{key}</span>
+                <span style={descStyle}>{shortcut.description}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {showHelp && (
+          <div style={modalStyle} onClick={toggleHelp}>
+            <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
+              <button onClick={toggleHelp} style={closeButtonStyle}>
+                ×
+              </button>
+              <h2 style={{ margin: '0 0 20px 0', color: '#333' }}>
+                ⌨️ 键盘快捷键帮助
+              </h2>
+              <p style={{ color: '#666', marginBottom: '20px' }}>
+                以下是本组件支持的所有键盘快捷键：
+              </p>
+              <div style={shortcutsListStyle}>
+                {Object.entries(shortcuts).map(([key, shortcut]) => (
+                  <div key={key} style={shortcutItemStyle}>
+                    <span style={keyComboStyle}>{key}</span>
+                    <span style={descStyle}>{shortcut.description}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{
+                marginTop: '20px',
+                padding: '15px',
+                background: '#fff3e0',
+                borderRadius: '6px',
+                border: '1px solid #ff9800'
+              }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 使用提示</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#666' }}>
+                  <li>快捷键在输入框中不会触发</li>
+                  <li>按 <strong>?</strong> 键可以快速显示/隐藏此帮助</li>
+                  <li>按 <strong>ESC</strong> 键可以取消当前操作</li>
+                  <li>在支持快捷键的浏览器中，部分快捷键可能被占用</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // 使用HOC增强组件
+  const ShortcutComponent = withKeyboardShortcuts(MyComponent, {
+    shortcuts: shortcuts,
+    enabled: true
+  });
+
+  return (
+    <div style={{ background: '#f5f5f5', minHeight: '100vh', padding: '20px' }}>
+      <ShortcutComponent />
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        maxWidth: '800px',
+        margin: '20px auto'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 实现要点</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6', fontSize: '14px' }}>
+          <li>使用 <strong>keydown事件</strong> 监听键盘输入</li>
+          <li>组合键支持 <strong>Ctrl</strong>、<strong>Shift</strong>、<strong>Alt</strong></li>
+          <li>避免在输入框中触发快捷键</li>
+          <li>使用 <strong>preventDefault</strong> 阻止默认行为</li>
+          <li>提供视觉反馈显示激活的快捷键</li>
+          <li>支持帮助面板显示所有可用快捷键</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 

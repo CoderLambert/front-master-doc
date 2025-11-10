@@ -111,11 +111,10 @@ function DoubleClickDemo() {
 
 #### 2.1.3 鼠标悬停事件
 
-<CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function HoverDemo() {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = React.useState(false);
 
   return (
     <div
@@ -125,47 +124,74 @@ function HoverDemo() {
         padding: '20px',
         background: isHovered ? '#e3f2fd' : '#f5f5f5',
         borderRadius: '8px',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        transition: 'background-color 0.3s',
+        border: '2px solid ' + (isHovered ? '#2196f3' : '#ddd')
       }}
     >
-      {isHovered ? '鼠标在上面' : '将鼠标移到这里'}
+      {isHovered ? '✅ 鼠标悬停中...' : '👆 将鼠标移到这里'}
     </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.2 键盘事件
 
 #### 2.2.1 onKeyDown / onKeyUp - 按键事件
 
-<CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function KeyboardDemo() {
-  const [key, setKey] = useState('');
+  const [key, setKey] = React.useState('');
+  const [history, setHistory] = React.useState([]);
 
   const handleKeyDown = (e) => {
-    setKey(e.key);
-    console.log('按键:', e.key);
+    const pressedKey = e.key;
+    setKey(pressedKey);
+    setHistory(prev => [pressedKey, ...prev.slice(0, 4)]);
   };
 
   return (
-    <div>
+    <div style={{ padding: '20px' }}>
       <input
         type="text"
         onKeyDown={handleKeyDown}
-        placeholder="按一个键试试"
-        style={{ padding: '10px' }}
+        placeholder="在这里输入一些文字..."
+        style={{
+          padding: '12px',
+          fontSize: '16px',
+          border: '2px solid #ddd',
+          borderRadius: '6px',
+          width: '100%',
+          maxWidth: '400px',
+          outline: 'none'
+        }}
       />
-      <p>按下的键: {key}</p>
+
+      <div style={{ marginTop: '20px', padding: '15px', background: '#f5f5f5', borderRadius: '8px' }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>📝 按键记录</h4>
+        <p style={{ margin: '5px 0' }}><strong>最近按键:</strong> {key || '无'}</p>
+        {history.length > 0 && (
+          <div>
+            <strong>历史记录:</strong>
+            <ul style={{ margin: '10px 0', paddingLeft: '20px' }}>
+              {history.map((k, i) => (
+                <li key={i} style={{ color: '#666' }}>
+                  {i + 1}. {k}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 #### 2.2.2 组合键处理
 
@@ -201,72 +227,215 @@ function HotkeyDemo() {
 
 #### 2.3.1 onChange - 输入变化
 
-<CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function InputDemo() {
-  const [value, setValue] = useState('');
+  const [value, setValue] = React.useState('');
+  const [feedback, setFeedback] = React.useState('');
 
   const handleChange = (e) => {
-    setValue(e.target.value);
+    const newValue = e.target.value;
+    setValue(newValue);
+
+    // 实时反馈
+    if (newValue.length > 10) {
+      setFeedback('输入很详细！');
+    } else if (newValue.length > 5) {
+      setFeedback('不错，继续输入...');
+    } else if (newValue.length > 0) {
+      setFeedback('输入进行中...');
+    } else {
+      setFeedback('');
+    }
   };
 
   return (
-    <div>
+    <div style={{ padding: '20px' }}>
       <input
         type="text"
         value={value}
         onChange={handleChange}
-        placeholder="输入一些文字"
+        placeholder="在这里输入一些文字..."
+        style={{
+          padding: '12px',
+          fontSize: '16px',
+          border: '2px solid #2196f3',
+          borderRadius: '6px',
+          width: '100%',
+          maxWidth: '400px',
+          outline: 'none'
+        }}
       />
-      <p>输入的值: {value}</p>
+
+      <div style={{ marginTop: '20px', padding: '15px', background: '#e3f2fd', borderRadius: '8px' }}>
+        <p style={{ margin: '5px 0', fontSize: '18px' }}>
+          <strong>输入的值:</strong> {value || '（无）'}
+        </p>
+        <p style={{ margin: '5px 0', color: '#666' }}>
+          字符数: {value.length}
+        </p>
+        {feedback && (
+          <p style={{
+            margin: '10px 0 0 0',
+            color: '#1976d2',
+            fontStyle: 'italic',
+            fontWeight: 'bold'
+          }}>
+            {feedback}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 #### 2.3.2 onSubmit - 表单提交
 
-<CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function FormDemo() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [submitted, setSubmitted] = React.useState(false);
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const handleSubmit = (e) => {
-    e.preventDefault(); // 阻止默认提交行为
+    e.preventDefault();
+    setSubmitted(true);
     console.log('提交的数据:', { email, password });
-    alert(`邮箱: ${email}\n密码: ${password}`);
+  };
+
+  const handleReset = () => {
+    setEmail('');
+    setPassword('');
+    setSubmitted(false);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>邮箱:</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-      <div>
-        <label>密码:</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      <button type="submit">登录</button>
-    </form>
+    <div style={{ padding: '20px', maxWidth: '450px' }}>
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            📧 邮箱地址:
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="请输入邮箱"
+            required
+            style={{
+              width: '100%',
+              padding: '10px',
+              fontSize: '16px',
+              border: '2px solid #ddd',
+              borderRadius: '6px',
+              boxSizing: 'border-box'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '15px' }}>
+          <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+            🔒 密码:
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="请输入密码"
+              required
+              style={{
+                width: '100%',
+                padding: '10px',
+                fontSize: '16px',
+                border: '2px solid #ddd',
+                borderRadius: '6px',
+                boxSizing: 'border-box'
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
+                color: '#666'
+              }}
+            >
+              {showPassword ? '🙈' : '👁️'}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            type="submit"
+            style={{
+              flex: 1,
+              padding: '12px',
+              fontSize: '16px',
+              background: '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🚀 登录
+          </button>
+          <button
+            type="button"
+            onClick={handleReset}
+            style={{
+              flex: 1,
+              padding: '12px',
+              fontSize: '16px',
+              background: '#f5f5f5',
+              color: '#333',
+              border: '2px solid #ddd',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            🔄 重置
+          </button>
+        </div>
+      </form>
+
+      {submitted && (
+        <div style={{
+          marginTop: '20px',
+          padding: '15px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          border: '2px solid #4caf50'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✅ 提交成功！</h4>
+          <p style={{ margin: '5px 0' }}>邮箱: {email}</p>
+          <p style={{ margin: '5px 0' }}>
+            密码: {'•'.repeat(password.length)}
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -429,21 +598,27 @@ function BindDemo() {
 
 ### 4.2 事件处理中的状态更新
 
-事件处理函数中经常需要更新状态：
+事件处理函数中经常需要更新状态。下面的待办事项应用展示了完整的事件处理流程：
 
-<CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function TodoList() {
-  const [todos, setTodos] = useState([]);
-  const [input, setInput] = useState('');
+  const [todos, setTodos] = React.useState([
+    { id: 1, text: '学习React事件处理', completed: true },
+    { id: 2, text: '完成在线练习', completed: false }
+  ]);
+  const [input, setInput] = React.useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim()) {
       setTodos([
         ...todos,
-        { id: Date.now(), text: input, completed: false }
+        {
+          id: Date.now(),
+          text: input,
+          completed: false
+        }
       ]);
       setInput('');
     }
@@ -455,35 +630,133 @@ function TodoList() {
     ));
   };
 
-  return (
-    <form onSubmit={handleSubmit}>
-      <input
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder="添加待办事项"
-      />
-      <button type="submit">添加</button>
+  const deleteTodo = (id) => {
+    setTodos(todos.filter(todo => todo.id !== id));
+  };
 
-      <ul>
+  const completedCount = todos.filter(t => t.completed).length;
+
+  return (
+    <div style={{ padding: '20px', maxWidth: '500px' }}>
+      <h3 style={{ marginTop: 0 }}>📝 交互式待办事项列表</h3>
+
+      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="添加新的待办事项..."
+            style={{
+              flex: 1,
+              padding: '10px',
+              fontSize: '16px',
+              border: '2px solid #ddd',
+              borderRadius: '6px'
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              background: '#4caf50',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            ➕ 添加
+          </button>
+        </div>
+      </form>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '10px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        textAlign: 'center'
+      }}>
+        <strong>进度:</strong> {completedCount} / {todos.length} 已完成
+        <div style={{
+          marginTop: '10px',
+          height: '10px',
+          background: '#e0e0e0',
+          borderRadius: '5px',
+          overflow: 'hidden'
+        }}>
+          <div style={{
+            height: '100%',
+            width: \`${todos.length > 0 ? (completedCount / todos.length) * 100 : 0}%\`,
+            background: '#4caf50',
+            transition: 'width 0.3s'
+          }} />
+        </div>
+      </div>
+
+      <ul style={{ listStyle: 'none', padding: 0 }}>
         {todos.map(todo => (
           <li
             key={todo.id}
-            onClick={() => toggleTodo(todo.id)}
             style={{
-              textDecoration: todo.completed ? 'line-through' : 'none',
-              cursor: 'pointer'
+              display: 'flex',
+              alignItems: 'center',
+              padding: '12px',
+              marginBottom: '8px',
+              background: todo.completed ? '#e8f5e9' : 'white',
+              border: '2px solid ' + (todo.completed ? '#4caf50' : '#ddd'),
+              borderRadius: '6px',
+              transition: 'all 0.2s'
             }}
           >
-            {todo.text}
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => toggleTodo(todo.id)}
+              style={{
+                width: '20px',
+                height: '20px',
+                marginRight: '12px',
+                cursor: 'pointer'
+              }}
+            />
+            <span
+              onClick={() => toggleTodo(todo.id)}
+              style={{
+                flex: 1,
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                color: todo.completed ? '#666' : '#333',
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              {todo.text}
+            </span>
+            <button
+              onClick={() => deleteTodo(todo.id)}
+              style={{
+                padding: '5px 10px',
+                background: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              🗑️
+            </button>
           </li>
         ))}
       </ul>
-    </form>
+    </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 4.3 自定义事件处理 Hook
 

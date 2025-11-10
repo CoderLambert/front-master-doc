@@ -150,9 +150,8 @@ function App() {
 
 使用`{}`在JSX中嵌入JavaScript表达式。
 
-<CodeBlock>
-
-```jsx
+<LiveCode
+  code={`
 function App() {
   const name = 'Alice';
   const age = 25;
@@ -175,9 +174,16 @@ function App() {
     </div>
   );
 }
-```
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+<Box style={{ padding: '15px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>💡 互动提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    试试修改代码中的 <code>name</code>、<code>age</code> 或 <code>isLoggedIn</code> 的值，看看渲染结果如何变化！
+  </p>
+</Box>
 
 ### 3.2 复杂表达式
 
@@ -411,55 +417,233 @@ function App({ user }) {
 
 使用三元运算符进行简单条件渲染。
 
-<CodeBlock>
+<LiveCode
+  code={`
+function App() {
+  const [isAdmin, setIsAdmin] = React.useState(false);
 
-```jsx
-function App({ isAdmin }) {
   return (
     <div>
-      {isAdmin ? <AdminPanel /> : <UserPanel />}
+      <div style={{ marginBottom: '20px' }}>
+        <button
+          onClick={() => setIsAdmin(!isAdmin)}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: isAdmin ? '#f44336' : '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}
+        >
+          {isAdmin ? '切换为普通用户' : '切换为管理员'}
+        </button>
+      </div>
 
-      {/* 条件显示文本 */}
-      <p>
-        Status: {isAdmin ? 'Administrator' : 'Regular User'}
+      {isAdmin ? (
+        <div style={{
+          padding: '20px',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '8px',
+          border: '2px solid #2196f3'
+        }}>
+          <h2>🔐 管理员面板</h2>
+          <p>您拥有管理员权限</p>
+        </div>
+      ) : (
+        <div style={{
+          padding: '20px',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '8px',
+          border: '2px solid #9e9e9e'
+        }}>
+          <h2>👤 用户面板</h2>
+          <p>您是普通用户</p>
+        </div>
+      )}
+
+      <p style={{ marginTop: '20px', fontSize: '18px', fontWeight: 'bold' }}>
+        状态: {isAdmin ? 'Administrator' : 'Regular User'}
       </p>
     </div>
   );
 }
-```
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+<Box style={{ padding: '15px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    点击按钮切换用户角色，观察条件渲染如何根据 <code>isAdmin</code> 的值显示不同的内容。
+  </p>
+</Box>
 
 ### 5.3 逻辑与运算符
 
 使用`&&`运算符进行条件渲染（当条件为真时渲染元素）。
 
-<CodeBlock>
+<LiveCode
+  code={`
+function App() {
+  const [notifications, setNotifications] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState('');
 
-```jsx
-function App({ notifications }) {
+  const addNotification = () => {
+    setNotifications([...notifications, {
+      id: Date.now(),
+      text: '新消息 ' + (notifications.length + 1)
+    }]);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+  };
+
+  const simulateLoading = () => {
+    setLoading(true);
+    setTimeout(() => setLoading(false), 2000);
+  };
+
+  const triggerError = () => {
+    setError('操作失败，请重试');
+    setTimeout(() => setError(''), 3000);
+  };
+
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div style={{ padding: '20px' }}>
+      <h1>📊 仪表盘</h1>
+
+      {/* 控制按钮 */}
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        margin: '20px 0',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={addNotification}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          添加通知
+        </button>
+        <button
+          onClick={clearNotifications}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#9e9e9e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          清空通知
+        </button>
+        <button
+          onClick={simulateLoading}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          模拟加载
+        </button>
+        <button
+          onClick={triggerError}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          触发错误
+        </button>
+      </div>
 
       {/* 只有当notifications.length > 0时才渲染 */}
       {notifications.length > 0 && (
-        <div className="notifications">
-          You have {notifications.length} new notifications
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '8px',
+          border: '2px solid #2196f3',
+          marginBottom: '15px'
+        }}>
+          <h3>🔔 您有 {notifications.length} 条新通知</h3>
+          <ul style={{ margin: '10px 0 0 0', paddingLeft: '20px' }}>
+            {notifications.map(n => (
+              <li key={n.id}>{n.text}</li>
+            ))}
+          </ul>
         </div>
       )}
 
       {/* 条件渲染加载状态 */}
-      {loading && <Spinner />}
+      {loading && (
+        <div style={{
+          padding: '20px',
+          backgroundColor: '#fff3e0',
+          borderRadius: '8px',
+          textAlign: 'center',
+          marginBottom: '15px'
+        }}>
+          <div style={{
+            display: 'inline-block',
+            width: '20px',
+            height: '20px',
+            border: '3px solid #ff9800',
+            borderTop: '3px solid transparent',
+            borderRadius: '50%',
+            marginRight: '10px'
+          }}></div>
+          正在加载...
+        </div>
+      )}
 
       {/* 条件渲染错误信息 */}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && (
+        <p style={{
+          color: '#f44336',
+          padding: '10px',
+          backgroundColor: '#ffebee',
+          borderRadius: '5px',
+          border: '1px solid #f44336'
+        }}>
+          ⚠️ {error}
+        </p>
+      )}
+
+      {/* 移除内联样式，react-live不支持style标签 */}
     </div>
   );
 }
-```
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+<Box style={{ padding: '15px', background: '#fff3e0', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#e65100' }}>💡 提示</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    使用 <code>&&</code> 运算符，只有当条件为 <code>true</code> 时才渲染元素。试试点击不同按钮观察效果！
+  </p>
+</Box>
 
 ### 5.4 立即返回（Guard Clause）
 

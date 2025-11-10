@@ -340,12 +340,8 @@ export default App;
 
 看看如何通过组件组合构建复杂的UI：
 
-<CodeBlock>
-
-```jsx
-import React from 'react';
-
-// 定义头像组件
+<LiveCode
+  code={`
 function Avatar({ name, src }) {
   return (
     <img
@@ -355,62 +351,187 @@ function Avatar({ name, src }) {
         width: '50px',
         height: '50px',
         borderRadius: '50%',
-        marginRight: '10px'
+        marginRight: '10px',
+        border: '2px solid #2196f3'
+      }}
+      onError={(e) => {
+        e.target.src = \`https://ui-avatars.com/api/?name=\${encodeURIComponent(name)}&background=2196f3&color=fff&size=50\`;
       }}
     />
   );
 }
 
-// 定义用户卡片组件
-function UserCard({ name, role, src }) {
+function UserCard({ name, role, src, onUpdate, index }) {
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editName, setEditName] = React.useState(name);
+  const [editRole, setEditRole] = React.useState(role);
+
+  const handleUpdate = () => {
+    onUpdate(index, editName, editRole);
+    setIsEditing(false);
+  };
+
   return (
     <div
       style={{
-        border: '1px solid #ddd',
+        border: '2px solid #2196f3',
         borderRadius: '8px',
         padding: '15px',
         margin: '10px 0',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        backgroundColor: '#e3f2fd',
+        transition: 'all 0.3s'
       }}
     >
-      <Avatar name={name} src={src} />
-      <div>
-        <h3 style={{ margin: '0 0 5px 0' }}>{name}</h3>
-        <p style={{ margin: 0, color: '#666' }}>{role}</p>
+      <Avatar name={editName} src={src} />
+      <div style={{ flex: 1, marginLeft: '15px' }}>
+        {isEditing ? (
+          <div>
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              style={{
+                padding: '5px',
+                fontSize: '16px',
+                border: '1px solid #2196f3',
+                borderRadius: '4px',
+                width: '150px',
+                marginRight: '10px'
+              }}
+            />
+            <input
+              type="text"
+              value={editRole}
+              onChange={(e) => setEditRole(e.target.value)}
+              style={{
+                padding: '5px',
+                fontSize: '16px',
+                border: '1px solid #2196f3',
+                borderRadius: '4px',
+                width: '150px'
+              }}
+            />
+            <div style={{ marginTop: '10px' }}>
+              <button
+                onClick={handleUpdate}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  marginRight: '5px'
+                }}
+              >
+                保存
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditName(name);
+                  setEditRole(role);
+                }}
+                style={{
+                  padding: '5px 10px',
+                  backgroundColor: '#9e9e9e',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                取消
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <h3 style={{ margin: '0 0 5px 0', color: '#1565c0' }}>{editName}</h3>
+            <p style={{ margin: 0, color: '#666' }}>{editRole}</p>
+          </div>
+        )}
       </div>
+      {!isEditing && (
+        <button
+          onClick={() => setIsEditing(true)}
+          style={{
+            padding: '5px 10px',
+            backgroundColor: '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer'
+          }}
+        >
+          编辑
+        </button>
+      )}
     </div>
   );
 }
 
-// 主应用组件
 function App() {
+  const [users, setUsers] = React.useState([
+    { id: 1, name: 'Alice', role: '前端工程师', src: 'https://via.placeholder.com/50' },
+    { id: 2, name: 'Bob', role: '产品经理', src: 'https://via.placeholder.com/50' },
+    { id: 3, name: 'Charlie', role: '设计师', src: 'https://via.placeholder.com/50' }
+  ]);
+
+  const updateUser = (index, newName, newRole) => {
+    const newUsers = [...users];
+    newUsers[index] = { ...newUsers[index], name: newName, role: newRole };
+    setUsers(newUsers);
+  };
+
   return (
     <div style={{ padding: '20px' }}>
-      <h1>用户列表</h1>
-      <UserCard
-        name="Alice"
-        role="前端工程师"
-        src="https://via.placeholder.com/50"
-      />
-      <UserCard
-        name="Bob"
-        role="产品经理"
-        src="https://via.placeholder.com/50"
-      />
-      <UserCard
-        name="Charlie"
-        role="设计师"
-        src="https://via.placeholder.com/50"
-      />
+      <h1 style={{ color: '#1565c0', marginBottom: '20px' }}>👥 组件化用户列表</h1>
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        backgroundColor: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 React组件组合</h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          观察这个应用：<strong>App</strong>组件包含多个<strong>UserCard</strong>组件，
+          而每个<strong>UserCard</strong>组件又包含<strong>Avatar</strong>组件。
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          这就是React的<strong>组件化思想</strong>：小而美的组件可以组合成复杂的UI！
+        </p>
+      </div>
+
+      {users.map((user, index) => (
+        <UserCard
+          key={user.id}
+          name={user.name}
+          role={user.role}
+          src={user.src}
+          index={index}
+          onUpdate={updateUser}
+        />
+      ))}
     </div>
   );
 }
+`}
+  scope={{ React }}
+/>
 
-export default App;
-```
-
-</CodeBlock>
+<Box style={{ padding: '15px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 组件化优势</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>可复用</strong>：UserCard组件可以在多个地方使用<br/>
+    <strong>可维护</strong>：每个组件职责单一，逻辑清晰<br/>
+    <strong>可测试</strong>：可以独立测试每个组件<br/>
+    <strong>可组合</strong>：多个组件组合成复杂应用
+  </p>
+</Box>
 
 ### 示例3：动态内容
 

@@ -45,18 +45,19 @@ const memoizedValue = useMemo(() => {
 
 ### 1.2 简单示例
 
-<CodeBlock>
-
-```jsx
-import { useState, useMemo } from 'react';
-
+<LiveCode
+  code={`
 function MemoExample() {
-  const [count, setCount] = useState(0);
-  const [otherState, setOtherState] = useState(0);
+  const [count, setCount] = React.useState(0);
+  const [otherState, setOtherState] = React.useState(0);
+  const [calculations, setCalculations] = React.useState({
+    value1: 0,
+    value2: 0
+  });
 
-  // 不使用useMemo - 每次渲染都计算
-  const expensiveValue1 = () => {
-    console.log('执行expensiveValue1计算...');
+  // 模拟昂贵的计算
+  const expensiveCalculation = (label) => {
+    console.log(\`执行\${label}计算...\`);
     let result = 0;
     for (let i = 0; i < 1000000; i++) {
       result += i;
@@ -64,38 +65,133 @@ function MemoExample() {
     return result;
   };
 
-  // 使用useMemo - 只有count变化时才重新计算
-  const expensiveValue2 = useMemo(() => {
-    console.log('执行expensiveValue2计算...');
-    let result = 0;
-    for (let i = 0; i < 1000000; i++) {
-      result += i;
-    }
+  // 不使用useMemo - 每次渲染都计算
+  const expensiveValue1 = React.useMemo(() => {
+    const result = expensiveCalculation('expensiveValue1');
+    setCalculations(prev => ({ ...prev, value1: prev.value1 + 1 }));
     return result;
-  }, [count]);  // 只有count变化时重新计算
+  }, [count, otherState]); // 受所有状态影响
+
+  // 使用useMemo - 只有count变化时才重新计算
+  const expensiveValue2 = React.useMemo(() => {
+    const result = expensiveCalculation('expensiveValue2');
+    setCalculations(prev => ({ ...prev, value2: prev.value2 + 1 }));
+    return result;
+  }, [count]); // 只受count影响
 
   return (
-    <div>
-      <p>Count: {count}</p>
-      <p>Other State: {otherState}</p>
+    <div style={{ padding: '20px' }}>
+      <h3>⚡ useMemo性能对比</h3>
 
-      <button onClick={() => setCount(count + 1)}>
-        增加Count (重新计算expensiveValue2)
-      </button>
-      <button onClick={() => setOtherState(otherState + 1)}>
-        增加Other State (不重新计算expensiveValue2)
-      </button>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '15px',
+        margin: '20px 0'
+      }}>
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#ffebee',
+          borderRadius: '8px',
+          border: '2px solid #f44336'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>
+            Count: {count}
+          </h4>
+          <button
+            onClick={() => setCount(count + 1)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#f44336',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            增加Count
+          </button>
+          <p style={{ marginTop: '10px', fontSize: '12px' }}>
+            💡 会重新计算两个值
+          </p>
+        </div>
 
-      <div>
-        <p>Value1 (不使用useMemo): {expensiveValue1()}</p>
-        <p>Value2 (使用useMemo): {expensiveValue2}</p>
+        <div style={{
+          padding: '15px',
+          backgroundColor: '#e3f2fd',
+          borderRadius: '8px',
+          border: '2px solid #2196f3'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>
+            Other State: {otherState}
+          </h4>
+          <button
+            onClick={() => setOtherState(otherState + 1)}
+            style={{
+              padding: '10px 20px',
+              backgroundColor: '#2196f3',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            增加Other State
+          </button>
+          <p style={{ marginTop: '10px', fontSize: '12px' }}>
+            💡 只重新计算Value1
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '20px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px',
+        marginTop: '20px'
+      }}>
+        <h4>📊 计算结果</h4>
+        <div style={{ margin: '15px 0' }}>
+          <p style={{ fontWeight: 'bold', color: '#f44336' }}>
+            Value1 (受所有状态影响): {calculations.value1} 次计算
+          </p>
+          <p style={{ fontWeight: 'bold', color: '#2196f3' }}>
+            Value2 (只受count影响): {calculations.value2} 次计算
+          </p>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 提示</h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          观察控制台输出：只有当<strong>count</strong>变化时，expensiveValue2才会重新计算。
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          而expensiveValue1在任何状态变化时都会重新计算。
+        </p>
       </div>
     </div>
   );
 }
-```
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+<Box style={{ padding: '15px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 useMemo工作原理</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>useMemo</strong>缓存计算结果，只有当依赖项发生变化时才重新计算。
+    这对于昂贵的计算操作非常有用，可以显著提高性能。
+  </p>
+</Box>
 
 ---
 

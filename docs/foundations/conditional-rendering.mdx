@@ -189,89 +189,363 @@ function UserProfile({ user }) {
 
 根据用户登录状态显示不同内容。
 
-<CodeBlock>
+<LiveCode
+  code={`
+function LoginDemo() {
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [userName, setUserName] = React.useState('Alice');
 
-```jsx
-function App({ isLoggedIn, userName }) {
+  const handleLogin = () => {
+    setIsLoggedIn(true);
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUserName('Guest');
+  };
+
   return (
-    <div>
+    <div style={{ padding: '20px' }}>
       {/* 条件渲染导航栏 */}
-      {isLoggedIn ? (
-        <nav>
-          <span>欢迎，{userName}</span>
-          <button>退出</button>
-        </nav>
-      ) : (
-        <nav>
-          <button>登录</button>
-          <button>注册</button>
-        </nav>
-      )}
+      <nav style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        marginBottom: '20px'
+      }}>
+        <strong>我的应用</strong>
+
+        {isLoggedIn ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span>👋 欢迎，{userName}</span>
+            <button
+              onClick={handleLogout}
+              style={{
+                padding: '8px 15px',
+                background: '#f44336',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              退出
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input
+              type="text"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              placeholder="输入用户名"
+              style={{
+                padding: '8px',
+                border: '1px solid #ddd',
+                borderRadius: '4px'
+              }}
+            />
+            <button
+              onClick={handleLogin}
+              style={{
+                padding: '8px 15px',
+                background: '#4caf50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              登录
+            </button>
+          </div>
+        )}
+      </nav>
 
       {/* 条件渲染主内容 */}
-      <main>
+      <main style={{ padding: '20px', background: '#fafafa', borderRadius: '8px', minHeight: '150px' }}>
         {isLoggedIn ? (
-          <Dashboard />
+          <div>
+            <h3 style={{ marginTop: 0, color: '#4caf50' }}>✅ 仪表盘</h3>
+            <p>欢迎回来，{userName}！您已成功登录。</p>
+            <div style={{ marginTop: '15px', padding: '15px', background: 'white', borderRadius: '6px' }}>
+              <h4>📊 您的数据</h4>
+              <p>• 最近活动：5 分钟前</p>
+              <p>• 待办事项：3 项</p>
+              <p>• 消息：2 条未读</p>
+            </div>
+          </div>
         ) : (
-          <LandingPage />
+          <div>
+            <h3 style={{ marginTop: 0, color: '#666' }}>🏠 欢迎页面</h3>
+            <p>请登录以访问您的个人仪表盘。</p>
+            <div style={{ marginTop: '15px', padding: '15px', background: 'white', borderRadius: '6px' }}>
+              <h4>🌟 功能特色</h4>
+              <p>• 个性化仪表盘</p>
+              <p>• 实时数据更新</p>
+              <p>• 安全可靠</p>
+            </div>
+          </div>
         )}
       </main>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '10px',
+        background: '#e3f2fd',
+        borderRadius: '6px',
+        fontSize: '14px',
+        color: '#1976d2'
+      }}>
+        💡 状态：{isLoggedIn ? '已登录' : '未登录'} | 用户：{userName}
+      </div>
     </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 3.2 加载状态
 
 在数据加载时显示加载指示器。
 
-<CodeBlock>
+<LiveCode
+  code={`
+function UserListDemo() {
+  const [users, setUsers] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState(null);
+  const [stage, setStage] = React.useState('initial');
 
-```jsx
-function UserList() {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
+  const loadUsers = async () => {
     setLoading(true);
-    fetchUsers()
-      .then(setUsers)
-      .catch(setError)
-      .finally(() => setLoading(false));
+    setError(null);
+    setStage('loading');
+
+    try {
+      // 模拟API调用
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // 随机决定是否成功
+      if (Math.random() > 0.3) {
+        setUsers([
+          { id: 1, name: 'Alice', email: 'alice@example.com' },
+          { id: 2, name: 'Bob', email: 'bob@example.com' },
+          { id: 3, name: 'Charlie', email: 'charlie@example.com' }
+        ]);
+        setStage('success');
+      } else {
+        throw new Error('网络错误：无法加载用户数据');
+      }
+    } catch (err) {
+      setError(err.message);
+      setStage('error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setUsers([]);
+    setError(null);
+    setStage('initial');
+  };
+
+  React.useEffect(() => {
+    // 自动加载一次
+    loadUsers();
   }, []);
 
-  // 加载中
-  if (loading) {
-    return <div className="spinner">加载中...</div>;
+  // 加载中状态
+  if (stage === 'loading') {
+    return (
+      <div style={{
+        padding: '30px',
+        textAlign: 'center',
+        background: '#f5f5f5',
+        borderRadius: '8px'
+      }}>
+        <div style={{
+          display: 'inline-block',
+          width: '40px',
+          height: '40px',
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #2196f3',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '15px'
+        }}></div>
+        <p style={{ fontSize: '18px', color: '#666', margin: '10px 0 5px 0' }}>
+          正在加载用户数据...
+        </p>
+        <p style={{ fontSize: '14px', color: '#999' }}>
+          请稍候
+        </p>
+        <style>{\`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        \`}</style>
+      </div>
+    );
   }
 
   // 错误状态
-  if (error) {
+  if (stage === 'error') {
     return (
-      <div className="error">
-        <p>加载失败: {error.message}</p>
-        <button onClick={() => window.location.reload()}>
-          重试
+      <div style={{
+        padding: '30px',
+        textAlign: 'center',
+        background: '#ffebee',
+        borderRadius: '8px',
+        border: '2px solid #f44336'
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '10px' }}>⚠️</div>
+        <h3 style={{ margin: '10px 0', color: '#c62828' }}>加载失败</h3>
+        <p style={{ color: '#666', margin: '10px 0' }}>{error}</p>
+        <button
+          onClick={loadUsers}
+          style={{
+            padding: '10px 20px',
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            marginTop: '10px'
+          }}
+        >
+          🔄 重试
+        </button>
+        <button
+          onClick={reset}
+          style={{
+            padding: '10px 20px',
+            background: '#f5f5f5',
+            color: '#333',
+            border: '2px solid #ddd',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            marginTop: '10px',
+            marginLeft: '10px'
+          }}
+        >
+          重置
         </button>
       </div>
     );
   }
 
   // 成功状态
-  return (
-    <ul>
-      {users.map(user => (
-        <li key={user.id}>{user.name}</li>
-      ))}
-    </ul>
-  );
-}
-```
+  if (stage === 'success') {
+    return (
+      <div style={{ padding: '20px' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '20px'
+        }}>
+          <h3 style={{ margin: 0 }}>👥 用户列表</h3>
+          <div>
+            <button
+              onClick={loadUsers}
+              style={{
+                padding: '8px 15px',
+                background: '#2196f3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                marginRight: '10px'
+              }}
+            >
+              🔄 刷新
+            </button>
+            <button
+              onClick={reset}
+              style={{
+                padding: '8px 15px',
+                background: '#f5f5f5',
+                color: '#333',
+                border: '2px solid #ddd',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              清空
+            </button>
+          </div>
+        </div>
 
-</CodeBlock>
+        <div style={{
+          background: 'white',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          {users.map(user => (
+            <div
+              key={user.id}
+              style={{
+                padding: '15px',
+                borderBottom: '1px solid #eee',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '15px'
+              }}
+            >
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontWeight: 'bold'
+              }}>
+                {user.name[0]}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                  {user.name}
+                </div>
+                <div style={{ fontSize: '14px', color: '#666' }}>
+                  {user.email}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{
+          marginTop: '15px',
+          padding: '10px',
+          background: '#e8f5e9',
+          borderRadius: '6px',
+          fontSize: '14px',
+          color: '#2e7d32',
+          textAlign: 'center'
+        }}>
+          ✅ 成功加载 {users.length} 个用户
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+`}
+  scope={{ React }}
+/>
 
 ### 3.3 权限控制
 
@@ -316,41 +590,164 @@ function App({ user }) {
 
 根据条件动态应用样式。
 
-<CodeBlock>
+<LiveCode
+  code={`
+function StatusBadgeDemo() {
+  const [status, setStatus] = React.useState('success');
+  const [notification, setNotification] = React.useState('');
 
-```jsx
-function StatusBadge({ status }) {
   const getStatusStyle = (status) => {
-    switch (status) {
-      case 'success':
-        return { backgroundColor: '#4caf50', color: 'white' };
-      case 'warning':
-        return { backgroundColor: '#ff9800', color: 'white' };
-      case 'error':
-        return { backgroundColor: '#f44336', color: 'white' };
-      default:
-        return { backgroundColor: '#9e9e9e', color: 'white' };
-    }
+    const styles = {
+      success: {
+        backgroundColor: '#4caf50',
+        color: 'white',
+        borderColor: '#388e3c'
+      },
+      warning: {
+        backgroundColor: '#ff9800',
+        color: 'white',
+        borderColor: '#f57c00'
+      },
+      error: {
+        backgroundColor: '#f44336',
+        color: 'white',
+        borderColor: '#d32f2f'
+      },
+      info: {
+        backgroundColor: '#2196f3',
+        color: 'white',
+        borderColor: '#1976d2'
+      }
+    };
+    return styles[status] || styles.info;
+  };
+
+  const getStatusMessage = (status) => {
+    const messages = {
+      success: '操作已成功完成！',
+      warning: '请注意，此操作需要谨慎。',
+      error: '操作失败，请重试。',
+      info: '这是一条信息提示。'
+    };
+    return messages[status] || '未知状态';
+  };
+
+  const handleStatusChange = (newStatus) => {
+    setStatus(newStatus);
+    setNotification(getStatusMessage(newStatus));
+    // 3秒后清除通知
+    setTimeout(() => setNotification(''), 3000);
   };
 
   return (
-    <span style={getStatusStyle(status)}>
-      {status}
-    </span>
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🎨 条件样式演示</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4>选择状态：</h4>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {['success', 'warning', 'error', 'info'].map((s) => (
+            <button
+              key={s}
+              onClick={() => handleStatusChange(s)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                backgroundColor: getStatusStyle(s).backgroundColor,
+                color: getStatusStyle(s).color,
+                boxShadow: status === s ? '0 4px 8px rgba(0,0,0,0.2)' : '0 2px 4px rgba(0,0,0,0.1)',
+                transform: status === s ? 'scale(1.05)' : 'scale(1)',
+                transition: 'all 0.2s'
+              }}
+            >
+              {s === 'success' && '✅'}
+              {s === 'warning' && '⚠️'}
+              {s === 'error' && '❌'}
+              {s === 'info' && 'ℹ️'}
+              {' '}
+              {s.charAt(0).toUpperCase() + s.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4>当前状态徽章：</h4>
+        <div style={{
+          padding: '15px 25px',
+          backgroundColor: getStatusStyle(status).backgroundColor,
+          color: getStatusStyle(status).color,
+          borderRadius: '8px',
+          display: 'inline-block',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+          border: \`2px solid ${getStatusStyle(status).borderColor}\`,
+          textTransform: 'uppercase'
+        }}>
+          {status}
+        </div>
+      </div>
+
+      {notification && (
+        <div style={{
+          padding: '15px',
+          backgroundColor: getStatusStyle(status).backgroundColor,
+          color: getStatusStyle(status).color,
+          borderRadius: '8px',
+          marginBottom: '20px',
+          animation: 'slideIn 0.3s ease-out',
+          border: \`2px solid ${getStatusStyle(status).borderColor}\`
+        }}>
+          <strong>{notification}</strong>
+        </div>
+      )}
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        fontSize: '14px',
+        fontFamily: 'monospace'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>样式代码：</h4>
+        <pre style={{ margin: 0, color: '#666' }}>
+{\`const getStatusStyle = (status) => {
+  switch (status) {
+    case '${status}':
+      return {
+        backgroundColor: '${getStatusStyle(status).backgroundColor}',
+        color: '${getStatusStyle(status).color}'
+      };
+    // ... 其他情况
+  }
+};\`}
+        </pre>
+      </div>
+
+      <style>{\`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      \`}</style>
+    </div>
   );
 }
-
-// 或者使用类名
-function StatusBadge({ status }) {
-  return (
-    <span className={`badge badge-${status}`}>
-      {status}
-    </span>
-  );
-}
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 

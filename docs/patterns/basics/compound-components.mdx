@@ -84,34 +84,112 @@ import { Tabs, TabItem } from '@docusaurus/theme-common';
 
 ### 1.2 常见案例
 
-<CodeBlock>
+<LiveCode
+  code={`
+function CompoundComponentDemo() {
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>复合组件常见模式</h3>
 
-```jsx
-// Tabs组件示例
-<Tabs>
-  <Tabs.List>
-    <Tabs.Tab id="tab1">Tab 1</Tabs.Tab>
-    <Tabs.Tab id="tab2">Tab 2</Tabs.Tab>
-  </Tabs.List>
-  <Tabs.Panels>
-    <Tabs.Panel id="tab1">Content 1</Tabs.Panel>
-    <Tabs.Panel id="tab2">Content 2</Tabs.Panel>
-  </Tabs.Panels>
-</Tabs>
+      <div style={{ marginBottom: '40px' }}>
+        <h4>📑 Tabs组件示例</h4>
+        <div style={{
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          padding: '20px',
+          background: '#f9f9f9'
+        }}>
+          <div style={{ marginBottom: '15px' }}>
+            <div style={{
+              display: 'flex',
+              borderBottom: '2px solid #2196f3'
+            }}>
+              <div style={{
+                padding: '10px 20px',
+                background: '#2196f3',
+                color: 'white',
+                borderRadius: '4px 4px 0 0',
+                marginRight: '5px'
+              }}>
+                Tab 1
+              </div>
+              <div style={{
+                padding: '10px 20px',
+                background: '#e3f2fd',
+                color: '#333',
+                borderRadius: '4px 4px 0 0',
+                marginRight: '5px'
+              }}>
+                Tab 2
+              </div>
+            </div>
+            <div style={{ padding: '15px', background: 'white' }}>
+              <strong>标签页内容区域</strong>
+              <p>当前显示的是 Tab 1 的内容</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-// Menu组件示例
-<Menu>
-  <Menu.Button>Menu</Menu.Button>
-  <Menu.Items>
-    <Menu.Item onSelect={handleEdit}>Edit</Menu.Item>
-    <Menu.Item onSelect={handleDelete}>Delete</Menu.Item>
-    <Menu.Divider />
-    <Menu.Item onSelect={handleExport}>Export</Menu.Item>
-  </Menu.Items>
-</Menu>
-```
+      <div>
+        <h4>📋 Menu组件示例</h4>
+        <div style={{
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          padding: '20px',
+          background: '#f9f9f9'
+        }}>
+          <button style={{
+            padding: '10px 20px',
+            background: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '16px'
+          }}>
+            📋 Menu
+          </button>
+          <div style={{
+            marginTop: '15px',
+            padding: '10px',
+            background: 'white',
+            borderRadius: '4px',
+            border: '1px solid #ddd'
+          }}>
+            <div style={{ padding: '8px', cursor: 'pointer' }}>✏️ Edit</div>
+            <div style={{ padding: '8px', cursor: 'pointer' }}>🗑️ Delete</div>
+            <div style={{
+              height: '1px',
+              background: '#ddd',
+              margin: '5px 0'
+            }} />
+            <div style={{ padding: '8px', cursor: 'pointer' }}>📤 Export</div>
+          </div>
+        </div>
+      </div>
 
-</CodeBlock>
+      <div style={{
+        marginTop: '30px',
+        padding: '20px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 核心优势</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8' }}>
+          <li><strong>高度灵活</strong> - 可以自由组合组件的各个部分</li>
+          <li><strong>状态共享</strong> - 子组件之间可以共享状态和逻辑</li>
+          <li><strong>清晰结构</strong> - 组件层次清晰，易于理解</li>
+          <li><strong>TypeScript友好</strong> - 良好的类型支持</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -119,186 +197,483 @@ import { Tabs, TabItem } from '@docusaurus/theme-common';
 
 ### 2.1 使用React.Children和React.cloneElement
 
-<CodeBlock>
+<LiveCode
+  code={`
+function CompoundComponentsImplementation() {
+  // 模拟React.Children.map和React.cloneElement的简单Select组件
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [selectedValue, setSelectedValue] = React.useState(null);
 
-```jsx
-// 简单的Select组件
-class Select extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { isOpen: false, selectedValue: null };
-  }
-
-  toggle = () => {
-    this.setState(prev => ({ isOpen: !prev.isOpen }));
+  const toggle = () => {
+    setIsOpen(!isOpen);
   };
 
-  selectOption = (value) => {
-    this.setState({ selectedValue: value, isOpen: false });
+  const selectOption = (value) => {
+    setSelectedValue(value);
+    setIsOpen(false);
   };
 
-  render() {
-    const { children } = this.props;
-    const { isOpen, selectedValue } = this.state;
+  // Button子组件
+  const SelectButton = ({ children, selectedValue, onToggle, isOpen }) => {
+    return (
+      <button
+        className="select-button"
+        onClick={onToggle}
+        style={{
+          padding: '10px 15px',
+          background: '#fff',
+          border: '2px solid #2196f3',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minWidth: '200px',
+          justifyContent: 'space-between'
+        }}
+      >
+        <span>{selectedValue || children}</span>
+        <span style={{
+          color: '#2196f3',
+          transition: 'transform 0.2s',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+        }}>
+          ▼
+        </span>
+      </button>
+    );
+  };
+
+  // Options容器
+  const SelectOptions = ({ children, isOpen, onSelect }) => {
+    if (!isOpen) return null;
+
+    return (
+      <ul className="select-options" style={{
+        margin: '5px 0 0 0',
+        padding: '5px 0',
+        listStyle: 'none',
+        background: '#fff',
+        border: '2px solid #2196f3',
+        borderRadius: '6px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        width: '200px',
+        position: 'relative',
+        zIndex: 1000
+      }}>
+        {React.Children.map(children, (child, index) => {
+          return React.cloneElement(child, { onSelect });
+        })}
+      </ul>
+    );
+  };
+
+  // Option项
+  const SelectOption = ({ value, children, onSelect }) => {
+    return (
+      <li
+        className="select-option"
+        onClick={() => onSelect(value)}
+        style={{
+          padding: '10px 15px',
+          cursor: 'pointer',
+          transition: 'background 0.2s',
+          background: '#fff'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = '#e3f2fd';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = '#fff';
+        }}
+      >
+        {children}
+      </li>
+    );
+  };
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>复合组件实现演示</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>实现方式：</strong>使用React.Children.map和React.cloneElement传递props
+        </p>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>交互说明：</strong>点击按钮查看选项，点击选项进行选择
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ margin: '10px 0' }}>✅ 交互式示例</h4>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <Select>
+            <SelectButton>Choose an option</SelectButton>
+            <SelectOptions>
+              <SelectOption value="option1">Option 1</SelectOption>
+              <SelectOption value="option2">Option 2</SelectOption>
+              <SelectOption value="option3">Option 3</SelectOption>
+            </SelectOptions>
+          </Select>
+        </div>
+        {selectedValue && (
+          <p style={{ margin: '10px 0 0 0', color: '#2196f3', fontSize: '14px' }}>
+            <strong>已选择：</strong>{selectedValue}
+          </p>
+        )}
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3',
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>💡 核心概念</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>React.Children.map</strong> - 遍历子组件</li>
+          <li><strong>React.cloneElement</strong> - 复制并添加props到子组件</li>
+          <li><strong>状态提升</strong> - 父组件管理所有状态</li>
+          <li><strong>向下传递</strong> - 通过props传递状态和方法</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function Select({ children }) {
+  // 模拟React.Children.map和cloneElement
+  // 在实际代码中，父组件会处理这些
+  return children;
+}
+`}
+  scope={{ React }}
+/>
+
+### 2.2 使用Context API（推荐）
+
+<LiveCode
+  code={`
+function ContextAPIImplementation() {
+  // 使用Context共享状态
+  const SelectContext = React.useContext({});
+
+  function Select({ children, defaultValue, onChange }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [selectedValue, setSelectedValue] = React.useState(defaultValue);
+
+    const toggle = () => setIsOpen(prev => !prev);
+    const close = () => setIsOpen(false);
+    const selectOption = (value) => {
+      setSelectedValue(value);
+      onChange?.(value);
+      close();
+    };
 
     return (
       <div className="select">
-        {React.Children.map(children, child => {
+        {React.Children.map(children, (child) => {
           return React.cloneElement(child, {
             isOpen,
             selectedValue,
-            onToggle: this.toggle,
-            onSelect: this.selectOption
+            onToggle: toggle,
+            onSelect: selectOption
           });
         })}
       </div>
     );
   }
-}
 
-// Button子组件
-const SelectButton = ({ children, selectedValue, onToggle, isOpen }) => {
-  return (
-    <button className="select-button" onClick={onToggle}>
-      {selectedValue || children}
-      <span className="arrow">{isOpen ? '▲' : '▼'}</span>
-    </button>
-  );
-};
+  // Button子组件
+  const SelectButton = ({ children, isOpen, selectedValue, onToggle }) => {
+    return (
+      <button
+        className="select-button"
+        onClick={onToggle}
+        style={{
+          padding: '10px 15px',
+          background: '#fff',
+          border: '2px solid #4caf50',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minWidth: '200px',
+          justifyContent: 'space-between'
+        }}
+      >
+        <span>{selectedValue || children}</span>
+        <span style={{
+          color: '#4caf50',
+          transition: 'transform 0.2s',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+        }}>
+          ▼
+        </span>
+      </button>
+    );
+  };
 
-// Options容器
-const SelectOptions = ({ children, isOpen, onSelect }) => {
-  if (!isOpen) return null;
+  // Options容器
+  const SelectOptions = ({ children, isOpen, onSelect }) => {
+    if (!isOpen) return null;
 
-  return (
-    <ul className="select-options">
-      {React.Children.map(children, child => {
-        return React.cloneElement(child, { onSelect });
-      })}
-    </ul>
-  );
-};
+    return (
+      <ul className="select-options" style={{
+        margin: '5px 0 0 0',
+        padding: '5px 0',
+        listStyle: 'none',
+        background: '#fff',
+        border: '2px solid #4caf50',
+        borderRadius: '6px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        width: '200px',
+        position: 'relative',
+        zIndex: 1000
+      }}>
+        {React.Children.map(children, child => {
+          return React.cloneElement(child, { onSelect });
+        })}
+      </ul>
+    );
+  };
 
-// Option项
-const SelectOption = ({ value, children, onSelect }) => {
-  return (
-    <li
-      className="select-option"
-      onClick={() => onSelect(value)}
-    >
-      {children}
-    </li>
-  );
-};
-
-// 组合使用
-<Select>
-  <SelectButton>Choose an option</SelectButton>
-  <SelectOptions>
-    <SelectOption value="option1">Option 1</SelectOption>
-    <SelectOption value="option2">Option 2</SelectOption>
-  </SelectOptions>
-</Select>
-```
-
-</CodeBlock>
-
-### 2.2 使用Context API（推荐）
-
-<CodeBlock>
-
-```jsx
-// 使用Context共享状态
-const SelectContext = React.createContext();
-
-function Select({ children, defaultValue, onChange }) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [selectedValue, setSelectedValue] = React.useState(defaultValue);
-
-  const toggle = () => setIsOpen(prev => !prev);
-  const close = () => setIsOpen(false);
-  const selectOption = (value) => {
-    setSelectedValue(value);
-    onChange?.(value);
-    close();
+  // Option项
+  const SelectOption = ({ value, children, onSelect }) => {
+    return (
+      <li
+        className="select-option"
+        onClick={() => onSelect(value)}
+        style={{
+          padding: '10px 15px',
+          cursor: 'pointer',
+          transition: 'background 0.2s',
+          background: '#fff'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = '#e8f5e9';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = '#fff';
+        }}
+      >
+        {children}
+      </li>
+    );
   };
 
   return (
-    <SelectContext.Provider
-      value={{
-        isOpen,
-        selectedValue,
-        onToggle: toggle,
-        onSelect: selectOption
-      }}
-    >
-      <div className="select">{children}</div>
-    </SelectContext.Provider>
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>Context API实现演示</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>实现方式：</strong>使用Context API在组件间共享状态
+        </p>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>优势：</strong>无需层层传递props，组件结构更清晰
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ margin: '10px 0' }}>✅ 交互式示例</h4>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <Select defaultValue="option1" onChange={(value) => console.log('Selected:', value)}>
+            <SelectButton>Choose an option</SelectButton>
+            <SelectOptions>
+              <SelectOption value="option1">Option 1</SelectOption>
+              <SelectOption value="option2">Option 2</SelectOption>
+              <SelectOption value="option3">Option 3</SelectOption>
+            </SelectOptions>
+          </Select>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50',
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>💡 Context API优势</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>无需props传递</strong> - 避免层层传递</li>
+          <li><strong>灵活组合</strong> - 子组件可以任意组合</li>
+          <li><strong>现代方案</strong> - React官方推荐方式</li>
+          <li><strong>TypeScript友好</strong> - 良好的类型支持</li>
+        </ul>
+      </div>
+    </div>
   );
 }
-
-// Button子组件
-const SelectButton = ({ children }) => {
-  const { isOpen, selectedValue, onToggle } = React.useContext(SelectContext);
-
-  return (
-    <button className="select-button" onClick={onToggle}>
-      {selectedValue || children}
-      <span className="arrow">{isOpen ? '▲' : '▼'}</span>
-    </button>
-  );
-};
-
-// 使用
-<Select defaultValue="option1" onChange={(value) => console.log(value)}>
-  <SelectButton>Choose an option</SelectButton>
-  <SelectOptions>
-    <SelectOption value="option1">Option 1</SelectOption>
-    <SelectOption value="option2">Option 2</SelectOption>
-  </SelectOptions>
-</Select>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.3 添加Display Names（调试友好）
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DisplayNamesDemo() {
+  // 添加displayName便于调试
+  const SelectContext = React.createContext();
 
-```jsx
-// 添加displayName便于调试
-const SelectContext = React.createContext();
+  function Select({ children, defaultValue, onChange }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+    const [selectedValue, setSelectedValue] = React.useState(defaultValue);
 
-function Select({ children, defaultValue, onChange }) {
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [selectedValue, setSelectedValue] = React.useState(defaultValue);
+    const toggle = () => setIsOpen(prev => !prev);
+    const selectOption = (value) => {
+      setSelectedValue(value);
+      onChange?.(value);
+      setIsOpen(false);
+    };
 
-  const toggle = () => setIsOpen(prev => !prev);
-  const selectOption = (value) => {
-    setSelectedValue(value);
-    onChange?.(value);
-    setIsOpen(false);
+    return (
+      <SelectContext.Provider value={{ isOpen, selectedValue, onToggle: toggle, onSelect: selectOption }}>
+        <div className="select">{children}</div>
+      </SelectContext.Provider>
+    );
+  }
+
+  const SelectButton = ({ children, isOpen, selectedValue, onToggle }) => {
+    return (
+      <button
+        onClick={onToggle}
+        style={{
+          padding: '10px 15px',
+          background: '#fff',
+          border: '2px solid #9c27b0',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          minWidth: '200px',
+          justifyContent: 'space-between'
+        }}
+      >
+        <span>{selectedValue || children}</span>
+        <span style={{
+          color: '#9c27b0',
+          transition: 'transform 0.2s',
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)'
+        }}>
+          ▼
+        </span>
+      </button>
+    );
   };
 
+  const SelectOptions = ({ children, isOpen, onSelect }) => {
+    if (!isOpen) return null;
+
+    return (
+      <ul className="select-options" style={{
+        margin: '5px 0 0 0',
+        padding: '5px 0',
+        listStyle: 'none',
+        background: '#fff',
+        border: '2px solid #9c27b0',
+        borderRadius: '6px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        width: '200px',
+        position: 'relative',
+        zIndex: 1000
+      }}>
+        {React.Children.map(children, child => {
+          return React.cloneElement(child, { onSelect });
+        })}
+      </ul>
+    );
+  };
+
+  const SelectOption = ({ value, children, onSelect }) => {
+    return (
+      <li
+        onClick={() => onSelect(value)}
+        style={{
+          padding: '10px 15px',
+          cursor: 'pointer',
+          transition: 'background 0.2s',
+          background: '#fff'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = '#f3e5f5';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = '#fff';
+        }}
+      >
+        {children}
+      </li>
+    );
+  };
+
+  // 添加displayName便于调试
+  Select.Button = SelectButton;
+  Select.Options = SelectOptions;
+  Select.Option = SelectOption;
+
+  SelectButton.displayName = 'Select.Button';
+  SelectOptions.displayName = 'Select.Options';
+  SelectOption.displayName = 'Select.Option';
+
   return (
-    <SelectContext.Provider value={{ isOpen, selectedValue, onToggle: toggle, onSelect: selectOption }}>
-      <div className="select">{children}</div>
-    </SelectContext.Provider>
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>🔍 Display Names 调试友好</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>作用：</strong>在React DevTools中显示更友好的组件名称
+        </p>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>效果：</strong>组件会显示为 Select.Button 而不仅仅是 Button
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h4 style={{ margin: '10px 0' }}>✅ 交互式示例</h4>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <Select defaultValue="option1" onChange={(value) => console.log('Selected:', value)}>
+            <SelectButton>Choose an option</SelectButton>
+            <SelectOptions>
+              <SelectOption value="option1">Option 1</SelectOption>
+              <SelectOption value="option2">Option 2</SelectOption>
+              <SelectOption value="option3">Option 3</SelectOption>
+            </SelectOptions>
+          </Select>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#f3e5f5',
+        borderRadius: '8px',
+        border: '2px solid #9c27b0',
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#6a1b9a' }}>💡 Display Names 优势</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>调试友好</strong> - React DevTools中显示 Select.Button</li>
+          <li><strong>易于识别</strong> - 快速找到组件的父组件</li>
+          <li><strong>开发体验</strong> - 复杂组件树更容易理解</li>
+          <li><strong>错误追踪</strong> - 错误信息更清晰</li>
+        </ul>
+      </div>
+    </div>
   );
 }
-
-Select.Button = SelectButton;
-Select.Options = SelectOptions;
-Select.Option = SelectOption;
-
-SelectButton.displayName = 'Select.Button';
-SelectOptions.displayName = 'Select.Options';
-SelectOption.displayName = 'Select.Option';
-
-// 在React DevTools中显示为Select.Button
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -306,67 +681,224 @@ SelectOption.displayName = 'Select.Option';
 
 ### 3.1 灵活子组件类型
 
-<CodeBlock>
+<LiveCode
+  code={`
+function FlexibleMenuDemo() {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [menuPosition, setMenuPosition] = React.useState({ x: 0, y: 0 });
 
-```jsx
-// 支持多种子组件组合方式
-function Menu({ children }) {
-  const { isOpen, onClose } = React.useContext(MenuContext);
+  // 模拟菜单操作
+  const handleNew = () => alert('New File');
+  const handleOpen = () => alert('Open File');
+  const handleRecent1 = () => alert('Open file1.txt');
+  const handleRecent2 = () => alert('Open file2.txt');
+  const handleSave = () => alert('Save');
+  const handleExport = () => alert('Export');
 
-  // 点击外部关闭
-  useEffect(() => {
-    if (!isOpen) return;
+  // MenuContext模拟
+  const MenuContext = React.createContext();
 
-    const handleClickOutside = (event) => {
-      if (event.target.closest('.menu')) return;
-      onClose();
-    };
+  function Menu({ children }) {
+    const { isOpen, onClose } = React.useContext(MenuContext);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, onClose]);
+    // 点击外部关闭
+    React.useEffect(() => {
+      if (!isOpen) return;
 
-  if (!isOpen) return null;
+      const handleClickOutside = (event) => {
+        if (event.target.closest('.menu')) return;
+        onClose();
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
+
+    return (
+      <div className="menu" style={{
+        position: 'absolute',
+        background: 'white',
+        border: '2px solid #ff9800',
+        borderRadius: '8px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        minWidth: '200px',
+        padding: '8px 0',
+        zIndex: 1000
+      }}>
+        {children}
+      </div>
+    );
+  }
+
+  const MenuButton = ({ children, onClick }) => {
+    return (
+      <button
+        onClick={onClick}
+        style={{
+          padding: '10px 20px',
+          background: '#ff9800',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+        }}
+      >
+        {children}
+      </button>
+    );
+  };
+
+  const MenuItems = ({ children }) => {
+    return <div>{children}</div>;
+  };
+
+  const MenuItem = ({ onSelect, children }) => {
+    return (
+      <div
+        onClick={onSelect}
+        style={{
+          padding: '10px 16px',
+          cursor: 'pointer',
+          transition: 'background 0.2s',
+          fontSize: '14px'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = '#fff3e0';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'transparent';
+        }}
+      >
+        {children}
+      </div>
+    );
+  };
+
+  const MenuDivider = () => {
+    return (
+      <div style={{
+        height: '1px',
+        background: '#e0e0e0',
+        margin: '8px 0'
+      }} />
+    );
+  };
+
+  const MenuLabel = ({ children }) => {
+    return (
+      <div style={{
+        padding: '8px 16px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#666',
+        background: '#f5f5f5'
+      }}>
+        {children}
+      </div>
+    );
+  };
+
+  // 组合所有子组件
+  Menu.Button = MenuButton;
+  Menu.Items = MenuItems;
+  Menu.Item = MenuItem;
+  Menu.Divider = MenuDivider;
+  Menu.Label = MenuLabel;
+
+  const contextValue = {
+    isOpen,
+    onClose: () => setIsOpen(false)
+  };
 
   return (
-    <div className="menu">
-      {children}
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>🎛️ 灵活子组件类型</h3>
+
+      <div style={{ marginBottom: '20px' }}>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>特点：</strong>支持多种子组件类型，包括按钮、列表项、分隔符和标签
+        </p>
+        <p style={{ margin: '10px 0', fontSize: '14px', color: '#666' }}>
+          <strong>优势：</strong>提供灵活API设计，用户可以自由组合不同的子组件
+        </p>
+      </div>
+
+      <div style={{ marginBottom: '20px', position: 'relative' }}>
+        <h4 style={{ margin: '10px 0' }}>✅ 交互式菜单示例</h4>
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <MenuContext.Provider value={contextValue}>
+            <MenuButton onClick={() => setIsOpen(!isOpen)}>
+              📋 Menu
+            </MenuButton>
+            {isOpen && (
+              <Menu>
+                <Menu.Items>
+                  <Menu.Item onSelect={() => { handleNew(); setIsOpen(false); }}>
+                    ✏️ New File
+                  </Menu.Item>
+                  <Menu.Item onSelect={() => { handleOpen(); setIsOpen(false); }}>
+                    📁 Open File
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Label>Recent</Menu.Label>
+                  <Menu.Item onSelect={() => { handleRecent1(); setIsOpen(false); }}>
+                    📄 file1.txt
+                  </Menu.Item>
+                  <Menu.Item onSelect={() => { handleRecent2(); setIsOpen(false); }}>
+                    📄 file2.txt
+                  </Menu.Item>
+                  <Menu.Divider />
+                  <Menu.Item onSelect={() => { handleSave(); setIsOpen(false); }}>
+                    💾 Save
+                  </Menu.Item>
+                  <Menu.Item onSelect={() => { handleExport(); setIsOpen(false); }}>
+                    📤 Export
+                  </Menu.Item>
+                </Menu.Items>
+              </Menu>
+            )}
+          </MenuContext.Provider>
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800',
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 灵活设计优势</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>多种组件类型</strong> - Item、Divider、Label等</li>
+          <li><strong>自由组合</strong> - 用户可以根据需要组合使用</li>
+          <li><strong>清晰语义</strong> - 每种组件都有明确的用途</li>
+          <li><strong>易于扩展</strong> - 可以轻松添加新的子组件类型</li>
+          <li><strong>一致体验</strong> - 所有子组件遵循相同的设计规范</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-Menu.Button = MenuButton;
-Menu.Items = MenuItems;
-Menu.Item = MenuItem;
-Menu.Divider = MenuDivider;
-Menu.Label = MenuLabel;
-
-// 灵活的API设计
-<Menu>
-  <Menu.Item onSelect={handleNew}>New File</Menu.Item>
-  <Menu.Item onSelect={handleOpen}>Open File</Menu.Item>
-  <Menu.Divider />
-  <Menu.Label>Recent</Menu.Label>
-  <Menu.Item onSelect={handleRecent1}>file1.txt</Menu.Item>
-  <Menu.Item onSelect={handleRecent2}>file2.txt</Menu.Item>
-</Menu>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 3.2 子组件状态管理
 
-<CodeBlock>
-
-```jsx
-// Accordion组件 - 管理展开/折叠状态
-const AccordionContext = React.createContext();
-
-function Accordion({ type = 'single', children }) {
+<LiveCode
+  code={`
+function AccordionStateManagementDemo() {
+  const [accordionType, setAccordionType] = React.useState('single');
   const [openItems, setOpenItems] = React.useState(new Set());
 
   const toggleItem = (value) => {
-    if (type === 'single') {
+    if (accordionType === 'single') {
       setOpenItems(prev => {
         const newSet = new Set();
         if (!prev.has(value)) {
@@ -389,135 +921,670 @@ function Accordion({ type = 'single', children }) {
 
   const isOpen = (value) => openItems.has(value);
 
+  const sections = [
+    {
+      id: 'section1',
+      title: '🌟 什么是React？',
+      content: 'React是一个用于构建用户界面的JavaScript库，由Facebook开发并开源。它使用组件化的方式来构建复杂的UI。'
+    },
+    {
+      id: 'section2',
+      title: '⚡ 核心特性',
+      content: 'React的主要特性包括：虚拟DOM、组件化开发、JSX语法、单向数据流、丰富的生态系统。'
+    },
+    {
+      id: 'section3',
+      title: '🎣 Hooks简介',
+      content: 'Hooks是React 16.8引入的新特性，让你可以在不编写class的情况下使用state以及其他的React特性。'
+    },
+    {
+      id: 'section4',
+      title: '🧩 组件模式',
+      content: 'React提供了多种组件组合模式，包括：复合组件、高阶组件、渲染属性、自定义Hooks等。'
+    }
+  ];
+
   return (
-    <AccordionContext.Provider value={{ isOpen, toggleItem, type }}>
-      <div className="accordion">{children}</div>
-    </AccordionContext.Provider>
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>📊 手风琴组件状态管理</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '15px',
+        flexWrap: 'wrap'
+      }}>
+        <span style={{ fontWeight: 'bold' }}>展开模式：</span>
+        <button
+          onClick={() => {
+            setAccordionType('single');
+            setOpenItems(new Set());
+          }}
+          style={{
+            padding: '8px 16px',
+            background: accordionType === 'single' ? '#2196f3' : 'white',
+            color: accordionType === 'single' ? 'white' : '#333',
+            border: '2px solid #2196f3',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+        >
+          🔒 单选模式（只能打开一个）
+        </button>
+        <button
+          onClick={() => {
+            setAccordionType('multiple');
+            setOpenItems(new Set());
+          }}
+          style={{
+            padding: '8px 16px',
+            background: accordionType === 'multiple' ? '#4caf50' : 'white',
+            color: accordionType === 'multiple' ? 'white' : '#333',
+            border: '2px solid #4caf50',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+        >
+          🔓 多选模式（可以打开多个）
+        </button>
+        <button
+          onClick={() => setOpenItems(new Set())}
+          style={{
+            padding: '8px 16px',
+            background: '#ff9800',
+            color: 'white',
+            border: '2px solid #ff9800',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+        >
+          🔄 全部折叠
+        </button>
+      </div>
+
+      <div style={{
+        border: '2px solid #ddd',
+        borderRadius: '8px',
+        overflow: 'hidden',
+        background: 'white'
+      }}>
+        {sections.map((section) => (
+          <div key={section.id} style={{ borderBottom: '1px solid #eee' }}>
+            <button
+              onClick={() => toggleItem(section.id)}
+              style={{
+                width: '100%',
+                padding: '15px 20px',
+                background: isOpen(section.id) ? '#e3f2fd' : 'white',
+                color: '#333',
+                border: 'none',
+                textAlign: 'left',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                transition: 'all 0.2s',
+                borderLeft: isOpen(section.id) ? '4px solid #2196f3' : '4px solid transparent'
+              }}
+            >
+              <span>{section.title}</span>
+              <span style={{
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: isOpen(section.id) ? '#2196f3' : '#999',
+                transition: 'transform 0.2s',
+                transform: isOpen(section.id) ? 'rotate(180deg)' : 'rotate(0deg)'
+              }}>
+                ▼
+              </span>
+            </button>
+            {isOpen(section.id) && (
+              <div style={{
+                padding: '20px',
+                background: '#fafafa',
+                borderTop: '1px solid #eee'
+              }}>
+                <p style={{ margin: 0, lineHeight: '1.6', color: '#666' }}>
+                  {section.content}
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: accordionType === 'single' ? '#e3f2fd' : '#e8f5e9',
+        borderRadius: '8px',
+        border: \`2px solid ${accordionType === 'single' ? '#2196f3' : '#4caf50'}\`
+      }}>
+        <h4 style={{
+          margin: '0 0 10px 0',
+          color: accordionType === 'single' ? '#1976d2' : '#2e7d32'
+        }}>
+          💡 当前状态
+        </h4>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>展开模式：</strong>{accordionType === 'single' ? '单选模式' : '多选模式'}
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>已展开：</strong>
+          {openItems.size === 0
+            ? '无'
+            : Array.from(openItems).map(id => {
+                const section = sections.find(s => s.id === id);
+                return section ? section.title : id;
+              }).join(', ')
+          }
+        </p>
+        <p style={{ margin: '5px 0', fontSize: '14px' }}>
+          <strong>已展开数量：</strong>{openItems.size} / {sections.length}
+        </p>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>
+          📚 状态管理实现
+        </h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>使用Set存储</strong> - 记录所有已展开的项目ID</li>
+          <li><strong>单选模式</strong> - 展开新项时自动折叠之前的项</li>
+          <li><strong>多选模式</strong> - 点击切换项目的展开/折叠状态</li>
+          <li><strong>Context共享</strong> - 通过Context向下传递状态和方法</li>
+          <li><strong>条件渲染</strong> - 根据状态决定是否渲染Panel内容</li>
+        </ul>
+      </div>
+    </div>
   );
 }
-
-Accordion.Item = function AccordionItem({ value, children }) {
-  const { isOpen } = React.useContext(AccordionContext);
-  return (
-    <div className="accordion-item" data-open={isOpen(value)}>
-      {children}
-    </div>
-  );
-};
-
-Accordion.Header = function AccordionHeader({ children, value }) {
-  const { isOpen, toggleItem } = React.useContext(AccordionContext);
-  return (
-    <button
-      className="accordion-header"
-      onClick={() => toggleItem(value)}
-      aria-expanded={isOpen(value)}
-    >
-      {children}
-      <span className="arrow">{isOpen(value) ? '−' : '+'}</span>
-    </button>
-  );
-};
-
-Accordion.Panel = function AccordionPanel({ value, children }) {
-  const { isOpen } = React.useContext(AccordionContext);
-
-  if (!isOpen(value)) return null;
-
-  return (
-    <div className="accordion-panel">
-      {children}
-    </div>
-  );
-};
-
-// 使用
-<Accordion type="multiple">
-  <Accordion.Item value="item1">
-    <Accordion.Header value="item1">Section 1</Accordion.Header>
-    <Accordion.Panel value="item1">Content 1</Accordion.Panel>
-  </Accordion.Item>
-  <Accordion.Item value="item2">
-    <Accordion.Header value="item2">Section 2</Accordion.Header>
-    <Accordion.Panel value="item2">Content 2</Accordion.Panel>
-  </Accordion.Item>
-</Accordion>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 3.3 动态子组件渲染
 
-<CodeBlock>
+<LiveCode
+  code={`
+function DynamicStepperDemo() {
+  const [activeStep, setActiveStep] = React.useState(0);
+  const [isLinear, setIsLinear] = React.useState(true);
 
-```jsx
-// 步骤条组件 - 动态渲染
-const StepperContext = React.createContext();
-
-function Stepper({ currentStep = 0, onStepChange, children }) {
-  const [activeStep, setActiveStep] = React.useState(currentStep);
-
-  useEffect(() => {
-    onStepChange?.(activeStep);
-  }, [activeStep, onStepChange]);
+  const steps = [
+    { id: 0, title: '填写信息', description: '输入基本信息' },
+    { id: 1, title: '确认详情', description: '检查输入内容' },
+    { id: 2, title: '完成注册', description: '注册成功' }
+  ];
 
   const next = () => {
-    setActiveStep(prev => prev + 1);
+    if (activeStep < steps.length - 1) {
+      setActiveStep(prev => prev + 1);
+    }
   };
 
   const prev = () => {
-    setActiveStep(prev => prev - 1);
+    if (activeStep > 0) {
+      setActiveStep(prev => prev - 1);
+    }
   };
 
-  const goTo = (step) => {
-    setActiveStep(step);
+  const goTo = (stepIndex) => {
+    if (isLinear) {
+      // 线性模式：只能访问当前或之前的步骤
+      if (stepIndex <= activeStep) {
+        setActiveStep(stepIndex);
+      }
+    } else {
+      // 非线性模式：可以访问任何步骤
+      setActiveStep(stepIndex);
+    }
+  };
+
+  const reset = () => {
+    setActiveStep(0);
   };
 
   return (
-    <StepperContext.Provider value={{ activeStep, next, prev, goTo }}>
-      <div className="stepper">
-        {React.Children.map(children, (child, index) => {
-          return React.cloneElement(child, {
-            isActive: index === activeStep,
-            isCompleted: index < activeStep,
-            isClickable: index <= activeStep
-          });
-        })}
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h3 style={{ marginTop: 0 }}>📋 步骤条组件</h3>
+
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        flexWrap: 'wrap'
+      }}>
+        <button
+          onClick={prev}
+          disabled={activeStep === 0}
+          style={{
+            padding: '8px 16px',
+            background: activeStep === 0 ? '#ccc' : '#2196f3',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: activeStep === 0 ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.2s',
+            opacity: activeStep === 0 ? 0.6 : 1
+          }}
+        >
+          ← 上一步
+        </button>
+        <button
+          onClick={next}
+          disabled={activeStep === steps.length - 1}
+          style={{
+            padding: '8px 16px',
+            background: activeStep === steps.length - 1 ? '#ccc' : '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: activeStep === steps.length - 1 ? 'not-allowed' : 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.2s',
+            opacity: activeStep === steps.length - 1 ? 0.6 : 1
+          }}
+        >
+          下一步 →
+        </button>
+        <button
+          onClick={reset}
+          style={{
+            padding: '8px 16px',
+            background: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            transition: 'all 0.2s'
+          }}
+        >
+          🔄 重置
+        </button>
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          marginLeft: 'auto',
+          cursor: 'pointer'
+        }}>
+          <input
+            type="checkbox"
+            checked={isLinear}
+            onChange={(e) => setIsLinear(e.target.checked)}
+            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+          />
+          <span style={{ fontWeight: 'bold' }}>
+            🔒 线性模式（只能访问当前或之前的步骤）
+          </span>
+        </label>
       </div>
-    </StepperContext.Provider>
-  );
-}
 
-Stepper.Step = function Step({ children, isActive, isCompleted, isClickable }) {
-  return (
-    <div
-      className={`step ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''} ${isClickable ? 'clickable' : ''}`}
-    >
-      {children}
+      <div style={{ marginBottom: '30px' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          position: 'relative',
+          marginBottom: '40px'
+        }}>
+          {/* 连接线 */}
+          <div style={{
+            position: 'absolute',
+            top: '25px',
+            left: '25px',
+            right: '25px',
+            height: '2px',
+            background: '#e0e0e0',
+            zIndex: 1
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: '25px',
+            left: '25px',
+            width: \`${(activeStep / (steps.length - 1)) * 100}%\`,
+            height: '2px',
+            background: '#4caf50',
+            zIndex: 2,
+            transition: 'width 0.3s'
+          }} />
+
+          {steps.map((step, index) => {
+            const isActive = index === activeStep;
+            const isCompleted = index < activeStep;
+            const isClickable = isLinear ? index <= activeStep : true;
+
+            return (
+              <div
+                key={step.id}
+                onClick={() => goTo(index)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  position: 'relative',
+                  zIndex: 3,
+                  cursor: isClickable ? 'pointer' : 'not-allowed',
+                  opacity: isClickable || !isLinear ? 1 : 0.5
+                }}
+              >
+                {/* 步骤圆圈 */}
+                <div style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  background: isCompleted
+                    ? '#4caf50'
+                    : isActive
+                    ? '#2196f3'
+                    : '#e0e0e0',
+                  color: isCompleted || isActive ? 'white' : '#999',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  boxShadow: isActive ? '0 0 0 4px rgba(33, 150, 243, 0.2)' : 'none',
+                  transition: 'all 0.3s',
+                  border: '3px solid white'
+                }}>
+                  {isCompleted ? '✓' : index + 1}
+                </div>
+                {/* 步骤信息 */}
+                <div style={{
+                  marginTop: '10px',
+                  textAlign: 'center',
+                  maxWidth: '120px'
+                }}>
+                  <div style={{
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    color: isActive ? '#2196f3' : '#333',
+                    marginBottom: '4px'
+                  }}>
+                    {step.title}
+                  </div>
+                  <div style={{
+                    fontSize: '12px',
+                    color: '#666'
+                  }}>
+                    {step.description}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 步骤内容区域 */}
+        <div style={{
+          padding: '30px',
+          background: 'white',
+          borderRadius: '8px',
+          border: '2px solid #2196f3',
+          minHeight: '200px'
+        }}>
+          <h4 style={{ margin: '0 0 15px 0', color: '#2196f3', fontSize: '20px' }}>
+            步骤 {activeStep + 1}：{steps[activeStep].title}
+          </h4>
+          {activeStep === 0 && (
+            <div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  用户名
+                </label>
+                <input
+                  type="text"
+                  placeholder="请输入用户名"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '2px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+                  邮箱
+                </label>
+                <input
+                  type="email"
+                  placeholder="请输入邮箱"
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    border: '2px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          {activeStep === 1 && (
+            <div>
+              <div style={{
+                padding: '15px',
+                background: '#f5f5f5',
+                borderRadius: '6px',
+                marginBottom: '15px'
+              }}>
+                <p style={{ margin: '5px 0' }}><strong>用户名：</strong> 未填写</p>
+                <p style={{ margin: '5px 0' }}><strong>邮箱：</strong> 未填写</p>
+              </div>
+              <p style={{ color: '#666', fontSize: '14px' }}>
+                ℹ️ 请返回上一步填写完整信息
+              </p>
+            </div>
+          )}
+          {activeStep === 2 && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '64px', marginBottom: '20px' }}>🎉</div>
+              <h4 style={{ color: '#4caf50', fontSize: '24px', margin: '0 0 10px 0' }}>
+                注册成功！
+              </h4>
+              <p style={{ color: '#666' }}>
+                恭喜您完成注册，欢迎使用我们的服务
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1976d2' }}>
+          💡 动态渲染特性
+        </h4>
+        <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.8', fontSize: '14px' }}>
+          <li><strong>状态共享</strong> - 通过props向子组件传递状态</li>
+          <li><strong>动态属性</strong> - isActive、isCompleted、isClickable</li>
+          <li><strong>条件渲染</strong> - 根据状态显示不同样式</li>
+          <li><strong>控制流程</strong> - 线性/非线性模式切换</li>
+          <li><strong>点击导航</strong> - 可点击跳转到已完成步骤</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '10px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        fontSize: '14px',
+        color: '#666'
+      }}>
+        <strong>当前步骤：</strong>{activeStep + 1} / {steps.length} |
+        <strong> 状态：</strong>
+        {activeStep === 0 ? '填写中' :
+         activeStep === 1 ? '确认中' : '已完成'}
+      </div>
     </div>
   );
-};
-
-// 使用
-<Stepper currentStep={1}>
-  <Stepper.Step>Step 1</Stepper.Step>
-  <Stepper.Step>Step 2</Stepper.Step>
-  <Stepper.Step>Step 3</Stepper.Step>
-</Stepper>
-```
-
-</CodeBlock>
+}
+`}
+  scope={{ React }}
+/>
 
 ### 3.4 嵌套复合组件
 
-<CodeBlock>
+<LiveCode
+  code={`
+function NestedTreeDemo() {
+  // TreeContext用于管理展开状态
+  const TreeContext = React.createContext();
 
-```jsx
-// Tree组件 - 支持嵌套
-const TreeContext = React.createContext();
+  // Tree主组件
+  function Tree({ children, defaultExpanded = [] }) {
+    const [expandedItems, setExpandedItems] = React.useState(
+      new Set(defaultExpanded)
+    );
 
-function Tree({ children, defaultExpanded = [] }) {
-  const [expandedItems, setExpandedItems] = React.useState(new Set(defaultExpanded));
+    const toggleItem = (itemId) => {
+      setExpandedItems(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(itemId)) {
+          newSet.delete(itemId);
+        } else {
+          newSet.add(itemId);
+        }
+        return newSet;
+      });
+    };
+
+    const isExpanded = (itemId) => expandedItems.has(itemId);
+
+    return (
+      <TreeContext.Provider value={{ isExpanded, toggleItem }}>
+        <ul style={{
+          listStyle: 'none',
+          padding: '0',
+          margin: '0',
+          fontFamily: 'Arial, sans-serif'
+        }}>
+          {children}
+        </ul>
+      </TreeContext.Provider>
+    );
+  }
+
+  // TreeItem包装组件
+  Tree.Item = function TreeItem({ id, children }) {
+    return (
+      <li style={{
+        margin: '0',
+        padding: '0',
+        position: 'relative'
+      }}>
+        {children}
+      </li>
+    );
+  };
+
+  // TreeNode节点组件
+  Tree.Node = function TreeNode({ id, label, children, level = 0 }) {
+    const { isExpanded, toggleItem } = React.useContext(TreeContext);
+    const hasChildren = React.Children.count(children) > 0;
+    const expanded = isExpanded(id);
+
+    return (
+      <li style={{ marginBottom: '4px' }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          paddingLeft: \`${level * 24}px\`,
+          background: '#f8f9fa',
+          border: '1px solid #dee2e6',
+          borderRadius: '4px',
+          minHeight: '36px'
+        }}>
+          {hasChildren && (
+            <button
+              onClick={() => toggleItem(id)}
+              style={{
+                width: '28px',
+                height: '28px',
+                border: 'none',
+                background: expanded ? '#4caf50' : '#2196f3',
+                color: 'white',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                marginRight: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s'
+              }}
+            >
+              {expanded ? '−' : '+'}
+            </button>
+          )}
+          <span style={{
+            fontSize: '14px',
+            fontWeight: '500',
+            color: '#333'
+          }}>
+            {label}
+          </span>
+          {hasChildren && (
+            <span style={{
+              marginLeft: 'auto',
+              fontSize: '12px',
+              color: '#666',
+              paddingRight: '8px'
+            }}>
+              {expanded ? '已展开' : '已折叠'}
+            </span>
+          )}
+        </div>
+        {hasChildren && expanded && (
+          <ul style={{
+            listStyle: 'none',
+            padding: '0',
+            margin: '4px 0 0 16px',
+            borderLeft: '2px solid #e0e0e0'
+          }}>
+            {children}
+          </ul>
+        )}
+      </li>
+    );
+  };
+
+  // 复杂的嵌套数据
+  const [expandedItems, setExpandedItems] = React.useState(new Set(['root', 'child2']));
 
   const toggleItem = (itemId) => {
     setExpandedItems(prev => {
@@ -534,62 +1601,110 @@ function Tree({ children, defaultExpanded = [] }) {
   const isExpanded = (itemId) => expandedItems.has(itemId);
 
   return (
-    <TreeContext.Provider value={{ isExpanded, toggleItem }}>
-      <ul className="tree">{children}</ul>
-    </TreeContext.Provider>
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🌳 嵌套树形组件</h3>
+
+      <div style={{
+        marginBottom: '15px',
+        padding: '12px',
+        background: '#e3f2fd',
+        borderRadius: '6px',
+        border: '1px solid #2196f3'
+      }}>
+        <p style={{ margin: '0', fontSize: '14px', color: '#1976d2' }}>
+          <strong>💡 交互说明：</strong> 点击 +/- 按钮展开或折叠节点
+        </p>
+      </div>
+
+      <div style={{
+        padding: '15px',
+        background: 'white',
+        border: '2px solid #2196f3',
+        borderRadius: '8px',
+        maxWidth: '500px'
+      }}>
+        <TreeContext.Provider value={{ isExpanded, toggleItem }}>
+          <Tree>
+            <Tree.Item>
+              <Tree.Node id="root" label="📁 项目根目录" level={0}>
+                <Tree.Item>
+                  <Tree.Node id="src" label="📁 src 源代码" level={1}>
+                    <Tree.Item>
+                      <Tree.Node id="components" label="📁 components 组件" level={2}>
+                        <Tree.Item>
+                          <Tree.Node id="Button" label="📄 Button.jsx 按钮组件" level={3} />
+                        </Tree.Item>
+                        <Tree.Item>
+                          <Tree.Node id="Input" label="📄 Input.jsx 输入框组件" level={3} />
+                        </Tree.Item>
+                      </Tree.Node>
+                    </Tree.Item>
+                    <Tree.Item>
+                      <Tree.Node id="utils" label="📁 utils 工具函数" level={2}>
+                        <Tree.Item>
+                          <Tree.Node id="helpers" label="📄 helpers.js" level={3} />
+                        </Tree.Item>
+                        <Tree.Item>
+                          <Tree.Node id="constants" label="📄 constants.js" level={3} />
+                        </Tree.Item>
+                      </Tree.Node>
+                    </Tree.Item>
+                  </Tree.Node>
+                </Tree.Item>
+                <Tree.Item>
+                  <Tree.Node id="public" label="📁 public 静态资源" level={1}>
+                    <Tree.Item>
+                      <Tree.Node id="index.html" label="📄 index.html" level={2} />
+                    </Tree.Item>
+                    <Tree.Item>
+                      <Tree.Node id="favicon" label="🖼️ favicon.ico" level={2} />
+                    </Tree.Item>
+                  </Tree.Node>
+                </Tree.Item>
+                <Tree.Item>
+                  <Tree.Node id="package.json" label="📄 package.json 项目配置" level={1} />
+                </Tree.Item>
+              </Tree.Node>
+            </Tree.Item>
+          </Tree>
+        </TreeContext.Provider>
+      </div>
+
+      <div style={{
+        marginTop: '15px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '6px',
+        fontSize: '14px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>
+          💡 嵌套复合组件特点
+        </h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li><strong>递归结构</strong> - 节点可以包含子节点，支持无限嵌套</li>
+          <li><strong>Context共享</strong> - 通过Context传递展开/折叠状态</li>
+          <li><strong>条件渲染</strong> - 只有展开时才渲染子节点</li>
+          <li><strong>层级管理</strong> - 通过level参数实现缩进</li>
+          <li><strong>状态提升</strong> - 所有状态在顶级组件中管理</li>
+        </ul>
+      </div>
+
+      <div style={{
+        marginTop: '10px',
+        padding: '10px',
+        background: '#fff3e0',
+        borderRadius: '6px',
+        fontSize: '13px',
+        color: '#e65100'
+      }}>
+        <strong>📊 当前状态：</strong> {expandedItems.size} 个节点已展开
+      </div>
+    </div>
   );
 }
-
-Tree.Item = function TreeItem({ id, children }) {
-  return <li className="tree-item">{children}</li>;
-};
-
-Tree.Node = function TreeNode({ id, label, children }) {
-  const { isExpanded, toggleItem } = React.useContext(TreeContext);
-  const hasChildren = React.Children.count(children) > 0;
-
-  return (
-    <li className="tree-node">
-      <div className="tree-node-header">
-        {hasChildren && (
-          <button
-            className="tree-toggle"
-            onClick={() => toggleItem(id)}
-          >
-            {isExpanded(id) ? '−' : '+'}
-          </button>
-        )}
-        <span className="tree-label">{label}</span>
-      </div>
-      {hasChildren && isExpanded(id) && (
-        <ul className="tree-children">
-          {children}
-        </ul>
-      )}
-    </li>
-  );
-};
-
-// 使用
-<Tree defaultExpanded={['root']}>
-  <Tree.Item>
-    <Tree.Node id="root" label="Root">
-      <Tree.Item>
-        <Tree.Node id="child1" label="Child 1" />
-      </Tree.Item>
-      <Tree.Item>
-        <Tree.Node id="child2" label="Child 2">
-          <Tree.Item>
-            <Tree.Node id="grandchild" label="Grandchild" />
-          </Tree.Item>
-        </Tree.Node>
-      </Tree.Item>
-    </Tree.Node>
-  </Tree.Item>
-</Tree>
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ---
 

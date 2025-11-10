@@ -26,24 +26,33 @@ import { Tabs, TabItem } from '@docusaurus/theme-common';
   </p>
 </Box>
 
-<CodeBlock>
+<LiveCode
+  code={`
+function FunctionalComponentDemo() {
+  // 最简单的函数式组件
+  const Welcome = (props) => {
+    return <h1>Hello, {props.name}</h1>;
+  };
 
-```jsx
-// 最简单的函数式组件
-function Welcome(props) {
-  return <h1>Hello, {props.name}</h1>;
+  // 使用ES6箭头函数的函数式组件
+  const WelcomeWithAge = (props) => {
+    return <h2>Hello, {props.name}! You are {props.age} years old.</h2>;
+  };
+
+  // 简化的箭头函数（单行返回）
+  const Greeting = (props) => <p>Welcome to React, {props.message}!</p>;
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <Welcome name="Alice" />
+      <WelcomeWithAge name="Bob" age={25} />
+      <Greeting message="learning functional components" />
+    </div>
+  );
 }
-
-// 使用ES6箭头函数的函数式组件
-const Welcome = (props) => {
-  return <h1>Hello, {props.name}</h1>;
-};
-
-// 简化的箭头函数（单行返回）
-const Welcome = (props) => <h1>Hello, {props.name}</h1>;
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 1.1 函数式组件的历史
 
@@ -127,139 +136,306 @@ const Header = ({ title, children }) => {
 
 ### 2.2 Props处理
 
-<CodeBlock>
+<LiveCode
+  code={`
+function PropsHandlingDemo() {
+  // 未解构 - 需要使用props.*
+  const UserCardOld = (props) => {
+    return (
+      <div style={{
+        border: '1px solid #ddd',
+        padding: '10px',
+        marginBottom: '10px',
+        borderRadius: '5px'
+      }}>
+        <h3>❌ 未解构方式</h3>
+        <p><strong>Name:</strong> {props.name}</p>
+        <p><strong>Email:</strong> {props.email}</p>
+      </div>
+    );
+  };
 
-```jsx
-// 未解构 - 需要使用props.*
-function UserCard(props) {
+  // 解构赋值 - 更简洁
+  const UserCardNew = ({ avatar, name, email }) => {
+    return (
+      <div style={{
+        border: '1px solid #4caf50',
+        padding: '10px',
+        marginBottom: '10px',
+        borderRadius: '5px',
+        background: '#e8f5e9'
+      }}>
+        <h3>✅ 解构赋值方式</h3>
+        <p><strong>Name:</strong> {name}</p>
+        <p><strong>Email:</strong> {email}</p>
+      </div>
+    );
+  };
+
+  // 默认值
+  const UserCardWithDefault = ({ name, email, role = 'User' }) => {
+    return (
+      <div style={{
+        border: '1px solid #2196f3',
+        padding: '10px',
+        marginBottom: '10px',
+        borderRadius: '5px',
+        background: '#e3f2fd'
+      }}>
+        <h3>🔰 默认值方式</h3>
+        <p><strong>Name:</strong> {name}</p>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Role:</strong> {role}</p>
+      </div>
+    );
+  };
+
   return (
-    <div className="user-card">
-      <img src={props.avatar} alt={props.name} />
-      <h3>{props.name}</h3>
-      <p>{props.email}</p>
+    <div style={{ padding: '20px' }}>
+      <UserCardOld name="John Doe" email="john@example.com" />
+      <UserCardNew name="Jane Smith" email="jane@example.com" />
+      <UserCardWithDefault name="Bob Wilson" email="bob@example.com" />
+      <UserCardWithDefault name="Alice Brown" email="alice@example.com" role="Admin" />
     </div>
   );
 }
-
-// 解构赋值 - 更简洁
-function UserCard({ avatar, name, email }) {
-  return (
-    <div className="user-card">
-      <img src={avatar} alt={name} />
-      <h3>{name}</h3>
-      <p>{email}</p>
-    </div>
-  );
-}
-
-// 默认值
-function UserCard({ avatar, name, email, role = 'User' }) {
-  return (
-    <div className="user-card">
-      <img src={avatar} alt={name} />
-      <h3>{name}</h3>
-      <p>{email}</p>
-      <span className="role">{role}</span>
-    </div>
-  );
-}
-
-// 剩余参数
-function UserCard({ name, email, ...otherProps }) {
-  return (
-    <div className="user-card" {...otherProps}>
-      <h3>{name}</h3>
-      <p>{email}</p>
-    </div>
-  );
-}
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 2.3 条件渲染
 
-<CodeBlock>
+<LiveCode
+  code={`
+function ConditionalRenderingDemo() {
+  const [status, setStatus] = React.useState('success');
+  const [isActive, setIsActive] = React.useState(true);
+  const [showNotifications, setShowNotifications] = React.useState(true);
+  const [notifications, setNotifications] = React.useState([
+    { id: 1, message: 'Welcome to React!' },
+    { id: 2, message: 'Components are awesome' },
+    { id: 3, message: 'Keep learning!' }
+  ]);
 
-```jsx
-// 方式1：if语句
-function StatusIndicator({ status }) {
-  if (status === 'loading') {
-    return <div className="spinner">Loading...</div>;
-  }
+  // 方式1：if语句
+  const StatusIndicator = ({ status }) => {
+    if (status === 'loading') {
+      return <div style={{ color: '#ff9800', fontWeight: 'bold' }}>⏳ Loading...</div>;
+    }
+    if (status === 'error') {
+      return <div style={{ color: '#f44336', fontWeight: 'bold' }}>❌ Something went wrong</div>;
+    }
+    return <div style={{ color: '#4caf50', fontWeight: 'bold' }}>✅ Success!</div>;
+  };
 
-  if (status === 'error') {
-    return <div className="error">Something went wrong</div>;
-  }
-
-  return <div className="success">Success!</div>;
-}
-
-// 方式2：三元运算符
-function StatusBadge({ isActive }) {
-  return (
-    <span className={`badge ${isActive ? 'active' : 'inactive'}`}>
-      {isActive ? 'Active' : 'Inactive'}
+  // 方式2：三元运算符
+  const StatusBadge = ({ isActive }) => (
+    <span style={{
+      padding: '5px 10px',
+      borderRadius: '5px',
+      background: isActive ? '#4caf50' : '#9e9e9e',
+      color: 'white',
+      fontWeight: 'bold'
+    }}>
+      {isActive ? '🟢 Active' : '⚪ Inactive'}
     </span>
   );
-}
 
-// 方式3：逻辑与运算符
-function NotificationList({ notifications, showNotifications }) {
-  return (
+  // 方式3：逻辑与运算符
+  const NotificationList = ({ notifications, showNotifications }) => (
     <div>
       {showNotifications && notifications.length > 0 && (
-        <ul>
+        <ul style={{ background: '#f5f5f5', padding: '10px', borderRadius: '5px' }}>
           {notifications.map(notification => (
-            <li key={notification.id}>{notification.message}</li>
+            <li key={notification.id} style={{ marginBottom: '5px' }}>
+              {notification.message}
+            </li>
           ))}
         </ul>
       )}
     </div>
   );
-}
-```
-
-</CodeBlock>
-
-### 2.4 列表渲染
-
-<CodeBlock>
-
-```jsx
-function TodoList({ todos }) {
-  return (
-    <ul className="todo-list">
-      {todos.map(todo => (
-        <li key={todo.id} className={todo.completed ? 'completed' : ''}>
-          <input
-            type="checkbox"
-            checked={todo.completed}
-            readOnly
-          />
-          <span>{todo.text}</span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function UserList({ users }) {
-  if (!users || users.length === 0) {
-    return <p>No users found</p>;
-  }
 
   return (
-    <div className="user-list">
-      {users.map(user => (
-        <UserCard key={user.id} {...user} />
-      ))}
+    <div style={{ padding: '20px' }}>
+      <h3>📊 Conditional Rendering Demo</h3>
+
+      <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px' }}>
+        <h4>1. if语句方式</h4>
+        <StatusIndicator status={status} />
+        <div style={{ marginTop: '10px' }}>
+          <button onClick={() => setStatus('success')} style={{ marginRight: '5px', padding: '5px 10px' }}>
+            Set Success
+          </button>
+          <button onClick={() => setStatus('loading')} style={{ marginRight: '5px', padding: '5px 10px' }}>
+            Set Loading
+          </button>
+          <button onClick={() => setStatus('error')} style={{ padding: '5px 10px' }}>
+            Set Error
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px', padding: '15px', border: '1px solid #ddd', borderRadius: '5px' }}>
+        <h4>2. 三元运算符方式</h4>
+        <StatusBadge isActive={isActive} />
+        <div style={{ marginTop: '10px' }}>
+          <button onClick={() => setIsActive(!isActive)} style={{ padding: '5px 10px' }}>
+            Toggle Status
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '15px', border: '1px solid #ddd', borderRadius: '5px' }}>
+        <h4>3. 逻辑与运算符方式</h4>
+        <NotificationList notifications={notifications} showNotifications={showNotifications} />
+        <div style={{ marginTop: '10px' }}>
+          <button
+            onClick={() => setShowNotifications(!showNotifications)}
+            style={{ marginRight: '5px', padding: '5px 10px' }}
+          >
+            Toggle Notifications
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
-```
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+### 2.4 列表渲染
+
+<LiveCode
+  code={`
+function ListRenderingDemo() {
+  const [todos, setTodos] = React.useState([
+    { id: 1, text: 'Learn React', completed: true },
+    { id: 2, text: 'Build an app', completed: false },
+    { id: 3, text: 'Deploy to production', completed: false }
+  ]);
+
+  const [users, setUsers] = React.useState([
+    { id: 1, name: 'Alice Johnson', email: 'alice@example.com', role: 'Admin' },
+    { id: 2, name: 'Bob Smith', email: 'bob@example.com', role: 'User' },
+    { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' }
+  ]);
+
+  function TodoList({ todos }) {
+    if (!todos || todos.length === 0) {
+      return <p style={{ color: '#999' }}>No todos found</p>;
+    }
+
+    return (
+      <ul style={{ listStyle: 'none', padding: 0 }}>
+        {todos.map(todo => (
+          <li
+            key={todo.id}
+            style={{
+              padding: '10px',
+              marginBottom: '5px',
+              background: todo.completed ? '#e8f5e9' : '#fff',
+              border: '1px solid #ddd',
+              borderRadius: '5px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={todo.completed}
+              onChange={() => {
+                setTodos(todos.map(t =>
+                  t.id === todo.id ? { ...t, completed: !t.completed } : t
+                ));
+              }}
+              style={{ marginRight: '10px', width: '20px', height: '20px' }}
+            />
+            <span style={{
+              textDecoration: todo.completed ? 'line-through' : 'none',
+              color: todo.completed ? '#666' : '#333'
+            }}>
+              {todo.text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  function UserList({ users }) {
+    if (!users || users.length === 0) {
+      return <p style={{ color: '#999' }}>No users found</p>;
+    }
+
+    return (
+      <div>
+        {users.map(user => (
+          <div
+            key={user.id}
+            style={{
+              padding: '15px',
+              marginBottom: '10px',
+              background: '#f5f5f5',
+              borderRadius: '5px',
+              border: '1px solid #ddd'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong style={{ fontSize: '16px' }}>{user.name}</strong>
+                <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
+                  {user.email}
+                </p>
+              </div>
+              <span style={{
+                padding: '5px 10px',
+                background: user.role === 'Admin' ? '#2196f3' : '#9e9e9e',
+                color: 'white',
+                borderRadius: '5px',
+                fontSize: '12px'
+              }}>
+                {user.role}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <h3>📝 List Rendering Demo</h3>
+
+      <div style={{ marginBottom: '30px' }}>
+        <h4>Todo List</h4>
+        <TodoList todos={todos} />
+        <div style={{ marginTop: '10px' }}>
+          <button
+            onClick={() => setTodos([...todos, {
+              id: todos.length + 1,
+              text: 'New task',
+              completed: false
+            }])}
+            style={{ padding: '8px 15px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}
+          >
+            ➕ Add Todo
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <h4>User List</h4>
+        <UserList users={users} />
+      </div>
+    </div>
+  );
+}
+`}
+  scope={{ React }}
+/>
 
 ---
 
@@ -267,55 +443,207 @@ function UserList({ users }) {
 
 ### 3.1 语法对比
 
-<Compare>
+让我们看看函数式组件和类组件在实现相同功能时的对比：
 
-```jsx
-// 函数式组件
-function Counter({ initialCount = 0 }) {
-  const [count, setCount] = useState(initialCount);
+<LiveCode
+  code={`
+function FunctionalVsClassDemo() {
+  const [activeTab, setActiveTab] = React.useState('functional');
 
-  const increment = () => setCount(prev => prev + 1);
-  const decrement = () => setCount(prev => prev - 1);
+  const CounterDisplay = ({ type }) => {
+    if (type === 'functional') {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#e8f5e9',
+          borderRadius: '8px',
+          marginBottom: '15px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>✅ 函数式组件</h4>
+          <div style={{
+            padding: '15px',
+            background: 'white',
+            borderRadius: '6px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            marginBottom: '10px'
+          }}>
+            <div style={{ marginBottom: '8px' }}>function Counter(&#123; initialCount = 0 &#125;) &#123;</div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              const [count, setCount] = useState(initialCount);
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              const increment = () => setCount(prev => prev + 1);
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              const decrement = () => setCount(prev => prev - 1);
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              return (
+                &lt;div className="counter"&gt;
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              &lt;button onClick=&#123;decrement&#125;&gt;-&lt;/button&gt;
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              &lt;span&gt;&#123;count&#125;&lt;/span&gt;
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              &lt;button onClick=&#123;increment&#125;&gt;+&lt;/button&gt;
+            </div>
+            <div style={{ marginLeft: '20px' }}>
+              &lt;/div&gt;
+            </div>
+            <div style={{ marginTop: '8px' }}>&#125;</div>
+          </div>
+          <div style={{
+            padding: '15px',
+            background: '#f5f5f5',
+            borderRadius: '4px',
+            textAlign: 'center'
+          }}>
+            <strong>优势：</strong> 简洁、易读、无 this 绑定
+          </div>
+        </div>
+      );
+    } else {
+      return (
+        <div style={{
+          padding: '20px',
+          background: '#fff3e0',
+          borderRadius: '8px',
+          marginBottom: '15px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>⚠️ 类组件</h4>
+          <div style={{
+            padding: '15px',
+            background: 'white',
+            borderRadius: '6px',
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            marginBottom: '10px'
+          }}>
+            <div style={{ marginBottom: '8px' }}>class Counter extends React.Component &#123;</div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              constructor(props) &#123;
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              super(props);
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              this.state = &#123;
+            </div>
+            <div style={{ marginLeft: '60px', marginBottom: '8px' }}>
+              count: props.initialCount || 0
+            </div>
+            <div style={{ marginLeft: '40px' }}>
+              &#125;;
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              &#125;
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              increment = () => &#123;
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              this.setState(prev => (&#123; count: prev.count + 1 &#125;));
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              &#125;;
+            </div>
+            <div style={{ marginLeft: '20px', marginBottom: '8px' }}>
+              render() &#123;
+            </div>
+            <div style={{ marginLeft: '40px', marginBottom: '8px' }}>
+              return &lt;div&gt;...&lt;/div&gt;;
+            </div>
+            <div style={{ marginLeft: '20px' }}>
+              &#125;
+            </div>
+            <div style={{ marginTop: '8px' }}>&#125;</div>
+          </div>
+          <div style={{
+            padding: '15px',
+            background: '#f5f5f5',
+            borderRadius: '4px',
+            textAlign: 'center'
+          }}>
+            <strong>劣势：</strong> 代码冗长、需要理解 this
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
-    <div className="counter">
-      <button onClick={decrement}>-</button>
-      <span>{count}</span>
-      <button onClick={increment}>+</button>
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>🔄 函数式组件 vs 类组件</h3>
+
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px',
+        background: '#f5f5f5',
+        padding: '10px',
+        borderRadius: '8px'
+      }}>
+        <button
+          onClick={() => setActiveTab('functional')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            background: activeTab === 'functional' ? '#4caf50' : 'white',
+            color: activeTab === 'functional' ? 'white' : '#333',
+            transition: 'all 0.2s'
+          }}
+        >
+          ✅ 函数式组件
+        </button>
+        <button
+          onClick={() => setActiveTab('class')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            background: activeTab === 'class' ? '#ff9800' : 'white',
+            color: activeTab === 'class' ? 'white' : '#333',
+            transition: 'all 0.2s'
+          }}
+        >
+          ⚠️ 类组件
+        </button>
+      </div>
+
+      <CounterDisplay type={activeTab} />
+
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        marginTop: '20px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 总结</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8' }}>
+          <li>现代React开发<strong>推荐使用函数式组件</strong></li>
+          <li>函数式组件语法更简洁，代码量更少</li>
+          <li>无this绑定问题，减少心智负担</li>
+          <li>借助Hooks可以完全替代类组件的功能</li>
+          <li>更好的Tree Shaking，体积更小</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-// 类组件
-class Counter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      count: props.initialCount || 0
-    };
-  }
-
-  increment = () => {
-    this.setState(prev => ({ count: prev.count + 1 }));
-  };
-
-  decrement = () => {
-    this.setState(prev => ({ count: prev.count - 1 }));
-  };
-
-  render() {
-    return (
-      <div className="counter">
-        <button onClick={this.decrement}>-</button>
-        <span>{this.state.count}</span>
-        <button onClick={this.increment}>+</button>
-      </div>
-    );
-  }
-}
-```
-
-</Compare>
+`}
+  scope={{ React }}
+/>
 
 ### 3.2 关键区别
 
@@ -405,67 +733,225 @@ function UserProfile({ userId }) {
 
 ### 4.1 单一职责原则
 
-<Compare>
+单一职责原则是函数式组件设计的重要原则。让我们通过一个实际示例来理解：
 
-```jsx
-// ❌ 不好的例子 - 职责过多
-function UserProfile({ userId }) {
-  const [user, setUser] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
+<LiveCode
+  code={`
+function SingleResponsibilityPrincipleDemo() {
+  const [activeTab, setActiveTab] = React.useState('bad');
+  const [mockUser, setMockUser] = React.useState({
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    bio: 'Software developer'
+  });
 
-  useEffect(() => {
-    // 既获取用户数据又获取文章数据
-    fetchUser(userId).then(setUser);
-    fetchUserPosts(userId).then(setPosts);
-    setLoading(false);
-  }, [userId]);
+  const mockPosts = [
+    { id: 1, title: 'My First Post', content: 'Hello World!' },
+    { id: 2, title: 'React Tips', content: 'Use hooks wisely' }
+  ];
 
-  // 既负责数据获取又负责渲染
+  // 模拟API
+  const simulateAPI = (delay) => new Promise(resolve => {
+    setTimeout(resolve, delay);
+  });
+
+  // Bad Example Component
+  const BadUserProfile = () => {
+    const [user, setUser] = React.useState(null);
+    const [posts, setPosts] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      // 模拟：既获取用户数据又获取文章数据
+      Promise.all([
+        simulateAPI(800).then(() => mockUser),
+        simulateAPI(800).then(() => mockPosts)
+      ]).then(([userData, postsData]) => {
+        setUser(userData);
+        setPosts(postsData);
+        setLoading(false);
+      });
+    }, []);
+
+    // 既负责数据获取又负责渲染
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#ffebee',
+        borderRadius: '8px',
+        border: '2px solid #ef5350'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#c62828' }}>
+          ❌ 反例：职责过多
+        </h4>
+        {loading ? (
+          <div style={{
+            padding: '20px',
+            textAlign: 'center',
+            background: 'white',
+            borderRadius: '6px'
+          }}>
+            加载中...
+          </div>
+        ) : (
+          <div style={{
+            background: 'white',
+            padding: '15px',
+            borderRadius: '6px'
+          }}>
+            <p><strong>问题：</strong></p>
+            <ul style={{ fontSize: '14px', lineHeight: '1.6' }}>
+              <li>⚠️ 组件同时负责数据获取和UI渲染</li>
+              <li>⚠️ 获取用户数据和文章数据的逻辑混合</li>
+              <li>⚠️ 难以复用和测试</li>
+              <li>⚠️ 违反单一职责原则</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Good Example Components
+  const UserDataProvider = ({ userId, children }) => {
+    const [user, setUser] = React.useState(null);
+    const [posts, setPosts] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      Promise.all([
+        simulateAPI(800).then(() => mockUser),
+        simulateAPI(800).then(() => mockPosts)
+      ]).then(([userData, postsData]) => {
+        setUser(userData);
+        setPosts(postsData);
+        setLoading(false);
+      });
+    }, []);
+
+    return (
+      <div style={{
+        padding: '15px',
+        background: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #66bb6a'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>
+          ✅ 正例：职责分离
+        </h4>
+        {loading ? (
+          <div style={{
+            padding: '20px',
+            textAlign: 'center',
+            background: 'white',
+            borderRadius: '6px'
+          }}>
+            加载中...
+          </div>
+        ) : (
+          <div>
+            <div style={{
+              background: 'white',
+              padding: '15px',
+              borderRadius: '6px',
+              marginBottom: '10px'
+            }}>
+              <p><strong>UserDataProvider 职责：</strong></p>
+              <ul style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                <li>✅ 仅负责数据获取</li>
+                <li>✅ 统一管理用户和文章数据</li>
+                <li>✅ 通过Context向下传递数据</li>
+              </ul>
+            </div>
+            <div style={{
+              background: 'white',
+              padding: '15px',
+              borderRadius: '6px'
+            }}>
+              <p><strong>UI组件职责：</strong></p>
+              <ul style={{ fontSize: '14px', lineHeight: '1.6' }}>
+                <li>✅ 仅负责UI渲染</li>
+                <li>✅ 可复用到其他地方</li>
+                <li>✅ 易于测试和维护</li>
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <div>
-      {loading ? <Spinner /> : (
-        <>
-          <UserInfo user={user} />
-          <UserPosts posts={posts} />
-        </>
-      )}
+    <div style={{ padding: '20px' }}>
+      <h3 style={{ marginTop: 0 }}>📐 单一职责原则</h3>
+
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px',
+        background: '#f5f5f5',
+        padding: '10px',
+        borderRadius: '8px'
+      }}>
+        <button
+          onClick={() => setActiveTab('bad')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            background: activeTab === 'bad' ? '#f44336' : 'white',
+            color: activeTab === 'bad' ? 'white' : '#333',
+            transition: 'all 0.2s'
+          }}
+        >
+          ❌ 反例：职责混合
+        </button>
+        <button
+          onClick={() => setActiveTab('good')}
+          style={{
+            flex: 1,
+            padding: '12px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            background: activeTab === 'good' ? '#4caf50' : 'white',
+            color: activeTab === 'good' ? 'white' : '#333',
+            transition: 'all 0.2s'
+          }}
+        >
+          ✅ 正例：职责分离
+        </button>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        {activeTab === 'bad' ? <BadUserProfile /> : <UserDataProvider userId={1} />}
+      </div>
+
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#1565c0' }}>💡 最佳实践</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.8' }}>
+          <li><strong>一个组件只做一件事</strong> - 如果组件太复杂，拆分成多个</li>
+          <li><strong>数据获取与渲染分离</strong> - 使用Provider或自定义Hook</li>
+          <li><strong>逻辑与UI分离</strong> - 业务逻辑放在自定义Hook中</li>
+          <li><strong>提高复用性</strong> - 纯渲染组件可以在多处使用</li>
+          <li><strong>便于测试</strong> - 职责单一的组件更容易编写单元测试</li>
+        </ul>
+      </div>
     </div>
   );
 }
-
-// ✅ 好的例子 - 单一职责
-function UserProfile({ userId }) {
-  return (
-    <div>
-      <UserDataProvider userId={userId}>
-        <UserInfo />
-        <UserPosts />
-      </UserDataProvider>
-    </div>
-  );
-}
-
-function UserDataProvider({ userId, children }) {
-  const [user, setUser] = useState(null);
-  const [posts, setPosts] = useState([]);
-
-  useEffect(() => {
-    Promise.all([
-      fetchUser(userId).then(setUser),
-      fetchUserPosts(userId).then(setPosts)
-    ]);
-  }, [userId]);
-
-  return (
-    <UserDataContext.Provider value={{ user, posts }}>
-      {children}
-    </UserDataContext.Provider>
-  );
-}
-```
-
-</Compare>
+`}
+  scope={{ React }}
+/>
 
 ### 4.2 纯函数原则
 
@@ -563,51 +1049,190 @@ function LoginModal({ isOpen, onClose }) {
 
 ### 5.1 状态提升模式
 
-<CodeBlock>
+状态提升是React中共享状态的标准模式。当多个组件需要共享同一个状态时，将状态提升到它们的最近共同父组件。
 
-```jsx
-// 将共享状态提升到父组件
+<LiveCode
+  code={`
 function TemperatureCalculator() {
-  const [temperature, setTemperature] = useState('');
-  const [scale, setScale] = useState('c');
+  const [temperature, setTemperature] = React.useState('');
+  const [scale, setScale] = React.useState('c');
+
+  // 温度转换函数
+  const toCelsius = (fahrenheit) => (fahrenheit - 32) * 5 / 9;
+  const toFahrenheit = (celsius) => (celsius * 9 / 5) + 32;
+
+  const tryConvert = (temperature, convert) => {
+    const input = parseFloat(temperature);
+    if (Number.isNaN(input)) return '';
+    return (Math.round(convert(input) * 100) / 100).toString();
+  };
 
   const celsius = scale === 'f' ? tryConvert(temperature, toCelsius) : temperature;
   const fahrenheit = scale === 'c' ? tryConvert(temperature, toFahrenheit) : temperature;
 
+  const handleCelsiusChange = (value) => {
+    setScale('c');
+    setTemperature(value);
+  };
+
+  const handleFahrenheitChange = (value) => {
+    setScale('f');
+    setTemperature(value);
+  };
+
+  // 判断是否沸腾
+  const isBoiling = (temp, scale) => {
+    const num = parseFloat(temp);
+    if (Number.isNaN(num)) return false;
+    return scale === 'c' ? num >= 100 : num >= 212;
+  };
+
   return (
-    <div>
-      <TemperatureInput
-        scale="c"
-        temperature={celsius}
-        onTemperatureChange={setTemperature}
-      />
-      <TemperatureInput
-        scale="f"
-        temperature={fahrenheit}
-        onTemperatureChange={setTemperature}
-      />
+    <div style={{ padding: '20px', maxWidth: '600px' }}>
+      <h3 style={{ marginTop: 0 }}>🌡️ 温度转换器</h3>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '20px',
+        marginBottom: '20px'
+      }}>
+        <TemperatureInput
+          scale="c"
+          temperature={celsius}
+          onTemperatureChange={handleCelsiusChange}
+          isBoiling={isBoiling(celsius, 'c')}
+        />
+        <TemperatureInput
+          scale="f"
+          temperature={fahrenheit}
+          onTemperatureChange={handleFahrenheitChange}
+          isBoiling={isBoiling(fahrenheit, 'f')}
+        />
+      </div>
+
+      <div style={{
+        padding: '20px',
+        background: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <h4 style={{ margin: '0 0 15px 0', color: '#1565c0' }}>📊 当前状态</h4>
+        <div style={{ fontSize: '16px', lineHeight: '1.8' }}>
+          <p><strong>摄氏温度：</strong> {celsius || 'N/A'}°C</p>
+          <p><strong>华氏温度：</strong> {fahrenheit || 'N/A'}°F</p>
+          <p><strong>活跃温度计：</strong> {scale === 'c' ? '摄氏度' : '华氏度'}</p>
+          <p><strong>输入值：</strong> {temperature || 'N/A'}</p>
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        background: '#f5f5f5',
+        borderRadius: '8px',
+        fontSize: '14px'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>💡 状态提升原理</h4>
+        <ul style={{ margin: '0', paddingLeft: '20px', lineHeight: '1.6' }}>
+          <li>共享状态（<code>temperature</code>）提升到父组件</li>
+          <li>父组件通过props将状态和回调函数传递给子组件</li>
+          <li>子组件仅负责UI渲染和触发事件</li>
+          <li>任何组件都不能直接修改共享状态，只能通过回调函数</li>
+        </ul>
+      </div>
     </div>
   );
 }
 
-function TemperatureInput({ scale, temperature, onTemperatureChange }) {
+function TemperatureInput({ scale, temperature, onTemperatureChange, isBoiling }) {
   const handleChange = (e) => {
     onTemperatureChange(e.target.value);
   };
 
+  const scaleName = scale === 'c' ? 'Celsius' : 'Fahrenheit';
+  const scaleColor = scale === 'c' ? '#2196f3' : '#ff9800';
+
   return (
-    <fieldset>
-      <legend>Enter temperature in {scale === 'c' ? 'Celsius' : 'Fahrenheit'}:</legend>
-      <input
-        value={temperature}
-        onChange={handleChange}
-      />
-    </fieldset>
+    <div style={{
+      padding: '20px',
+      background: 'white',
+      borderRadius: '8px',
+      border: \`3px solid ${scaleColor}\`,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '15px'
+      }}>
+        <h4 style={{ margin: 0, color: scaleColor }}>
+          {scale === 'c' ? '🌡️' : '℉'} {scaleName}
+        </h4>
+        {isBoiling && (
+          <span style={{
+            padding: '4px 12px',
+            background: '#f44336',
+            color: 'white',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 'bold'
+          }}>
+            沸腾！
+          </span>
+        )}
+      </div>
+
+      <div style={{ position: 'relative' }}>
+        <input
+          type="text"
+          value={temperature}
+          onChange={handleChange}
+          placeholder={\`输入${scaleName}温度\`}
+          style={{
+            width: '100%',
+            padding: '12px',
+            fontSize: '18px',
+            border: \`2px solid ${scaleColor}\`,
+            borderRadius: '6px',
+            boxSizing: 'border-box',
+            outline: 'none',
+            transition: 'border-color 0.2s'
+          }}
+        />
+        <span style={{
+          position: 'absolute',
+          right: '12px',
+          top: '50%',
+          transform: 'translateY(-50%)',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          color: scaleColor
+        }}>
+          °{scale.toUpperCase()}
+        </span>
+      </div>
+
+      {temperature && isBoiling && (
+        <div style={{
+          marginTop: '10px',
+          padding: '8px',
+          background: '#ffebee',
+          color: '#c62828',
+          borderRadius: '4px',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          💧 水在 {temperature}°{scale.toUpperCase()} 会沸腾！
+        </div>
+      )}
+    </div>
   );
 }
-```
-
-</CodeBlock>
+`}
+  scope={{ React }}
+/>
 
 ### 5.2 Render Props模式
 

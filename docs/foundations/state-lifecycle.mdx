@@ -65,27 +65,157 @@ function Counter() {
 
 useState是React提供的Hook，用于在函数组件中添加State。
 
-<CodeBlock>
-
-```jsx
-import React, { useState } from 'react';
-
+<LiveCode
+  code={`
 function MyComponent() {
   // 声明状态变量
-  const [count, setCount] = useState(0);
+  const [count, setCount] = React.useState(0);
+  const [step, setStep] = React.useState(1);
+
+  const increment = () => {
+    setCount(count + step);
+  };
+
+  const decrement = () => {
+    setCount(count - step);
+  };
+
+  const reset = () => {
+    setCount(0);
+    setStep(1);
+  };
+
+  const changeStep = (newStep) => {
+    setStep(newStep);
+  };
 
   return (
-    <div>
-      <p>Count: {count}</p>
-      <button onClick={() => setCount(count + 1)}>
-        增加
-      </button>
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <h2 style={{ color: '#1565c0' }}>⚡ 交互式计数器</h2>
+
+      <div style={{
+        margin: '20px 0',
+        padding: '20px',
+        backgroundColor: '#e3f2fd',
+        borderRadius: '8px',
+        border: '2px solid #2196f3'
+      }}>
+        <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#1565c0', margin: '10px 0' }}>
+          {count}
+        </p>
+        <p style={{ color: '#666', margin: '5px 0' }}>
+          每次增加/减少: {step}
+        </p>
+      </div>
+
+      <div style={{ margin: '20px 0' }}>
+        <button
+          onClick={decrement}
+          style={{
+            padding: '15px 30px',
+            margin: '5px',
+            fontSize: '18px',
+            backgroundColor: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          -{step}
+        </button>
+
+        <button
+          onClick={reset}
+          style={{
+            padding: '15px 30px',
+            margin: '5px',
+            fontSize: '18px',
+            backgroundColor: '#9e9e9e',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          重置
+        </button>
+
+        <button
+          onClick={increment}
+          style={{
+            padding: '15px 30px',
+            margin: '5px',
+            fontSize: '18px',
+            backgroundColor: '#4caf50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          +{step}
+        </button>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0', color: '#e65100' }}>💡 调整步长</h4>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          {[1, 5, 10, 50].map((s) => (
+            <button
+              key={s}
+              onClick={() => changeStep(s)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: step === s ? '#ff9800' : '#ffd54f',
+                color: '#333',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                fontWeight: step === s ? 'bold' : 'normal'
+              }}
+            >
+              步长: {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px',
+        fontSize: '14px',
+        color: '#666'
+      }}>
+        <p style={{ margin: '5px 0' }}>
+          <strong>State</strong>是组件内部的私有数据，当状态改变时，组件会重新渲染。
+        </p>
+        <p style={{ margin: '5px 0' }}>
+          <strong>useState</strong>返回当前状态和更新状态的函数。
+        </p>
+      </div>
     </div>
   );
 }
-```
+`}
+  scope={{ React }}
+/>
 
-</CodeBlock>
+<Box style={{ padding: '15px', background: '#e8f5e9', borderRadius: '8px', margin: '20px 0' }}>
+  <h4 style={{ margin: 0, color: '#2e7d32' }}>💡 State vs Props</h4>
+  <p style={{ margin: '10px 0 0 0' }}>
+    <strong>Props</strong>：父组件传递，只读<br/>
+    <strong>State</strong>：组件内部管理，可修改
+  </p>
+</Box>
 
 **语法解析：**
 ```javascript
