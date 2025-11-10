@@ -67,11 +67,32 @@ const sidebars = {
       label: '🧩 组件模式',
       collapsed: true,
       items: [
-        'patterns/basics/functional-components',
-        'patterns/basics/higher-order-components',
-        'patterns/basics/render-props',
-        'patterns/basics/compound-components',
-        'patterns/basics/container-presentational'
+        {
+          type: 'category',
+          label: '基础模式',
+          collapsed: true,
+          items: [
+            'patterns/basics/functional-components',
+            'patterns/basics/higher-order-components',
+            'patterns/basics/render-props',
+            'patterns/basics/compound-components',
+            'patterns/basics/container-presentational'
+          ]
+        },
+        {
+          type: 'category',
+          label: '高级模式',
+          collapsed: true,
+          items: [
+            'patterns/advanced/context-patterns',
+            'patterns/advanced/hooks-patterns',
+            'patterns/advanced/error-boundaries',
+            'patterns/advanced/children-patterns',
+            'patterns/advanced/props-getters',
+            'patterns/advanced/controlled-uncontrolled',
+            'patterns/advanced/composition-vs-inheritance'
+          ]
+        }
       ]
     },
     {
@@ -147,11 +168,30 @@ const sidebars = {
       type: 'category',
       label: '组件模式',
       items: [
-        'patterns/basics/functional-components',
-        'patterns/basics/higher-order-components',
-        'patterns/basics/render-props',
-        'patterns/basics/compound-components',
-        'patterns/basics/container-presentational'
+        {
+          type: 'category',
+          label: '基础模式',
+          items: [
+            'patterns/basics/functional-components',
+            'patterns/basics/higher-order-components',
+            'patterns/basics/render-props',
+            'patterns/basics/compound-components',
+            'patterns/basics/container-presentational'
+          ]
+        },
+        {
+          type: 'category',
+          label: '高级模式',
+          items: [
+            'patterns/advanced/context-patterns',
+            'patterns/advanced/hooks-patterns',
+            'patterns/advanced/error-boundaries',
+            'patterns/advanced/children-patterns',
+            'patterns/advanced/props-getters',
+            'patterns/advanced/controlled-uncontrolled',
+            'patterns/advanced/composition-vs-inheritance'
+          ]
+        }
       ]
     },
     {
