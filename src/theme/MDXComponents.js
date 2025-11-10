@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Highlight } from 'prism-react-renderer';
+import LiveCodeComponent from '../components/LiveCode';
 
 // 自定义MDX组件映射
 const MDXComponents = {
@@ -398,6 +399,11 @@ const MDXComponents = {
         )}
       </Highlight>
     );
+  },
+
+  // LiveCode组件 - 实时代码编辑器
+  LiveCode: ({ code, scope = {}, ...props }) => {
+    return <LiveCodeComponent code={code} scope={scope} {...props} />;
   },
 };
 
