@@ -120,9 +120,153 @@ function WithUseCallback() {
 }
 ```
 
-</CodeBlock>
+## 2. 交互式示例：性能对比
 
-### 2.2 依赖数组的作用
+<LiveCode
+  code={`
+function PerformanceComparison() {
+  // 模拟一个需要优化渲染的子组件
+  const ExpensiveChild = React.memo(({ onIncrement, value }) => {
+    console.log('ExpensiveChild 渲染了, value:', value);
+    return (
+      <div style={{
+        padding: '15px',
+        backgroundColor: '#e3f2fd',
+        borderRadius: '8px',
+        marginTop: '15px',
+        border: '2px solid #2196F3'
+      }}>
+        <p style={{ margin: 0, fontSize: '14px', color: '#1565c0' }}>
+          💰 昂贵组件被渲染，值: {value}
+        </p>
+      </div>
+    );
+  });
+
+  // 无useCallback的版本
+  function WithoutCallback() {
+    const [count, setCount] = React.useState(0);
+    const [text, setText] = React.useState('');
+
+    // 没有使用useCallback - 每次都创建新函数
+    const handleIncrement = () => {
+      setCount(c => c + 1);
+    };
+
+    return (
+      <div style={{
+        padding: '20px',
+        backgroundColor: '#fff3e0',
+        borderRadius: '8px',
+        border: '2px solid #ff9800'
+      }}>
+        <h3 style={{ margin: '0 0 15px 0', color: '#e65100' }}>
+          ❌ 不使用useCallback
+        </h3>
+        <div style={{ marginBottom: '10px' }}>
+          <button
+            onClick={() => setCount(c => c + 1)}
+            style={{ padding: '8px 16px', marginRight: '10px' }}
+          >
+            增加计数
+          </button>
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="输入文本..."
+            style={{ padding: '8px', width: '150px' }}
+          />
+        </div>
+        <p>计数: {count}</p>
+        <ExpensiveChild onIncrement={handleIncrement} value={count} />
+        <p style={{ fontSize: '12px', color: '#e65100', marginTop: '10px' }}>
+          ⚠️ 每次输入文本都会导致子组件重新渲染
+        </p>
+      </div>
+    );
+  }
+
+  // 使用useCallback的版本
+  function WithCallback() {
+    const [count, setCount] = React.useState(0);
+    const [text, setText] = React.useState('');
+
+    // 使用useCallback缓存函数
+    const handleIncrement = React.useCallback(() => {
+      setCount(c => c + 1);
+    }, []); // 空依赖，函数只创建一次
+
+    return (
+      <div style={{
+        padding: '20px',
+        backgroundColor: '#e8f5e9',
+        borderRadius: '8px',
+        border: '2px solid #4caf50'
+      }}>
+        <h3 style={{ margin: '0 0 15px 0', color: '#2e7d32' }}>
+          ✅ 使用useCallback
+        </h3>
+        <div style={{ marginBottom: '10px' }}>
+          <button
+            onClick={() => setCount(c => c + 1)}
+            style={{ padding: '8px 16px', marginRight: '10px' }}
+          >
+            增加计数
+          </button>
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="输入文本..."
+            style={{ padding: '8px', width: '150px' }}
+          />
+        </div>
+        <p>计数: {count}</p>
+        <ExpensiveChild onIncrement={handleIncrement} value={count} />
+        <p style={{ fontSize: '12px', color: '#2e7d32', marginTop: '10px' }}>
+          ✅ 只有点击按钮时才渲染，文本输入不会影响
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <h2 style={{ textAlign: 'center', color: '#333' }}>
+        🔥 useCallback性能对比演示
+      </h2>
+      <p style={{ textAlign: 'center', color: '#666', marginBottom: '20px' }}>
+        打开浏览器控制台查看渲染日志
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <WithoutCallback />
+        <WithCallback />
+      </div>
+      <div style={{
+        marginTop: '20px',
+        padding: '15px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '8px',
+        fontSize: '14px',
+        color: '#666'
+      }}>
+        <h4 style={{ margin: '0 0 10px 0' }}>💡 观察结果：</h4>
+        <ul style={{ margin: 0, paddingLeft: '20px' }}>
+          <li><strong>左侧</strong>：在输入框中输入时，"昂贵组件"会重新渲染</li>
+          <li><strong>右侧</strong>：只有点击"增加计数"按钮时，组件才渲染</li>
+          <li>useCallback 通过缓存函数引用，避免了不必要的重新渲染</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+  `}
+/>
+
+## 3. 深入理解useCallback
+
+### 3.1 依赖数组的作用
 
 <CodeBlock>
 

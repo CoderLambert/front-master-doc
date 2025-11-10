@@ -80,11 +80,216 @@ function Counter() {
 }
 ```
 
-</CodeBlock>
+## 2. 交互式示例：TODO应用
+
+<LiveCode
+  code={`
+function TodoApp() {
+  // Reducer函数
+  const todoReducer = (state, action) => {
+    switch (action.type) {
+      case 'ADD_TODO':
+        return {
+          ...state,
+          todos: [
+            ...state.todos,
+            {
+              id: Date.now(),
+              text: action.payload,
+              completed: false
+            }
+          ]
+        };
+      case 'TOGGLE_TODO':
+        return {
+          ...state,
+          todos: state.todos.map(todo =>
+            todo.id === action.payload
+              ? { ...todo, completed: !todo.completed }
+              : todo
+          )
+        };
+      case 'DELETE_TODO':
+        return {
+          ...state,
+          todos: state.todos.filter(todo => todo.id !== action.payload)
+        };
+      case 'CLEAR_COMPLETED':
+        return {
+          ...state,
+          todos: state.todos.filter(todo => !todo.completed)
+        };
+      default:
+        return state;
+    }
+  };
+
+  // 初始状态
+  const initialState = {
+    todos: [],
+    filter: 'all' // 'all', 'active', 'completed'
+  };
+
+  const [state, dispatch] = useReducer(todoReducer, initialState);
+  const [inputValue, setInputValue] = React.useState('');
+
+  const addTodo = () => {
+    if (inputValue.trim()) {
+      dispatch({ type: 'ADD_TODO', payload: inputValue });
+      setInputValue('');
+    }
+  };
+
+  const activeCount = state.todos.filter(todo => !todo.completed).length;
+  const completedCount = state.todos.length - activeCount;
+
+  return (
+    <div style={{
+      maxWidth: '600px',
+      margin: '0 auto',
+      padding: '20px',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <h1 style={{ textAlign: 'center', color: '#333' }}>📝 TODO应用</h1>
+
+      {/* 输入框 */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && addTodo()}
+          placeholder="添加新任务..."
+          style={{
+            flex: 1,
+            padding: '10px',
+            fontSize: '16px',
+            border: '2px solid #ddd',
+            borderRadius: '6px',
+            outline: 'none'
+          }}
+        />
+        <button
+          onClick={addTodo}
+          style={{
+            padding: '10px 20px',
+            fontSize: '16px',
+            backgroundColor: '#4CAF50',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          添加
+        </button>
+      </div>
+
+      {/* 统计信息 */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-around',
+        marginBottom: '20px',
+        padding: '15px',
+        backgroundColor: '#f5f5f5',
+        borderRadius: '6px'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{activeCount}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>进行中</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#4CAF50' }}>{completedCount}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>已完成</div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2196F3' }}>{state.todos.length}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>总计</div>
+        </div>
+      </div>
+
+      {/* TODO列表 */}
+      <div>
+        {state.todos.length === 0 ? (
+          <p style={{ textAlign: 'center', color: '#999', padding: '40px 0' }}>
+            还没有任务，添加一个吧！
+          </p>
+        ) : (
+          state.todos.map(todo => (
+            <div
+              key={todo.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                padding: '12px',
+                marginBottom: '8px',
+                backgroundColor: todo.completed ? '#e8f5e9' : '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                textDecoration: todo.completed ? 'line-through' : 'none',
+                opacity: todo.completed ? 0.7 : 1
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={todo.completed}
+                onChange={() => dispatch({ type: 'TOGGLE_TODO', payload: todo.id })}
+                style={{ marginRight: '12px', width: '18px', height: '18px' }}
+              />
+              <span style={{ flex: 1, color: '#333' }}>{todo.text}</span>
+              <button
+                onClick={() => dispatch({ type: 'DELETE_TODO', payload: todo.id })}
+                style={{
+                  padding: '6px 12px',
+                  backgroundColor: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                删除
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* 清除按钮 */}
+      {completedCount > 0 && (
+        <button
+          onClick={() => dispatch({ type: 'CLEAR_COMPLETED' })}
+          style={{
+            width: '100%',
+            padding: '12px',
+            marginTop: '20px',
+            fontSize: '16px',
+            backgroundColor: '#ff9800',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          清除已完成任务 ({completedCount})
+        </button>
+      )}
+    </div>
+  );
+}
+  `}
+/>
+
+这个交互式示例展示了useReducer的强大功能：
+- ✅ 复杂状态逻辑管理
+- ✅ 多个相关状态（todos列表）
+- ✅ 基于action的不可变状态更新
+- ✅ 状态的派生计算（activeCount, completedCount）
 
 ---
 
-## 2. useState vs useReducer
+## 3. useState vs useReducer
 
 ### 2.1 何时使用useReducer
 
