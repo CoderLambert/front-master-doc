@@ -353,10 +353,36 @@ const MDXComponents = {
     </div>
   ),
 
-  // 使用默认的Highlight组件渲染代码
+  // 智能代码组件 - 区分内联代码和代码块
   code: ({ className, children, ...props }) => {
     const match = /language-(\w+)/.exec(className || '');
     const codeString = children?.trim() || '';
+    const hasNewlines = codeString.includes('\n');
+    const isInline = !hasNewlines && codeString.length < 50;
+
+    // 内联代码渲染 - 使用简单的 <code> 标签
+    if (isInline) {
+      return (
+        <code
+          style={{
+            fontFamily: 'Monaco, Menlo, "Ubuntu Mono", Consolas, source-code-pro, monospace',
+            fontSize: '0.875em',
+            padding: '0.2rem 0.4rem',
+            borderRadius: '0.25rem',
+            backgroundColor: 'rgba(200, 200, 200, 0.15)',
+            color: '#e83e8c',
+            whiteSpace: 'nowrap',
+            display: 'inline',
+            verticalAlign: 'baseline',
+          }}
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    }
+
+    // 代码块渲染 - 使用Highlight组件
     return (
       <Highlight code={codeString} language={(match && match[1]) || 'javascript'} {...props}>
         {({ className: highlightClassName, style, tokens, getLineProps, getTokenProps }) => (
