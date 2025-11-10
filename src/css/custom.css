@@ -28,3 +28,35 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+/* 修复内联代码样式问题 - 确保代码在行内正确显示 */
+code {
+  font-family: 'Monaco, Menlo, "Ubuntu Mono", Consolas, source-code-pro, monospace';
+  font-size: 0.875em;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  background-color: rgba(200, 200, 200, 0.15);
+  color: #e83e8c;
+  white-space: nowrap;
+  display: inline;
+}
+
+[data-theme='dark'] code {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ff79c6;
+}
+
+/* 确保pre标签内的代码块保持块级显示 */
+pre code {
+  background-color: transparent;
+  padding: 0;
+  white-space: pre;
+  display: block;
+  color: inherit;
+}
+
+/* 确保段落内的内联代码正确显示 */
+p code {
+  display: inline;
+  white-space: nowrap;
+}
