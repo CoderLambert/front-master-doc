@@ -114,7 +114,8 @@
       "Bash(curl -s -o /dev/null -w \"react-memo: %{http_code}\\n\" http://localhost:3011/docs/performance/basics/react-memo)",
       "Bash(curl -s -o /dev/null -w \"virtualization: %{http_code}\\n\" http://localhost:3011/docs/performance/basics/virtualization)",
       "Bash(curl -s -o /dev/null -w \"code-splitting: %{http_code}\\n\" http://localhost:3011/docs/performance/basics/code-splitting)",
-      "Bash(git add docs/)"
+      "Bash(git add docs/)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
